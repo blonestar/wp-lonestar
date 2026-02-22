@@ -104,6 +104,48 @@ jobs:
             exit 1
           fi
 
+      - name: Build release notes from CHANGELOG
+        id: notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.meta.outputs.version }}"
+          NOTES_FILE="$RUNNER_TEMP/release-notes.md"
+          BODY_FILE="$RUNNER_TEMP/release-body.md"
+
+          # Prefer exact version section: ## [X.Y.Z]
+          awk -v version="$VERSION" '
+            $0 ~ "^## \\[" version "\\]" {capture=1; next}
+            capture && $0 ~ "^## \\[" {exit}
+            capture {print}
+          ' CHANGELOG.md > "$NOTES_FILE"
+          sed -i '/./,$!d' "$NOTES_FILE"
+
+          # Fallback to Unreleased when version section is not present yet.
+          if [ ! -s "$NOTES_FILE" ]; then
+            awk '
+              /^## \[Unreleased\]/ {capture=1; next}
+              capture && /^## \[/ {exit}
+              capture {print}
+            ' CHANGELOG.md > "$NOTES_FILE"
+            sed -i '/./,$!d' "$NOTES_FILE"
+          fi
+
+          if [ ! -s "$NOTES_FILE" ]; then
+            echo "Could not build release notes from CHANGELOG.md"
+            exit 1
+          fi
+
+          {
+            echo "## Changelog"
+            echo
+            cat "$NOTES_FILE"
+            echo
+            echo "Full Changelog: https://github.com/${GITHUB_REPOSITORY}/commits/${{ steps.meta.outputs.tag }}"
+          } > "$BODY_FILE"
+
+          echo "body_path=$BODY_FILE" >> "$GITHUB_OUTPUT"
+
       - name: Package theme zip
         id: package
         shell: bash
@@ -154,6 +196,6 @@ jobs:
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
           name: Lonestar v${{ steps.meta.outputs.version }}
-          generate_release_notes: true
+          body_path: ${{ steps.notes.outputs.body_path }}
           files: ${{ steps.package.outputs.asset_path }}
           fail_on_unmatched_files: true

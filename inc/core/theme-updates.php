@@ -61,12 +61,17 @@ function lonestar_get_latest_parent_release_payload()
         return $cached_payload;
     }
 
-    $repo = trim((string) LONESTAR_UPDATE_REPO);
+    $repo = trim((string) LONESTAR_UPDATE_REPO, " \t\n\r\0\x0B/");
     if ('' === $repo) {
         return false;
     }
 
-    $release_api_url = sprintf('https://api.github.com/repos/%s/releases/latest', rawurlencode($repo));
+    if (1 !== preg_match('/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/', $repo)) {
+        return false;
+    }
+
+    // GitHub endpoint expects owner/repo path segments, not URL-encoded slash.
+    $release_api_url = sprintf('https://api.github.com/repos/%s/releases/latest', $repo);
     $headers = array(
         'Accept'     => 'application/vnd.github+json',
         'User-Agent' => 'LonestarThemeUpdater/' . (string) wp_get_theme(get_template())->get('Version'),

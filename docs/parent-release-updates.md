@@ -60,9 +60,16 @@ flowchart TD
 3. Runs `npm ci` and `npm run build`.
 4. Runs PHP lint on all `.php` files.
 5. Verifies `dist/manifest.json` exists.
-6. Packages `lonestar-X.Y.Z.zip` with root folder `lonestar/`.
-7. Creates and pushes tag `lonestar-vX.Y.Z`.
-8. Publishes GitHub Release and attaches zip asset.
+6. Builds release body from `CHANGELOG.md`:
+   - first tries section `## [X.Y.Z]`
+   - falls back to `## [Unreleased]` if version section is missing
+7. Packages `lonestar-X.Y.Z.zip` with root folder `lonestar/`.
+8. Creates and pushes tag `lonestar-vX.Y.Z`.
+9. Publishes GitHub Release and attaches zip asset.
+
+Recommended:
+- before release, move notes into a dedicated version section in `CHANGELOG.md`:
+  - `## [X.Y.Z] - YYYY-MM-DD`
 
 ## Manual Fallback (If Actions Is Unavailable)
 

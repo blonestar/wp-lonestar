@@ -51,12 +51,14 @@ All notable changes to the Lonestar parent theme are documented in this file.
 - Parent release runbook now documents implemented `workflow_dispatch` release flow and CI/release trigger split.
 - Git workflow release section now points to `workflow_dispatch` release trigger.
 - Contributing guide now includes concrete required CI status checks: `build` and `php-lint`.
+- Release workflow now builds GitHub release description from `CHANGELOG.md` (version section first, `Unreleased` fallback).
 
 ### Fixed
 - ACF block registration now follows resolved enabled block directories (avoids double registration in parent+child duplicates).
 - Block discovery and asset caches were version-bumped to prevent stale conflict results.
 - Module settings save now forces overridden parent modules to `false` to match child-priority runtime behavior.
 - Release workflow now correctly parses `Version` from WordPress-style `style.css` headers.
+- Parent theme updater now calls GitHub Releases API with valid `owner/repo` path format (fixes remote payload detection).
 
 ## [0.1.0] - 2026-02-22
 
