@@ -15,7 +15,7 @@ add_action('upgrader_process_complete', 'lonestar_flush_block_discovery_caches',
  */
 function lonestar_register_native_block_types()
 {
-    $transient_key = 'lonestar_native_blocks_to_load';
+    $transient_key = 'lonestar_native_blocks_to_load_v2';
     $cache_namespace = function_exists('lonestar_get_theme_cache_namespace') ? lonestar_get_theme_cache_namespace() : 'default';
     $use_cache = !lonestar_is_vite_dev_mode();
     $block_directories = false;
@@ -119,6 +119,13 @@ function lonestar_flush_block_discovery_caches($upgrader_object = null, $options
 
     delete_transient('lonestar_acf_blocks_to_load');
     delete_transient('lonestar_native_blocks_to_load');
+    delete_transient('lonestar_acf_blocks_to_load_v2');
+    delete_transient('lonestar_acf_blocks_to_load_v3');
+    delete_transient('lonestar_native_blocks_to_load_v2');
     delete_transient('lonestar_blocks_to_scan_' . $cache_namespace);
+    delete_transient('lonestar_blocks_to_scan_v2_' . $cache_namespace);
+    delete_transient('lonestar_blocks_to_scan_v3_' . $cache_namespace);
     delete_transient('lonestar_block_asset_map_' . $cache_namespace);
+    delete_transient('lonestar_block_asset_map_v2_' . $cache_namespace);
+    delete_transient('lonestar_block_asset_map_v3_' . $cache_namespace);
 }

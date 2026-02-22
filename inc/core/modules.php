@@ -18,6 +18,17 @@ if (!defined('LONESTAR_MODULE_TOGGLE_OPTION')) {
     define('LONESTAR_MODULE_TOGGLE_OPTION', MODULES_TOGGLE_OPTION);
 }
 
+if (!defined('BLOCKS_TOGGLE_OPTION')) {
+    if (defined('LONESTAR_BLOCK_TOGGLE_OPTION')) {
+        define('BLOCKS_TOGGLE_OPTION', LONESTAR_BLOCK_TOGGLE_OPTION);
+    } else {
+        define('BLOCKS_TOGGLE_OPTION', 'lonestar_block_toggles');
+    }
+}
+if (!defined('LONESTAR_BLOCK_TOGGLE_OPTION')) {
+    define('LONESTAR_BLOCK_TOGGLE_OPTION', BLOCKS_TOGGLE_OPTION);
+}
+
 if (!defined('MODULES_CATALOG_CACHE_TTL')) {
     if (defined('LONESTAR_MODULE_CATALOG_CACHE_TTL')) {
         define('MODULES_CATALOG_CACHE_TTL', LONESTAR_MODULE_CATALOG_CACHE_TTL);
@@ -39,5 +50,6 @@ add_action('admin_menu', 'modules_register_modules_admin_page', 30);
 add_action('admin_init', 'modules_handle_modules_admin_post');
 add_filter('acf/settings/load_json', 'modules_filter_module_acf_json_load_paths', 20);
 add_action('update_option_' . LONESTAR_MODULE_TOGGLE_OPTION, 'modules_handle_module_toggle_option_update', 10, 3);
+add_action('update_option_' . LONESTAR_BLOCK_TOGGLE_OPTION, 'modules_handle_module_toggle_option_update', 10, 3);
 add_action('after_switch_theme', 'modules_flush_module_related_caches');
 add_action('upgrader_process_complete', 'modules_flush_module_related_caches', 10, 2);

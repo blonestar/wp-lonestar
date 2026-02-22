@@ -73,7 +73,7 @@ function lonestar_get_block_cache_namespace()
  */
 function lonestar_get_block_discovery_transient_key()
 {
-	return 'lonestar_blocks_to_scan_' . lonestar_get_block_cache_namespace();
+	return 'lonestar_blocks_to_scan_v3_' . lonestar_get_block_cache_namespace();
 }
 
 /**
@@ -124,16 +124,92 @@ function lonestar_get_theme_block_root_paths($block_type = 'all')
 	}
 
 	$roots = array();
-	foreach ($relative_paths as $relative_path) {
-		$absolute_path = wp_normalize_path(TEMPLATE_PATH . ltrim($relative_path, '/'));
-		if (is_dir($absolute_path) && is_readable($absolute_path)) {
-			$roots[] = $absolute_path;
+	$theme_base_paths = array(wp_normalize_path(untrailingslashit(TEMPLATE_PATH)));
+	$stylesheet_path = wp_normalize_path(untrailingslashit(get_stylesheet_directory()));
+	if ('' !== $stylesheet_path && !in_array($stylesheet_path, $theme_base_paths, true)) {
+		$theme_base_paths[] = $stylesheet_path;
+	}
+
+	foreach ($theme_base_paths as $theme_base_path) {
+		foreach ($relative_paths as $relative_path) {
+			$absolute_path = wp_normalize_path($theme_base_path . '/' . ltrim($relative_path, '/'));
+			if (is_dir($absolute_path) && is_readable($absolute_path)) {
+				$roots[] = $absolute_path;
+			}
 		}
 	}
 
 	$roots = array_values(array_unique($roots));
 	sort($roots, SORT_NATURAL);
 	return $roots;
+}
+
+/**
+ * Return normalized source context metadata for parent/child theme paths.
+ *
+ * @return array<string,array{path:string,uri:string,dist_path:string,dist_uri:string}>
+ */
+function lonestar_get_theme_source_contexts()
+{
+	static $contexts = null;
+	if (is_array($contexts)) {
+		return $contexts;
+	}
+
+	$contexts = array();
+	$dist_def = trim(defined('DIST_REL_PATH') ? (string) DIST_REL_PATH : 'dist/', '/');
+
+	$template_path = wp_normalize_path(untrailingslashit((string) get_template_directory()));
+	$template_uri = untrailingslashit((string) get_template_directory_uri());
+	if ('' !== $template_path) {
+		$contexts['template'] = array(
+			'path'      => $template_path,
+			'uri'       => $template_uri,
+			'dist_path' => wp_normalize_path($template_path . '/' . $dist_def),
+			'dist_uri'  => $template_uri . '/' . $dist_def,
+		);
+	}
+
+	$stylesheet_path = wp_normalize_path(untrailingslashit((string) get_stylesheet_directory()));
+	$stylesheet_uri = untrailingslashit((string) get_stylesheet_directory_uri());
+	if ('' !== $stylesheet_path && $stylesheet_path !== $template_path) {
+		$contexts['stylesheet'] = array(
+			'path'      => $stylesheet_path,
+			'uri'       => $stylesheet_uri,
+			'dist_path' => wp_normalize_path($stylesheet_path . '/' . $dist_def),
+			'dist_uri'  => $stylesheet_uri . '/' . $dist_def,
+		);
+	}
+
+	return $contexts;
+}
+
+/**
+ * Resolve source context key from absolute filesystem path.
+ *
+ * @param string $absolute_path Absolute path.
+ * @return string
+ */
+function lonestar_get_source_context_key_for_path($absolute_path)
+{
+	$absolute_path = wp_normalize_path((string) $absolute_path);
+	if ('' === $absolute_path) {
+		return 'template';
+	}
+
+	$contexts = lonestar_get_theme_source_contexts();
+	foreach ($contexts as $context_key => $context) {
+		$base_path = isset($context['path']) ? wp_normalize_path((string) $context['path']) : '';
+		if ('' === $base_path) {
+			continue;
+		}
+
+		if (0 === strpos($absolute_path, $base_path . '/')) {
+			return sanitize_key((string) $context_key);
+		}
+	}
+
+	return 'template';
 }
 
 /**
@@ -178,12 +254,15 @@ function lonestar_get_native_block_root_paths()
 /**
  * Find all block directories by scanning block roots for metadata files.
  *
+ * @param bool $apply_toggle_filter Whether to remove disabled blocks.
+ *
  * @return array
  */
-function lonestar_find_block_directories()
+function lonestar_find_block_directories($apply_toggle_filter = true)
 {
-	$directories = array();
-	$roots = lonestar_get_block_root_paths();
+    $apply_toggle_filter = (bool) $apply_toggle_filter;
+    $directories = array();
+    $roots = lonestar_get_block_root_paths();
 
 	if (empty($roots)) {
 		return $directories;
@@ -220,10 +299,14 @@ function lonestar_find_block_directories()
 		}
 	}
 
-	$directories = array_values(array_unique($directories));
-	sort($directories, SORT_NATURAL);
+    $directories = array_values(array_unique($directories));
+    sort($directories, SORT_NATURAL);
 
-	return $directories;
+    if ($apply_toggle_filter && function_exists('lonestar_filter_enabled_block_directories')) {
+        return lonestar_filter_enabled_block_directories($directories);
+    }
+
+    return $directories;
 }
 
 /**
@@ -328,12 +411,21 @@ function lonestar_get_block_source_file($block_directory, $asset_type)
  * @param string $absolute_path Absolute asset path.
  * @return string
  */
-function lonestar_get_theme_relative_asset_path($absolute_path)
+function lonestar_get_theme_relative_asset_path($absolute_path, $source_context = '')
 {
 	$absolute_path = wp_normalize_path($absolute_path);
-	$theme_root = wp_normalize_path(untrailingslashit(TEMPLATE_PATH));
+	$source_context = sanitize_key((string) $source_context);
+	$contexts = lonestar_get_theme_source_contexts();
 
-	if (0 !== strpos($absolute_path, $theme_root . '/')) {
+	if ('' !== $source_context && isset($contexts[$source_context])) {
+		$context = $contexts[$source_context];
+		$theme_root = wp_normalize_path(untrailingslashit((string) $context['path']));
+	} else {
+		$resolved_context = lonestar_get_source_context_key_for_path($absolute_path);
+		$theme_root = isset($contexts[$resolved_context]['path']) ? wp_normalize_path(untrailingslashit((string) $contexts[$resolved_context]['path'])) : '';
+	}
+
+	if ('' === $theme_root || 0 !== strpos($absolute_path, $theme_root . '/')) {
 		return '';
 	}
 
@@ -352,7 +444,8 @@ function lonestar_get_vite_dev_asset_url($absolute_file)
 		return '';
 	}
 
-	$relative_path = lonestar_get_theme_relative_asset_path($absolute_file);
+	$source_context = lonestar_get_source_context_key_for_path($absolute_file);
+	$relative_path = lonestar_get_theme_relative_asset_path($absolute_file, $source_context);
 	if ('' === $relative_path) {
 		return '';
 	}
@@ -369,12 +462,16 @@ function lonestar_get_vite_dev_asset_url($absolute_file)
  */
 function lonestar_get_theme_asset_url($absolute_file)
 {
-	$relative_path = lonestar_get_theme_relative_asset_path($absolute_file);
+	$source_context = lonestar_get_source_context_key_for_path($absolute_file);
+	$relative_path = lonestar_get_theme_relative_asset_path($absolute_file, $source_context);
 	if ('' === $relative_path) {
 		return '';
 	}
 
-	$theme_uri = defined('TEMPLATE_URI') ? untrailingslashit(TEMPLATE_URI) : get_template_directory_uri();
+	$contexts = lonestar_get_theme_source_contexts();
+	$theme_uri = isset($contexts[$source_context]['uri'])
+		? untrailingslashit((string) $contexts[$source_context]['uri'])
+		: (defined('TEMPLATE_URI') ? untrailingslashit(TEMPLATE_URI) : get_template_directory_uri());
 	return $theme_uri . '/' . ltrim($relative_path, '/');
 }
 
@@ -383,21 +480,33 @@ function lonestar_get_theme_asset_url($absolute_file)
  *
  * @return array|null
  */
-function lonestar_get_block_assets_manifest()
+function lonestar_get_block_assets_manifest($source_context = 'template')
 {
-	static $manifest = null;
-	static $loaded = false;
-
-	if ($loaded) {
-		return $manifest;
+	static $manifests = array();
+	static $loaded = array();
+	$source_context = sanitize_key((string) $source_context);
+	if ('' === $source_context) {
+		$source_context = 'template';
 	}
 
-	$loaded = true;
-	if (!defined('DIST_PATH')) {
+	if (isset($loaded[$source_context]) && true === $loaded[$source_context]) {
+		return isset($manifests[$source_context]) ? $manifests[$source_context] : null;
+	}
+
+	$loaded[$source_context] = true;
+	$contexts = lonestar_get_theme_source_contexts();
+	$dist_path = '';
+	if (isset($contexts[$source_context]['dist_path'])) {
+		$dist_path = wp_normalize_path((string) $contexts[$source_context]['dist_path']);
+	} elseif (defined('DIST_PATH')) {
+		$dist_path = wp_normalize_path((string) DIST_PATH);
+	}
+
+	if ('' === $dist_path) {
 		return null;
 	}
 
-	$manifest_path = DIST_PATH . '/manifest.json';
+	$manifest_path = $dist_path . '/manifest.json';
 	if (!file_exists($manifest_path) || !is_readable($manifest_path)) {
 		return null;
 	}
@@ -412,8 +521,8 @@ function lonestar_get_block_assets_manifest()
 		return null;
 	}
 
-	$manifest = $decoded;
-	return $manifest;
+	$manifests[$source_context] = $decoded;
+	return $manifests[$source_context];
 }
 
 /**
@@ -423,13 +532,18 @@ function lonestar_get_block_assets_manifest()
  * @param string $source_file Absolute source file path.
  * @return string
  */
-function lonestar_get_manifest_built_file($manifest, $source_file)
+function lonestar_get_manifest_built_file($manifest, $source_file, $source_context = '')
 {
 	if (!is_array($manifest) || !is_string($source_file) || '' === $source_file) {
 		return '';
 	}
 
-	$relative_source = lonestar_get_theme_relative_asset_path($source_file);
+	$source_context = sanitize_key((string) $source_context);
+	if ('' === $source_context) {
+		$source_context = lonestar_get_source_context_key_for_path($source_file);
+	}
+
+	$relative_source = lonestar_get_theme_relative_asset_path($source_file, $source_context);
 	if ('' === $relative_source || !isset($manifest[$relative_source]) || !is_array($manifest[$relative_source])) {
 		return '';
 	}
@@ -544,7 +658,7 @@ function lonestar_get_cached_block_asset_registration_map()
 		return lonestar_build_block_asset_registration_map($block_directories);
 	}
 
-	$transient_key = 'lonestar_block_asset_map_' . lonestar_get_block_cache_namespace();
+	$transient_key = 'lonestar_block_asset_map_v3_' . lonestar_get_block_cache_namespace();
 	$cached = get_transient($transient_key);
 	if (is_array($cached)) {
 		return $cached;
@@ -568,7 +682,7 @@ function lonestar_register_block_files()
 	}
 
 	$is_vite_dev_mode = lonestar_is_vite_dev_mode();
-	$manifest = $is_vite_dev_mode ? null : lonestar_get_block_assets_manifest();
+	$source_contexts = lonestar_get_theme_source_contexts();
 
 	foreach ($block_assets_map as $asset_map) {
 		$js_source = isset($asset_map['js_source']) && is_string($asset_map['js_source']) ? $asset_map['js_source'] : '';
@@ -606,14 +720,21 @@ function lonestar_register_block_files()
 		}
 
 		if ('' !== $js_source) {
+			$js_source_context = lonestar_get_source_context_key_for_path($js_source);
+			$js_context = isset($source_contexts[$js_source_context]) ? $source_contexts[$js_source_context] : null;
+			$manifest = $is_vite_dev_mode ? null : lonestar_get_block_assets_manifest($js_source_context);
 			$js_file_path = '';
 			$js_file_version = null;
 
 			if (is_array($manifest)) {
-				$built_js_file = lonestar_get_manifest_built_file($manifest, $js_source);
+				$built_js_file = lonestar_get_manifest_built_file($manifest, $js_source, $js_source_context);
 				if ('' !== $built_js_file) {
-					$js_dist_path = DIST_PATH . '/' . $built_js_file;
-					$js_file_path = DIST_URI . '/' . $built_js_file;
+					$js_dist_path = is_array($js_context) && isset($js_context['dist_path'])
+						? wp_normalize_path((string) $js_context['dist_path']) . '/' . $built_js_file
+						: (defined('DIST_PATH') ? DIST_PATH . '/' . $built_js_file : '');
+					$js_file_path = is_array($js_context) && isset($js_context['dist_uri'])
+						? untrailingslashit((string) $js_context['dist_uri']) . '/' . $built_js_file
+						: (defined('DIST_URI') ? DIST_URI . '/' . $built_js_file : '');
 					$js_file_version = file_exists($js_dist_path) ? filemtime($js_dist_path) : null;
 				}
 			}
@@ -635,14 +756,21 @@ function lonestar_register_block_files()
 		}
 
 		if ('' !== $css_source) {
+			$css_source_context = lonestar_get_source_context_key_for_path($css_source);
+			$css_context = isset($source_contexts[$css_source_context]) ? $source_contexts[$css_source_context] : null;
+			$manifest = $is_vite_dev_mode ? null : lonestar_get_block_assets_manifest($css_source_context);
 			$css_file_uri = '';
 			$css_file_version = null;
 
 			if (is_array($manifest)) {
-				$built_css_file = lonestar_get_manifest_built_file($manifest, $css_source);
+				$built_css_file = lonestar_get_manifest_built_file($manifest, $css_source, $css_source_context);
 				if ('' !== $built_css_file) {
-					$css_dist_path = DIST_PATH . '/' . $built_css_file;
-					$css_file_uri = DIST_URI . '/' . $built_css_file;
+					$css_dist_path = is_array($css_context) && isset($css_context['dist_path'])
+						? wp_normalize_path((string) $css_context['dist_path']) . '/' . $built_css_file
+						: (defined('DIST_PATH') ? DIST_PATH . '/' . $built_css_file : '');
+					$css_file_uri = is_array($css_context) && isset($css_context['dist_uri'])
+						? untrailingslashit((string) $css_context['dist_uri']) . '/' . $built_css_file
+						: (defined('DIST_URI') ? DIST_URI . '/' . $built_css_file : '');
 					$css_file_version = file_exists($css_dist_path) ? filemtime($css_dist_path) : null;
 				}
 			}
