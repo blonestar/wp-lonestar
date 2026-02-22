@@ -94,7 +94,7 @@ Also run manual smoke test in admin + frontend.
 
 ## 6) Release Relation (Parent Theme)
 
-- Parent releases are cut from `main` through an intentional release trigger/tag.
+- Parent releases are cut from `main` via GitHub `workflow_dispatch` (`Release` workflow).
 - Commits should stay conventional so semantic versioning can be derived reliably.
 - For release details see:
   - `docs/parent-release-updates.md`

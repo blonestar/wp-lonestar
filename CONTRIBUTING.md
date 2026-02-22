@@ -61,6 +61,8 @@ Also do a manual smoke test for affected admin and frontend paths.
 - Require 1 approval.
 - Dismiss stale approvals when new commits are pushed.
 - Require conversation resolution before merging.
-- Require status checks to pass before merging (after CI workflow is added).
+- Require status checks to pass before merging:
+  - `build`
+  - `php-lint`
 - Prefer squash merge for a clean history.
 - Optional: require review from Code Owners.

@@ -20,6 +20,8 @@ All notable changes to the Lonestar parent theme are documented in this file.
 - Added GitHub PR template in `.github/PULL_REQUEST_TEMPLATE.md`.
 - Added `.github/CODEOWNERS` with default repository ownership.
 - Added Mermaid module diagrams (discovery/override and boot flow) in `docs/modules-anatomy.md`.
+- Added GitHub Actions CI workflow in `.github/workflows/ci.yml` (`build`, `php-lint` on push/PR to `main`).
+- Added GitHub Actions release workflow in `.github/workflows/release.yml` (manual `workflow_dispatch` release with build before packaging).
 
 ### Changed
 - Block conflict resolution now enforces child-theme override priority over parent blocks with the same identity.
@@ -46,6 +48,9 @@ All notable changes to the Lonestar parent theme are documented in this file.
 - Git workflow and developer diagrams were aligned with PR-first collaboration and intentional release decision points.
 - Docs index text for release runbook now reflects current/manual + target/automation split.
 - `docs/developer-guide.md` is now parent-only; child-specific guidance remains in `docs/child-theme-guide.md`.
+- Parent release runbook now documents implemented `workflow_dispatch` release flow and CI/release trigger split.
+- Git workflow release section now points to `workflow_dispatch` release trigger.
+- Contributing guide now includes concrete required CI status checks: `build` and `php-lint`.
 
 ### Fixed
 - ACF block registration now follows resolved enabled block directories (avoids double registration in parent+child duplicates).
