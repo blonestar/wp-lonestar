@@ -11,7 +11,7 @@ For child-theme-specific procedures, see:
 - PHP 8.2+
 - Node.js 20+
 - npm 10+
-- ACF Pro (required by module options/fields such as GTM settings)
+- ACF Pro (required for ACF blocks and any module that registers ACF options/fields)
 
 ## 2) Scope
 

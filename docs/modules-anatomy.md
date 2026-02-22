@@ -88,6 +88,7 @@ Parent module state also supports:
   - `LONESTAR_DISABLE_ALL_MODULES`
   - `LONESTAR_DISABLED_MODULES`
 - sentinel file: `.disable-modules`
+- module catalog cache key now fingerprints parent/child `modules/` roots, so module add/remove changes refresh discovery automatically.
 
 ## 4) Convention Paths Used By Module Runtime
 
@@ -111,22 +112,22 @@ Example module structure:
 ```text
 modules/gtm/
 |-- module.gtm.php
+|-- module.json
 `-- inc/
     |-- inc.main.php
-    |-- inc.fields.php
-    |-- inc.options-subpage.php
+    |-- inc.settings.php
     `-- inc.gtm-script.php
 ```
 
 Responsibility split:
 - `module.gtm.php`  
   Bootstrap: requires `inc/inc.*.php`.
+- `module.json`  
+  Provides module metadata and Settings link (`Theme Settings -> GTM` tab).
 - `inc.main.php`  
   Hooks output into `wp_head` and `wp_body_open`.
-- `inc.fields.php`  
-  Registers ACF options fields (`gtm_enabled`, `gtm_id`).
-- `inc.options-subpage.php`  
-  Adds ACF options subpage under Theme Options.
+- `inc.settings.php`  
+  Registers native GTM settings tab in Theme Settings and stores values in `lonestar_gtm_settings` option.
 - `inc.gtm-script.php`  
   Normalizes GTM ID and renders script/noscript markup.
 
@@ -158,6 +159,6 @@ Practical recommendation:
   - verify toggle is enabled,
   - if same slug exists in both sources, verify which source is enabled and expected to win,
   - verify hooks fire on expected action timing.
-- ACF options page missing:
-  - verify ACF Pro is active,
-  - verify `acf/init` callbacks execute and no fatal errors occur.
+- GTM settings tab missing:
+  - verify GTM module is enabled in `Appearance -> Theme Settings -> Modules`,
+  - verify no fatal errors in GTM module files.

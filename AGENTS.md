@@ -28,5 +28,12 @@
 - Add entries under `## [Unreleased]` with Keep a Changelog headings (`Added`, `Changed`, `Fixed`, `Removed`, `Security`).
 - Keep entries concise and developer-focused.
 
+## Versioning Discipline (Required)
+- Use semantic versioning format `major.minor.patch`.
+- Before commit/push for meaningful parent-theme changes, bump version in:
+  - `style.css` (`Version` header)
+  - `package.json` (`version`)
+- If `package-lock.json` exists, keep root `version` values aligned with `package.json`.
+
 ## Documentation Discipline
 - If behavior changes, update docs in `docs/` in the same change set.

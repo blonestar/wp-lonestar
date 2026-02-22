@@ -22,6 +22,8 @@ All notable changes to the Lonestar parent theme are documented in this file.
 - Added Mermaid module diagrams (discovery/override and boot flow) in `docs/modules-anatomy.md`.
 - Added GitHub Actions CI workflow in `.github/workflows/ci.yml` (`build`, `php-lint` on push/PR to `main`).
 - Added GitHub Actions release workflow in `.github/workflows/release.yml` (manual `workflow_dispatch` release with build before packaging).
+- Added native GTM settings integration in Theme Settings (`GTM` tab) with option storage in `lonestar_gtm_settings`.
+- Added required semantic versioning rule to `AGENTS.md` with `style.css`/`package.json` (and `package-lock.json` when present) alignment.
 
 ### Changed
 - Block conflict resolution now enforces child-theme override priority over parent blocks with the same identity.
@@ -53,6 +55,8 @@ All notable changes to the Lonestar parent theme are documented in this file.
 - Git workflow release section now points to `workflow_dispatch` release trigger.
 - Contributing guide now includes concrete required CI status checks: `build` and `php-lint`.
 - Release workflow now builds GitHub release description from `CHANGELOG.md` (version section first, `Unreleased` fallback).
+- GTM module runtime now reads native settings, with fallback migration from legacy ACF option fields when native data is not yet saved.
+- Parent theme version was bumped from `0.2.0` to `0.2.1` in `style.css`, `package.json`, and `package-lock.json`.
 
 ### Fixed
 - ACF block registration now follows resolved enabled block directories (avoids double registration in parent+child duplicates).
@@ -60,6 +64,11 @@ All notable changes to the Lonestar parent theme are documented in this file.
 - Module settings save now forces overridden parent modules to `false` to match child-priority runtime behavior.
 - Release workflow now correctly parses `Version` from WordPress-style `style.css` headers.
 - Parent theme updater now calls GitHub Releases API with valid `owner/repo` path format (fixes remote payload detection).
+- GTM module Settings link in Theme Settings > Modules now points to a stable native tab (`Theme Settings -> GTM`) instead of ACF subpage detection.
+- Module catalog cache keys now include parent/child `modules/` filesystem fingerprint, so deleted child modules stop showing as overrides without waiting for transient expiry.
+
+### Removed
+- Removed GTM module dependency on ACF options subpage and local ACF field registration files.
 
 ## [0.1.0] - 2026-02-22
 

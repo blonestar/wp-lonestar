@@ -156,6 +156,60 @@ function modules_get_module_source_directories()
 }
 
 /**
+ * Build module source filesystem fingerprint for cache namespace.
+ *
+ * The fingerprint tracks top-level module entries (file/folder + mtime) across
+ * parent and child module roots so add/remove operations invalidate cache keys.
+ *
+ * @return string
+ */
+function modules_get_module_source_fingerprint()
+{
+    $module_sources = modules_get_module_source_directories();
+    if (empty($module_sources)) {
+        return 'none';
+    }
+
+    $fingerprint_chunks = array();
+
+    foreach ($module_sources as $module_source) {
+        $source = isset($module_source['source']) ? modules_normalize_source($module_source['source']) : 'template';
+        $modules_directory = isset($module_source['directory']) ? untrailingslashit(wp_normalize_path((string) $module_source['directory'])) : '';
+        if ('' === $modules_directory || !is_dir($modules_directory) || !is_readable($modules_directory)) {
+            continue;
+        }
+
+        $entries = glob($modules_directory . '/*');
+        if (!is_array($entries)) {
+            $entries = array();
+        }
+
+        $entry_chunks = array();
+        foreach ($entries as $entry) {
+            $entry = wp_normalize_path((string) $entry);
+            $entry_name = basename($entry);
+            if ('' === $entry_name || '.' === $entry_name[0]) {
+                continue;
+            }
+
+            $entry_type = is_dir($entry) ? 'd' : 'f';
+            $entry_mtime = file_exists($entry) ? filemtime($entry) : false;
+            $entry_chunks[] = $entry_type . ':' . $entry_name . ':' . ((false !== $entry_mtime) ? (string) $entry_mtime : '0');
+        }
+
+        sort($entry_chunks, SORT_NATURAL);
+        $fingerprint_chunks[] = $source . '|' . $modules_directory . '|' . implode(',', $entry_chunks);
+    }
+
+    if (empty($fingerprint_chunks)) {
+        return 'none';
+    }
+
+    sort($fingerprint_chunks, SORT_NATURAL);
+    return substr(md5(implode('||', $fingerprint_chunks)), 0, 12);
+}
+
+/**
  * Return module catalog transient key.
  *
  * @return string
@@ -172,8 +226,10 @@ function modules_get_module_catalog_transient_key()
         $theme_fingerprint = md5((string) get_template_directory());
     }
 
-    $catalog_schema_version = 'v2';
-    $transient_key = 'lonestar_mod_catalog_' . $catalog_schema_version . '_' . substr(md5((string) $theme_fingerprint), 0, 12);
+    $catalog_schema_version = 'v3';
+    $source_fingerprint = modules_get_module_source_fingerprint();
+    $cache_seed = $catalog_schema_version . '|' . $theme_fingerprint . '|' . $source_fingerprint;
+    $transient_key = 'lonestar_mod_catalog_' . $catalog_schema_version . '_' . substr(md5((string) $cache_seed), 0, 12);
     return $transient_key;
 }
 
