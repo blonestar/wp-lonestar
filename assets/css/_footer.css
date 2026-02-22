@@ -1,0 +1,18 @@
+/* Footer Styles */
+footer.wp-block-template-part {
+    margin-top: var(--spacing-xl);
+    background: #0f1a2b;
+    color: #dbe5f3;
+}
+
+footer.wp-block-template-part .wp-block-group {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: var(--spacing-sm);
+    padding-right: var(--spacing-sm);
+}
+
+footer.wp-block-template-part .wp-block-site-title a,
+footer.wp-block-template-part .wp-block-site-tagline {
+    color: #dbe5f3;
+}

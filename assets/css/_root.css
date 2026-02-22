@@ -1,0 +1,35 @@
+/* CSS Custom Properties */
+:root {
+    /* Core colors */
+    --color-white: #ffffff;
+    --color-black: #111111;
+    --color-bg: #f7f8fa;
+    --color-surface: #ffffff;
+    --color-border: #d9dee7;
+    --color-text: #1a1f29;
+    --color-text-muted: #5c6675;
+    --color-brand: #005f99;
+    --color-brand-strong: #004a78;
+
+    /* Typography */
+    --font-base: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-heading: "Merriweather", Georgia, "Times New Roman", serif;
+
+    /* Spacing */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 3rem;
+
+    /* Breakpoints (for reference in CSS) */
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+
+    /* Shared effects */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --shadow-card: 0 12px 28px rgba(16, 31, 56, 0.08);
+}

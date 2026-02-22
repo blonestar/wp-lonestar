@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "lonestar/example-acf",
+  "title": "Lonestar Example ACF",
+  "category": "lonestar-blocks",
+  "icon": "align-pull-left",
+  "description": "Example ACF block for theme starter usage.",
+  "keywords": ["lonestar", "acf", "example"],
+  "style": "lonestar-example-acf",
+  "editorStyle": "lonestar-example-acf",
+  "script": "example-acf",
+  "editorScript": "example-acf",
+  "supports": {
+    "anchor": true,
+    "align": ["wide", "full"],
+    "jsx": true
+  },
+  "acf": {
+    "mode": "preview",
+    "renderTemplate": "render.php"
+  }
+}

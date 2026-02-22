@@ -1,0 +1,32 @@
+/* Header Styles */
+header.wp-block-template-part {
+    background: linear-gradient(135deg, #ffffff 0%, #f2f6fb 100%);
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: 0 4px 18px rgba(17, 17, 17, 0.04);
+}
+
+header.wp-block-template-part .wp-block-group {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: var(--spacing-sm);
+    padding-right: var(--spacing-sm);
+}
+
+header.wp-block-template-part .wp-block-site-title a {
+    color: var(--color-black);
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+header.wp-block-template-part .wp-block-navigation-item__content {
+    color: var(--color-text);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+header.wp-block-template-part .wp-block-navigation-item__content:hover {
+    color: var(--color-brand-strong);
+    text-decoration: none;
+}

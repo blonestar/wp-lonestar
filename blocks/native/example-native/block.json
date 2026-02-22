@@ -1,0 +1,29 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "lonestar/example-native",
+  "title": "Lonestar Example Native",
+  "category": "lonestar-blocks",
+  "icon": "welcome-write-blog",
+  "description": "Example native block with dynamic render callback.",
+  "textdomain": "lonestar-theme",
+  "keywords": ["lonestar", "native", "example"],
+  "attributes": {
+    "heading": {
+      "type": "string",
+      "default": "Example Native Block"
+    },
+    "description": {
+      "type": "string",
+      "default": "This block is rendered by PHP and edited in the block editor."
+    }
+  },
+  "supports": {
+    "anchor": true,
+    "align": ["wide", "full"],
+    "html": false
+  },
+  "style": "lonestar-example-native",
+  "editorStyle": "lonestar-example-native",
+  "editorScript": "example-native"
+}
