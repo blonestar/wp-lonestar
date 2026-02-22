@@ -1,6 +1,6 @@
 // Version: 1.0.0
 // View your website on your local WordPress domain
-// for example http://evblog.local
+// for example http://your-site.local
 //
 // http://localhost:3000 serves Vite in development mode.
 // Accessing it directly is expected to be empty because WordPress loads assets from it.

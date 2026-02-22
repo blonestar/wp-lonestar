@@ -2,6 +2,14 @@
   "name": "lonestar-theme",
   "version": "0.2.0",
   "private": true,
+  "description": "Lonestar Framework parent theme tooling",
+  "author": "Bojan Ab",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blonestar/wp-lonestar.git"
+  },
+  "homepage": "https://github.com/blonestar/wp-lonestar",
   "scripts": {
     "dev": "cross-env NODE_ENV=development vite",
     "build": "vite build",
