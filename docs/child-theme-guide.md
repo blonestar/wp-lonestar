@@ -1,6 +1,6 @@
 # Child Theme Guide
 
-This guide documents EVBlog child-theme internals and recommended implementation patterns.
+This guide documents child-theme internals and recommended implementation patterns.
 
 ## 1) Core Files
 
@@ -10,19 +10,19 @@ This guide documents EVBlog child-theme internals and recommended implementation
   Child bootstrap and enqueue logic.
 - `theme.json`  
   Child design tokens/settings layered over parent theme behavior.
-- `assets/css/evblog.css`  
+- `assets/css/<child>.css`  
   Child CSS loaded by runtime enqueue.
 - `main.js`  
-  Child Vite entry point (currently imports `assets/css/evblog.css`).
+  Child Vite entry point (typically imports a child CSS asset).
 
 ## 2) Current Asset Runtime
 
-In `functions.php`, `lonestar_evblog_enqueue_assets()`:
-- first tries `assets/css/evblog.css` with `filemtime` cache-busting;
+In `functions.php`, child enqueue function should:
+- first try child CSS asset (for example `assets/css/<child>.css`) with `filemtime` cache-busting;
 - falls back to child `style.css` with theme version if the file is missing.
 
 Implication:
-- CSS changes in `assets/css/evblog.css` are immediately effective without Vite runtime integration.
+- CSS changes in the child asset are immediately effective without Vite runtime integration.
 
 ## 3) Child Vite Setup
 
@@ -38,15 +38,16 @@ Use cases:
 - parity with parent tooling patterns.
 
 Current behavior note:
-- runtime enqueue still points to `assets/css/evblog.css`;
+- runtime enqueue points to child source CSS asset;
 - if you want dist assets at runtime, add manifest-based enqueue logic in child bootstrap.
 
 ## 4) Parent vs Child Responsibility
 
-Put code in child when it is EVBlog-specific:
+Put code in child when it is project-specific:
 - custom site styles and layout overrides,
-- EVBlog-only template changes,
+- project-only template changes,
 - project integrations that should not leak to other projects.
+- project-only modules under `modules/` (auto-discovered by framework when child is active).
 
 Put code in parent when it is framework-worthy:
 - reusable module runtime behavior,

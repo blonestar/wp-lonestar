@@ -1,85 +1,45 @@
-# Developer Guide
+# Parent Developer Guide
 
-This document covers the practical development workflow for the EVBlog project based on:
-- parent framework theme: `wp-content/themes/lonestar/`
-- child project theme: `wp-content/themes/lonestar-evblog/`
+This document covers practical workflow for the Lonestar parent theme repository root (`./`).
+
+For child-theme-specific procedures, see:
+- `docs/child-theme-guide.md`
 
 ## 1) Requirements
 
-- WordPress 6.6+
-- PHP 8.1+ (project header currently requires PHP 8.2)
+- WordPress 6.9+
+- PHP 8.2+
 - Node.js 20+
 - npm 10+
 - ACF Pro (required by module options/fields such as GTM settings)
 
-## 2) Architecture Model
+## 2) Scope
 
-- Parent (`lonestar`) owns reusable framework runtime:
-  - core bootstrap, module catalog/bootstrapping, shared block and asset pipeline.
-- Child (`lonestar-evblog`) owns project-specific concerns:
-  - EVBlog styling, project integration code, child-level templates, child documentation.
-
-Keep reusable logic in parent, EVBlog-only logic in child.
+- Keep reusable framework logic in parent:
+  - core bootstrap/runtime,
+  - module catalog and module boot process,
+  - shared blocks and asset pipeline.
+- Keep project-specific behavior out of parent.
 
 ## 3) Initial Setup
 
-### Parent theme setup
-
-From `wp-content/themes/lonestar/`:
+From repository root:
 
 ```bash
 npm install
 npm run build
 ```
 
-### Child theme setup
+## 4) Daily Development Workflow
 
-From `wp-content/themes/lonestar-evblog/`:
-
-```bash
-npm install
-npm run build
-```
-
-## 4) Daily Development Workflows
-
-### A) Child CSS/UI change (fast path)
-
-1. Edit `assets/css/evblog.css` in child.
-2. Reload site.
-3. Validate desktop/mobile.
-
-Current child runtime enqueue is in `functions.php` and points to:
-- `assets/css/evblog.css` when present
-- fallback to child `style.css` otherwise
-
-### B) Parent framework/block changes
-
-1. Work in `wp-content/themes/lonestar/`.
-2. Run `npm run dev` for Vite development or `npm run build` for production output.
-3. Smoke test frontend and editor.
-
-### C) Child Vite tooling changes
-
-Child has local Vite config and helper files:
-- `vite.config.mjs`
-- `vite-entry-points.mjs`
-- `vite-block-discovery.mjs`
-
-Use:
-
-```bash
-npm run dev
-npm run build
-```
-
-Note:
-- child runtime is currently CSS-enqueue based;
-- if you decide to serve child assets from Vite manifest in runtime, add that enqueue path explicitly in child bootstrap.
+1. Edit parent code from repository root.
+2. Use `npm run dev` for Vite development or `npm run build` for production output.
+3. Run PHP lint on touched files.
+4. Smoke test frontend, editor, and `Appearance -> Theme Settings` when relevant.
 
 ## 5) Command Reference
 
-Run from child root (`wp-content/themes/lonestar-evblog/`):
+Run from repository root:
 
 ```bash
 npm run dev
@@ -95,38 +55,56 @@ Get-ChildItem -Recurse -File -Filter *.php | ForEach-Object { php -l $_.FullName
 
 ## 6) Versioning Practice
 
-Recommended (not technically required):
-- keep theme header version in `style.css` aligned with `package.json` version;
-- start at `0.1.0` for pre-1.0 development and increment intentionally.
+Recommended:
+- keep `style.css` theme `Version` aligned with `package.json` `version`;
+- use semver and increment intentionally;
+- do not bump version in regular feature/fix PRs unless preparing a release.
 
-Vite helper sync markers:
-- helper files include top-line comments: `// Version: x.y.z`
-- `package.json` contains:
-  - `lonestar_vite_helpers_version`
-  - `lonestar_vite_helpers_source`
+## 7) Validation Checklist Before Main Update
 
-These markers are used for quick parent/child sync checks.
-
-## 7) Validation Checklist Before Merge
-
-1. `npm run build` in every changed theme (`lonestar`, `lonestar-evblog`).
-2. PHP lint passes on touched files.
-3. Manual smoke test:
-   - frontend page load
+1. `npm run build` passes.
+2. PHP lint passes for touched files.
+3. Manual smoke test passes:
+   - frontend load
    - WP admin load
-   - affected template/module behavior
-   - desktop + mobile view.
+   - affected module/block behavior
+   - desktop + mobile rendering
 
 ## 8) Deployment Checklist
 
-1. Build changed theme(s).
-2. Ensure `dist/manifest.json` exists where runtime expects it.
-3. Deploy updated theme files and `dist/` artifacts.
-4. Verify module settings pages and frontend rendering in production/staging.
+1. Build artifacts generated (`npm run build`).
+2. `dist/manifest.json` exists.
+3. Deploy parent files including `dist/`.
+4. Verify module settings and frontend rendering in target environment.
 
 ## 9) Common Pitfalls
 
-- Editing framework logic in child instead of parent can duplicate responsibilities.
-- Assuming child `modules/` is auto-discovered by parent module catalog.
-- Forgetting to include build artifacts in deployment.
-- Changing helper files without bumping version markers.
+- Mixing project-specific logic into parent framework code.
+- Forgetting to include `dist/` artifacts in deployment.
+- Shipping changes without smoke test of editor + frontend.
+- Bumping version outside release flow.
+
+## 10) Parent Development Flow (Mermaid)
+
+```mermaid
+flowchart TD
+    A[Pick parent task] --> B[Edit code in repository root]
+    B --> C[Run build and PHP lint]
+    C --> D[Smoke test admin, editor, frontend]
+    D --> E{Checks pass?}
+    E -->|No| F[Fix and repeat]
+    F --> C
+    E -->|Yes| G[Commit with Conventional Commit]
+    G --> H{Use PR flow?}
+    H -->|Yes| I[Open PR and merge to main]
+    H -->|No| J[Push directly to main owner-only]
+    I --> K{Release needed now?}
+    J --> K
+    K -->|No| L[Done]
+    K -->|Yes| M[Run release flow intentionally]
+    M --> L
+```
+
+Related:
+- `docs/git-workflow.md`
+- `docs/parent-release-updates.md`

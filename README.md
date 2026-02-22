@@ -6,10 +6,14 @@
   - `docs/developer-guide.md`
   - `docs/child-theme-guide.md`
   - `docs/modules-anatomy.md`
+  - `docs/parent-release-updates.md`
+  - `docs/git-workflow.md`
+- Contribution and PR rules:
+  - `CONTRIBUTING.md`
 
 ## 1) Requirements
-- WordPress 6.6+ (block theme support)
-- PHP 8.1+
+- WordPress 6.9+ (block theme support)
+- PHP 8.2+
 - Node.js 20+
 - npm 10+
 - ACF Pro (required for ACF blocks and Theme Options page)
@@ -56,16 +60,22 @@ Important:
 - Module types:
   - Flat: `modules/module.<slug>.php`
   - Folder: `modules/<slug>/module.<slug>.php`
+- Module discovery sources:
+  - parent theme: `modules/`
+  - child theme (when active): `<child-theme>/modules`
 - Folder modules can include root-like sub-structure:
   - `blocks/acf/`, `blocks/native/`
   - `assets/`
   - `inc/*.php`, `inc/helpers/`, `inc/shortcodes/`, `inc/walkers/`
   - `acf-json/`
 - Enabled module block roots are scanned by the same block discovery/asset pipeline as theme roots.
-- Manage module toggles in admin: `Appearance -> Theme Modules`.
+- Manage module and block toggles in admin: `Appearance -> Theme Settings`.
 - Toggle state is stored in option: `lonestar_module_toggles`.
+- Block toggle state is stored in option: `lonestar_block_toggles`.
+- Module metadata supports `Module`, `Description`, `Author`, `Version` headers in `module.<slug>.php` docblock.
 - Module catalog is transient-cached in non-dev mode (`lonestar_mod_catalog_*`) and flushed on:
   - module toggle updates
+  - block toggle updates
   - theme switch
   - upgrader completion
 - Emergency disable controls (without opening admin):
@@ -75,8 +85,10 @@ Important:
   - set `LONESTAR_DISABLED_MODULES` as array or comma-separated string in `wp-config.php`
   - create `.disable-modules` file in theme root
 - If a module was enabled in options but disappears from filesystem, it is auto-marked disabled in options (plugin-like behavior).
+- If the same module slug exists in both parent and child theme, child-source module takes runtime priority.
 - Admin list shows module description resolved from:
   - `modules/<slug>/module.json` -> `description`
+  - `module.<slug>.php` docblock header `Description`
   - `modules/<slug>/README.md` first non-heading line
   - `module.<slug>.php` docblock summary
 - Admin list can show module Settings links (when module is enabled):
