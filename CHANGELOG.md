@@ -27,6 +27,7 @@ All notable changes to the Lonestar parent theme are documented in this file.
 - Block conflict resolution now enforces child-theme override priority over parent blocks with the same identity.
 - In Theme Settings > Blocks, overridden parent blocks are shown as disabled checkboxes with override note.
 - In Theme Settings > Modules, overridden parent modules are now shown as disabled checkboxes with override note.
+- Added parent theme thumbnail image.
 - In Theme Settings > About, parent repository URL is now shown under `Parent Theme`.
 - In Theme Settings > About, parent and child details are now fully separated into dedicated sections.
 - In Theme Settings > About, parent/child metadata now includes style header fields (Author, Description, Theme URI, Text Domain, and WP/PHP requirements).
