@@ -56,6 +56,7 @@ All notable changes to the Lonestar parent theme are documented in this file.
 - ACF block registration now follows resolved enabled block directories (avoids double registration in parent+child duplicates).
 - Block discovery and asset caches were version-bumped to prevent stale conflict results.
 - Module settings save now forces overridden parent modules to `false` to match child-priority runtime behavior.
+- Release workflow now correctly parses `Version` from WordPress-style `style.css` headers.
 
 ## [0.1.0] - 2026-02-22
 

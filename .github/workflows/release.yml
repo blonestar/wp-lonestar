@@ -54,7 +54,7 @@ jobs:
             exit 1
           fi
 
-          STYLE_VERSION="$(awk -F': *' '/^Version:/{print $2; exit}' style.css | tr -d '\r')"
+          STYLE_VERSION="$(sed -nE 's@^[[:space:]*]*Version:[[:space:]]*([^[:space:]]+).*$@\1@p' style.css | head -n1 | tr -d '\r')"
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
 
           if [ -z "$STYLE_VERSION" ]; then
