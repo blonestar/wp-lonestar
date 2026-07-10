@@ -6,6 +6,7 @@
   "category": "lonestar-blocks",
   "icon": "align-pull-left",
   "description": "Example ACF block for theme starter usage.",
+  "textdomain": "lonestar-theme",
   "keywords": ["lonestar", "acf", "example"],
   "style": "lonestar-example-acf",
   "editorStyle": "lonestar-example-acf",

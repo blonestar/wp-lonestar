@@ -4,158 +4,119 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version (X.Y.Z)"
+        description: Release version (X.Y.Z)
         required: true
         type: string
 
-permissions:
-  contents: write
+concurrency:
+  group: lonestar-release
+  cancel-in-progress: false
 
 jobs:
   release:
-    name: release
+    name: Build and publish verified release
     runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     steps:
       - name: Enforce main branch
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${GITHUB_REF_NAME}" != "main" ]; then
+          test "${GITHUB_REF_NAME}" = "main" || {
             echo "Release workflow must run from main. Current ref: ${GITHUB_REF_NAME}"
             exit 1
-          fi
+          }
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
         with:
           php-version: "8.2"
           coverage: none
 
-      - name: Validate release input and versions
+      - name: Validate release metadata
         id: meta
         shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-
-          VERSION="${{ inputs.version }}"
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid version format: $VERSION"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "Invalid version: $VERSION"
             exit 1
-          fi
+          }
 
           STYLE_VERSION="$(sed -nE 's@^[[:space:]*]*Version:[[:space:]]*([^[:space:]]+).*$@\1@p' style.css | head -n1 | tr -d '\r')"
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          LOCK_VERSION="$(node -p "require('./package-lock.json').version")"
+          test "$VERSION" = "$STYLE_VERSION" || { echo "style.css version mismatch"; exit 1; }
+          test "$VERSION" = "$PACKAGE_VERSION" || { echo "package.json version mismatch"; exit 1; }
+          test "$VERSION" = "$LOCK_VERSION" || { echo "package-lock.json version mismatch"; exit 1; }
 
-          if [ -z "$STYLE_VERSION" ]; then
-            echo "Could not parse Version from style.css"
+          TAG="lonestar-v$VERSION"
+          git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && {
+            echo "Tag already exists: $TAG"
             exit 1
-          fi
+          }
 
-          if [ "$STYLE_VERSION" != "$PACKAGE_VERSION" ]; then
-            echo "Version mismatch: style.css=$STYLE_VERSION package.json=$PACKAGE_VERSION"
-            exit 1
-          fi
-
-          if [ "$STYLE_VERSION" != "$VERSION" ]; then
-            echo "Input version ($VERSION) does not match file version ($STYLE_VERSION)"
-            exit 1
-          fi
+          NOTES="$RUNNER_TEMP/release-notes.md"
+          awk -v version="$VERSION" '
+            $0 ~ "^## \\[" version "\\]" { capture=1; next }
+            capture && $0 ~ "^## \\[" { exit }
+            capture { print }
+          ' CHANGELOG.md > "$NOTES"
+          sed -i '/./,$!d' "$NOTES"
+          test -s "$NOTES" || { echo "Missing exact CHANGELOG section for $VERSION"; exit 1; }
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=lonestar-v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "asset=lonestar-$VERSION.zip" >> "$GITHUB_OUTPUT"
+          echo "notes=$NOTES" >> "$GITHUB_OUTPUT"
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build assets
-        run: npm run build
+      - name: Install and validate
+        run: |
+          npm ci
+          npm run validate:json
+          npm run format:check
+          npm test
+          npm audit --audit-level=high
+          npm run build
+          npm run package:check
+          git diff --exit-code -- dist
 
       - name: Lint PHP files
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -d '' files < <(find . -type f -name '*.php' -print0)
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "No PHP files found."
-            exit 0
-          fi
-          for file in "${files[@]}"; do
+          while IFS= read -r -d '' file; do
             php -l "$file"
-          done
+          done < <(find . -path './node_modules' -prune -o -type f -name '*.php' -print0)
 
-      - name: Verify build output
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ ! -f dist/manifest.json ]; then
-            echo "Missing dist/manifest.json. Build step did not produce expected output."
-            exit 1
-          fi
-
-      - name: Build release notes from CHANGELOG
-        id: notes
-        shell: bash
-        run: |
-          set -euo pipefail
-          VERSION="${{ steps.meta.outputs.version }}"
-          NOTES_FILE="$RUNNER_TEMP/release-notes.md"
-          BODY_FILE="$RUNNER_TEMP/release-body.md"
-
-          # Prefer exact version section: ## [X.Y.Z]
-          awk -v version="$VERSION" '
-            $0 ~ "^## \\[" version "\\]" {capture=1; next}
-            capture && $0 ~ "^## \\[" {exit}
-            capture {print}
-          ' CHANGELOG.md > "$NOTES_FILE"
-          sed -i '/./,$!d' "$NOTES_FILE"
-
-          # Fallback to Unreleased when version section is not present yet.
-          if [ ! -s "$NOTES_FILE" ]; then
-            awk '
-              /^## \[Unreleased\]/ {capture=1; next}
-              capture && /^## \[/ {exit}
-              capture {print}
-            ' CHANGELOG.md > "$NOTES_FILE"
-            sed -i '/./,$!d' "$NOTES_FILE"
-          fi
-
-          if [ ! -s "$NOTES_FILE" ]; then
-            echo "Could not build release notes from CHANGELOG.md"
-            exit 1
-          fi
-
-          {
-            echo "## Changelog"
-            echo
-            cat "$NOTES_FILE"
-            echo
-            echo "Full Changelog: https://github.com/${GITHUB_REPOSITORY}/commits/${{ steps.meta.outputs.tag }}"
-          } > "$BODY_FILE"
-
-          echo "body_path=$BODY_FILE" >> "$GITHUB_OUTPUT"
-
-      - name: Package theme zip
+      - name: Package and inspect theme
         id: package
         shell: bash
+        env:
+          ASSET: ${{ steps.meta.outputs.asset }}
         run: |
           set -euo pipefail
-          ASSET="${{ steps.meta.outputs.asset }}"
           STAGE_ROOT="$RUNNER_TEMP/lonestar-release"
           STAGE_THEME="$STAGE_ROOT/lonestar"
-          OUTPUT_PATH="$RUNNER_TEMP/$ASSET"
-
+          OUTPUT="$RUNNER_TEMP/$ASSET"
+          CHECKSUM="$OUTPUT.sha256"
           rm -rf "$STAGE_ROOT"
           mkdir -p "$STAGE_THEME"
 
@@ -163,39 +124,81 @@ jobs:
             --exclude='.git' \
             --exclude='.github' \
             --exclude='node_modules' \
+            --exclude='tests' \
+            --exclude='scripts' \
+            --exclude='docs' \
+            --exclude='AGENTS.md' \
+            --exclude='CONTRIBUTING.md' \
+            --exclude='package.json' \
+            --exclude='package-lock.json' \
+            --exclude='vite.config.mjs' \
+            --exclude='vite-entry-points.mjs' \
+            --exclude='vite-block-discovery.mjs' \
+            --exclude='postcss.config.js' \
+            --exclude='.editorconfig' \
+            --exclude='.gitattributes' \
+            --exclude='.prettierignore' \
             --exclude='.gitignore' \
             --exclude='.DS_Store' \
             ./ "$STAGE_THEME/"
 
-          (
-            cd "$STAGE_ROOT"
-            zip -rq "$OUTPUT_PATH" "lonestar"
-          )
+          test -f "$STAGE_THEME/style.css"
+          test -f "$STAGE_THEME/functions.php"
+          test -f "$STAGE_THEME/theme.json"
+          test -f "$STAGE_THEME/dist/manifest.json"
+          (cd "$STAGE_ROOT" && zip -rq "$OUTPUT" lonestar)
 
-          echo "asset_path=$OUTPUT_PATH" >> "$GITHUB_OUTPUT"
-
-      - name: Create and push tag
-        shell: bash
-        run: |
-          set -euo pipefail
-          TAG="${{ steps.meta.outputs.tag }}"
-          VERSION="${{ steps.meta.outputs.version }}"
-
-          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-            echo "Tag already exists: $TAG"
+          ZIP_LIST="$RUNNER_TEMP/zip-list.txt"
+          unzip -Z1 "$OUTPUT" > "$ZIP_LIST"
+          awk 'index($0, "lonestar/") != 1 { bad=1 } END { exit bad }' "$ZIP_LIST"
+          if grep -E '(^|/)(\.git|\.github|node_modules|tests|scripts|docs)(/|$)|(^|/)\.env([./]|$)' "$ZIP_LIST"; then
+            echo "Forbidden path found in release ZIP"
             exit 1
           fi
 
+          (cd "$(dirname "$OUTPUT")" && sha256sum "$ASSET" > "$CHECKSUM")
+          sha256sum --check "$CHECKSUM"
+          echo "asset_path=$OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "checksum_path=$CHECKSUM" >> "$GITHUB_OUTPUT"
+
+      - name: Attest release artifact
+        uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661 # v3
+        with:
+          subject-path: ${{ steps.package.outputs.asset_path }}
+
+      - name: Create annotated tag
+        shell: bash
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "$TAG" -m "Lonestar v$VERSION"
           git push origin "$TAG"
 
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.meta.outputs.tag }}
-          name: Lonestar v${{ steps.meta.outputs.version }}
-          body_path: ${{ steps.notes.outputs.body_path }}
-          files: ${{ steps.package.outputs.asset_path }}
-          fail_on_unmatched_files: true
+      - name: Create and verify draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          NOTES: ${{ steps.meta.outputs.notes }}
+          ASSET_PATH: ${{ steps.package.outputs.asset_path }}
+          CHECKSUM_PATH: ${{ steps.package.outputs.checksum_path }}
+          ASSET_NAME: ${{ steps.meta.outputs.asset }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" "$ASSET_PATH" "$CHECKSUM_PATH" \
+            --draft \
+            --verify-tag \
+            --title "Lonestar v$VERSION" \
+            --notes-file "$NOTES"
+
+          EXPECTED="$(cut -d' ' -f1 "$CHECKSUM_PATH")"
+          ACTUAL="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq ".assets[] | select(.name == \"$ASSET_NAME\") | .digest" | sed 's/^sha256://')"
+          test -n "$ACTUAL" || { echo "GitHub did not expose an asset digest"; exit 1; }
+          test "$EXPECTED" = "$ACTUAL" || { echo "GitHub asset digest mismatch"; exit 1; }
+
+          gh release edit "$TAG" --draft=false --latest

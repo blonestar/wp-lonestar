@@ -1,1 +1,1 @@
-document.addEventListener("DOMContentLoaded",()=>{document.documentElement.classList.add("js-ready")});
+document.addEventListener(`DOMContentLoaded`,()=>{document.documentElement.classList.add(`js-ready`)});

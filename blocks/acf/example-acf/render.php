@@ -12,10 +12,15 @@ if ('' === trim($title)) {
 }
 
 if ('' === trim($text)) {
-    $text = __('This is a starter ACF block. Create ACF fields "title" and "text" to customize content.', 'lonestar-theme');
+    $text = __('This starter block is powered by its bundled local ACF field group.', 'lonestar-theme');
+}
+
+$extra_attributes = array('class' => 'wp-block-lonestar-example-acf');
+if (isset($block['anchor']) && is_string($block['anchor']) && '' !== $block['anchor']) {
+    $extra_attributes['id'] = sanitize_title($block['anchor']);
 }
 ?>
-<section class="wp-block-lonestar-example-acf">
+<section <?php echo get_block_wrapper_attributes($extra_attributes); ?>>
     <h3><?php echo esc_html($title); ?></h3>
-    <p><?php echo esc_html($text); ?></p>
+    <p><?php echo wp_kses_post($text); ?></p>
 </section>

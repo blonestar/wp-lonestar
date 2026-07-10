@@ -108,7 +108,7 @@ function lonestar_get_cached_block_directories()
 /**
  * Return theme-level block roots.
  *
- * @param string $block_type Block type: acf|native|all.
+ * @param string $block_type Block type: acf|native|php-only|all.
  * @return array
  */
 function lonestar_get_theme_block_root_paths($block_type = 'all')
@@ -121,6 +121,9 @@ function lonestar_get_theme_block_root_paths($block_type = 'all')
 	}
 	if (('all' === $block_type || 'native' === $block_type) && defined('NATIVE_BLOCKS_PATH')) {
 		$relative_paths[] = NATIVE_BLOCKS_PATH;
+	}
+	if (('all' === $block_type || 'php-only' === $block_type) && defined('PHP_ONLY_BLOCKS_PATH')) {
+		$relative_paths[] = PHP_ONLY_BLOCKS_PATH;
 	}
 
 	$roots = array();
@@ -215,7 +218,7 @@ function lonestar_get_source_context_key_for_path($absolute_path)
 /**
  * Return all block roots (theme + enabled modules).
  *
- * @param string $block_type Block type: acf|native|all.
+ * @param string $block_type Block type: acf|native|php-only|all.
  * @return array
  */
 function lonestar_get_block_root_paths($block_type = 'all')
@@ -249,6 +252,16 @@ function lonestar_get_acf_block_root_paths()
 function lonestar_get_native_block_root_paths()
 {
 	return lonestar_get_block_root_paths('native');
+}
+
+/**
+ * Return WordPress 7 PHP-only block root paths.
+ *
+ * @return array
+ */
+function lonestar_get_php_only_block_root_paths()
+{
+	return lonestar_get_block_root_paths('php-only');
 }
 
 /**
@@ -590,6 +603,23 @@ function lonestar_collect_metadata_handles($metadata, $fields, $fallback)
 }
 
 /**
+ * Resolve WordPress dependencies for block JavaScript registered by Vite.
+ *
+ * Native editor bundles use WordPress globals and must load after the editor APIs.
+ *
+ * @param array $metadata Parsed block metadata.
+ * @return array<int,string>
+ */
+function lonestar_get_block_script_dependencies($metadata)
+{
+	if (!is_array($metadata) || empty($metadata['editorScript'])) {
+		return array();
+	}
+
+	return array('wp-blocks', 'wp-block-editor', 'wp-element', 'wp-i18n');
+}
+
+/**
  * Build block asset registration map from discovered blocks.
  *
  * @param array $block_directories List of block directories.
@@ -638,6 +668,7 @@ function lonestar_build_block_asset_registration_map($block_directories)
 		$map[] = array(
 			'css_handles' => lonestar_collect_metadata_handles($json_contents, array('style', 'editorStyle', 'viewStyle'), $fallback_css_handle),
 			'js_handles'  => lonestar_collect_metadata_handles($json_contents, array('script', 'editorScript', 'viewScript', 'viewScriptModule'), $fallback_js_handle),
+			'js_dependencies' => lonestar_get_block_script_dependencies($json_contents),
 			'js_source'   => lonestar_get_block_source_file($block_directory, 'js'),
 			'css_source'  => lonestar_get_block_source_file($block_directory, 'css'),
 		);
@@ -688,6 +719,7 @@ function lonestar_register_block_files()
 		$js_source = isset($asset_map['js_source']) && is_string($asset_map['js_source']) ? $asset_map['js_source'] : '';
 		$css_source = isset($asset_map['css_source']) && is_string($asset_map['css_source']) ? $asset_map['css_source'] : '';
 		$js_handles = isset($asset_map['js_handles']) && is_array($asset_map['js_handles']) ? $asset_map['js_handles'] : array();
+		$js_dependencies = isset($asset_map['js_dependencies']) && is_array($asset_map['js_dependencies']) ? $asset_map['js_dependencies'] : array();
 		$css_handles = isset($asset_map['css_handles']) && is_array($asset_map['css_handles']) ? $asset_map['css_handles'] : array();
 
 		if ($is_vite_dev_mode) {
@@ -698,7 +730,7 @@ function lonestar_register_block_files()
 						if (wp_script_is($js_handle, 'registered')) {
 							continue;
 						}
-						wp_register_script($js_handle, $js_url, array(), null, true);
+						wp_register_script($js_handle, $js_url, $js_dependencies, null, true);
 						wp_script_add_data($js_handle, 'type', 'module');
 					}
 				}
@@ -749,7 +781,7 @@ function lonestar_register_block_files()
 					if (wp_script_is($js_handle, 'registered')) {
 						continue;
 					}
-					wp_register_script($js_handle, $js_file_path, array(), $js_file_version, true);
+					wp_register_script($js_handle, $js_file_path, $js_dependencies, $js_file_version, true);
 					wp_script_add_data($js_handle, 'type', 'module');
 				}
 			}

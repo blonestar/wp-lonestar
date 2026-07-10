@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "lonestar/example-php-only",
+  "title": "Lonestar Example PHP-only",
+  "category": "lonestar-blocks",
+  "icon": "editor-code",
+  "description": "WordPress 7 PHP-only block with automatically generated editor controls.",
+  "textdomain": "lonestar-theme",
+  "keywords": ["lonestar", "php", "server", "example"],
+  "attributes": {
+    "heading": {
+      "type": "string",
+      "label": "Heading",
+      "default": "Example PHP-only Block"
+    },
+    "description": {
+      "type": "string",
+      "label": "Description",
+      "default": "This block is registered, edited, and rendered without block JavaScript."
+    },
+    "tone": {
+      "type": "string",
+      "label": "Tone",
+      "enum": ["neutral", "accent"],
+      "default": "neutral"
+    },
+    "showDivider": {
+      "type": "boolean",
+      "label": "Show divider",
+      "default": true
+    }
+  },
+  "supports": {
+    "autoRegister": true,
+    "anchor": true,
+    "align": ["wide", "full"],
+    "html": false
+  },
+  "style": "file:./style.css",
+  "render": "file:./render.php"
+}

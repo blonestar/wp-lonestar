@@ -20,7 +20,9 @@
 
             return el(
                 "div",
-                useBlockProps({ className: "wp-block-lonestar-example-native" }),
+                useBlockProps({
+                    className: "wp-block-lonestar-example-native",
+                }),
                 el(RichText, {
                     tagName: "h3",
                     value: heading,
@@ -34,7 +36,7 @@
                     placeholder: "Block description",
                     allowedFormats: ["core/bold", "core/italic", "core/link"],
                     onChange: (value) => setAttributes({ description: value }),
-                })
+                }),
             );
         },
         save: () => null,

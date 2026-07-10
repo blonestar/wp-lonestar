@@ -3,22 +3,23 @@
 This document covers practical workflow for the Lonestar parent theme repository root (`./`).
 
 For child-theme-specific procedures, see:
+
 - `docs/child-theme-guide.md`
 
 ## 1) Requirements
 
-- WordPress 6.9+
+- WordPress 7.0+
 - PHP 8.2+
-- Node.js 20+
+- Node.js 22.12+
 - npm 10+
-- ACF Pro (required for ACF blocks and any module that registers ACF options/fields)
+- ACF Pro is optional and required only for ACF blocks/modules.
 
 ## 2) Scope
 
 - Keep reusable framework logic in parent:
-  - core bootstrap/runtime,
-  - module catalog and module boot process,
-  - shared blocks and asset pipeline.
+    - core bootstrap/runtime,
+    - module catalog and module boot process,
+    - shared blocks and asset pipeline.
 - Keep project-specific behavior out of parent.
 
 ## 3) Initial Setup
@@ -26,7 +27,7 @@ For child-theme-specific procedures, see:
 From repository root:
 
 ```bash
-npm install
+npm ci
 npm run build
 ```
 
@@ -44,8 +45,24 @@ Run from repository root:
 ```bash
 npm run dev
 npm run build
+npm run browsers
 npm run format
+npm run check
 ```
+
+`npm run browsers` prints the browser matrix inherited from the official WordPress Browserslist profile.
+
+## 5.1) CSS Pipeline
+
+Vite loads `postcss.config.js` automatically. The pipeline order is:
+
+1. `postcss-nesting` flattens standards-based nested selectors.
+2. Autoprefixer adds prefixes for the resolved WordPress Browserslist targets.
+3. Vite bundles and minifies the result.
+
+`postcss` is required as the plugin runner. `browserslist` and `@wordpress/browserslist-config` make the compatibility policy explicit and reusable. Vite already resolves local CSS `@import`, so there is no separate import plugin. Tailwind and Sass-like `postcss-nested` syntax are not supported.
+
+The Browserslist policy is consumed by Autoprefixer; it does not silently replace Vite's JavaScript `build.target`. Treat JavaScript compatibility as a separate, explicit architecture decision.
 
 PHP lint:
 
@@ -56,19 +73,20 @@ Get-ChildItem -Recurse -File -Filter *.php | ForEach-Object { php -l $_.FullName
 ## 6) Versioning Practice
 
 Recommended:
+
 - keep `style.css` theme `Version` aligned with `package.json` `version`;
 - use semver and increment intentionally;
 - do not bump version in regular feature/fix PRs unless preparing a release.
 
 ## 7) Validation Checklist Before Main Update
 
-1. `npm run build` passes.
+1. `npm run check` passes and the rebuilt `dist/` matches tracked output.
 2. PHP lint passes for touched files.
 3. Manual smoke test passes:
-   - frontend load
-   - WP admin load
-   - affected module/block behavior
-   - desktop + mobile rendering
+    - frontend load
+    - WP admin load
+    - affected module/block behavior
+    - desktop + mobile rendering
 
 ## 8) Deployment Checklist
 
@@ -83,6 +101,10 @@ Recommended:
 - Forgetting to include `dist/` artifacts in deployment.
 - Shipping changes without smoke test of editor + frontend.
 - Bumping version outside release flow.
+- Putting a PHP-only block under `blocks/native/` instead of `blocks/php-only/`.
+- Using Sass-like nesting, Tailwind utilities, or an implicit browser target outside the documented CSS pipeline.
+
+The complete block selection and filesystem contract is in `docs/block-types.md`.
 
 ## 10) Parent Development Flow (Mermaid)
 
@@ -106,5 +128,6 @@ flowchart TD
 ```
 
 Related:
+
 - `docs/git-workflow.md`
 - `docs/parent-release-updates.md`

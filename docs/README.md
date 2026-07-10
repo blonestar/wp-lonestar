@@ -3,12 +3,15 @@
 Detailed technical documentation for the Lonestar parent framework, plus a dedicated child-theme guide.
 
 Location:
+
 - Parent theme docs folder: `docs/`
 
 ## Documents
 
 - `developer-guide.md`  
   Parent-theme developer workflow for local setup, development, validation, and deployment.
+- `block-types.md`
+  Decision matrix and contracts for ACF, native static/dynamic, and WordPress 7 PHP-only blocks.
 - `child-theme-guide.md`  
   Child-theme-specific structure, conventions, and implementation patterns.
 - `modules-anatomy.md`  
@@ -26,7 +29,8 @@ Location:
 ## Suggested Reading Order
 
 1. `developer-guide.md`
-2. `child-theme-guide.md`
-3. `modules-anatomy.md`
-4. `parent-release-updates.md`
-5. `git-workflow.md`
+2. `block-types.md`
+3. `child-theme-guide.md`
+4. `modules-anatomy.md`
+5. `parent-release-updates.md`
+6. `git-workflow.md`

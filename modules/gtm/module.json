@@ -1,10 +1,11 @@
 {
-    "name": "GTM",
-    "description": "Outputs Google Tag Manager snippets with native Theme Settings configuration.",
-    "admin_links": [
-        {
-            "label": "GTM Settings",
-            "url": "themes.php?page=lonestar-theme-modules&tab=gtm"
-        }
-    ]
+  "name": "GTM",
+  "description": "Outputs Google Tag Manager snippets with native Theme Settings configuration.",
+  "requires": [],
+  "admin_links": [
+    {
+      "label": "GTM Settings",
+      "url": "themes.php?page=lonestar-theme-modules&tab=gtm"
+    }
+  ]
 }

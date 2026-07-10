@@ -25,5 +25,6 @@
   },
   "style": "lonestar-example-native",
   "editorStyle": "lonestar-example-native",
-  "editorScript": "example-native"
+  "editorScript": "example-native",
+  "render": "file:./render.php"
 }

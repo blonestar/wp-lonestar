@@ -97,4 +97,4 @@ Also run manual smoke test in admin + frontend.
 - Parent releases are cut from `main` via GitHub `workflow_dispatch` (`Release` workflow).
 - Commits should stay conventional so semantic versioning can be derived reliably.
 - For release details see:
-  - `docs/parent-release-updates.md`
+    - `docs/parent-release-updates.md`

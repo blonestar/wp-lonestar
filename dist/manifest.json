@@ -1,12 +1,12 @@
 {
   "blocks/acf/example-acf/example-acf.css": {
     "file": "blocks-acf-example-acf-css.css",
-    "src": "blocks/acf/example-acf/example-acf.css",
-    "isEntry": true,
     "name": "blocks-acf-example-acf-css",
     "names": [
       "blocks-acf-example-acf-css.css"
-    ]
+    ],
+    "src": "blocks/acf/example-acf/example-acf.css",
+    "isEntry": true
   },
   "blocks/acf/example-acf/example-acf.js": {
     "file": "blocks-acf-example-acf-js.js",
@@ -14,14 +14,29 @@
     "src": "blocks/acf/example-acf/example-acf.js",
     "isEntry": true
   },
+  "blocks/native/example-native-static/example-native-static.css": {
+    "file": "blocks-native-example-native-static-css.css",
+    "name": "blocks-native-example-native-static-css",
+    "names": [
+      "blocks-native-example-native-static-css.css"
+    ],
+    "src": "blocks/native/example-native-static/example-native-static.css",
+    "isEntry": true
+  },
+  "blocks/native/example-native-static/example-native-static.js": {
+    "file": "blocks-native-example-native-static-js.js",
+    "name": "blocks-native-example-native-static-js",
+    "src": "blocks/native/example-native-static/example-native-static.js",
+    "isEntry": true
+  },
   "blocks/native/example-native/example-native.css": {
     "file": "blocks-native-example-native-css.css",
-    "src": "blocks/native/example-native/example-native.css",
-    "isEntry": true,
     "name": "blocks-native-example-native-css",
     "names": [
       "blocks-native-example-native-css.css"
-    ]
+    ],
+    "src": "blocks/native/example-native/example-native.css",
+    "isEntry": true
   },
   "blocks/native/example-native/example-native.js": {
     "file": "blocks-native-example-native-js.js",

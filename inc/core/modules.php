@@ -48,6 +48,7 @@ require_once __DIR__ . '/modules_admin.php';
 add_action('after_setup_theme', 'modules_boot_theme_modules', 20);
 add_action('admin_menu', 'modules_register_modules_admin_page', 30);
 add_action('admin_init', 'modules_handle_modules_admin_post');
+add_action('admin_init', 'modules_reconcile_missing_enabled_modules', 5);
 add_filter('acf/settings/load_json', 'modules_filter_module_acf_json_load_paths', 20);
 add_action('update_option_' . LONESTAR_MODULE_TOGGLE_OPTION, 'modules_handle_module_toggle_option_update', 10, 3);
 add_action('update_option_' . LONESTAR_BLOCK_TOGGLE_OPTION, 'modules_handle_module_toggle_option_update', 10, 3);

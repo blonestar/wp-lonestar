@@ -1,6 +1,6 @@
 {
   "name": "lonestar-theme",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "description": "Lonestar Framework parent theme tooling",
   "author": "Bojan Ab",
@@ -11,21 +11,31 @@
   },
   "homepage": "https://github.com/blonestar/wp-lonestar",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development vite",
+    "dev": "vite",
     "build": "vite build",
-    "format": "prettier --write \"**/*.{js,jsx,json,css,scss,md}\""
+    "browsers": "browserslist",
+    "format": "prettier --write \"**/*.{js,jsx,json,css,scss,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,json,css,scss,md,yml,yaml}\"",
+    "test": "node --test tests/*.test.mjs",
+    "validate:json": "node scripts/validate-json.mjs",
+    "package:check": "node scripts/validate-package.mjs",
+    "audit": "npm audit --audit-level=high",
+    "check": "npm run validate:json && npm run format:check && npm test && npm run build && npm run package:check"
   },
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10"
+  },
+  "browserslist": [
+    "extends @wordpress/browserslist-config"
+  ],
   "devDependencies": {
-    "autoprefixer": "^10.4.24",
-    "cross-env": "^10.1.0",
-    "esbuild": "^0.27.3",
-    "glob": "^13.0.1",
-    "postcss": "^8.5.6",
-    "postcss-cli": "^11.0.1",
-    "postcss-import": "^16.1.1",
-    "postcss-nested": "^7.0.2",
-    "prettier": "^3.8.1",
-    "vite": "^7.3.1"
-  },
-  "dependencies": {}
+    "@wordpress/browserslist-config": "^6.50.0",
+    "autoprefixer": "^10.5.2",
+    "browserslist": "^4.28.5",
+    "postcss": "^8.5.16",
+    "postcss-nesting": "^14.0.0",
+    "prettier": "^3.9.5",
+    "vite": "^8.1.4"
+  }
 }

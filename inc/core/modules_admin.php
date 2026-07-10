@@ -425,6 +425,8 @@ function modules_render_about_tab()
     echo '</td></tr>';
     echo '</tbody></table>';
 
+    do_action('lonestar_theme_settings_about');
+
 }
 
 /**
@@ -465,11 +467,18 @@ function modules_handle_modules_admin_post()
         $overridden_lookup = (is_array($override_state) && isset($override_state['overridden_by_key']) && is_array($override_state['overridden_by_key']))
             ? $override_state['overridden_by_key']
             : array();
+        $existing_module_toggles = modules_get_module_toggle_map();
 
         $module_toggle_map = array();
         foreach (array_keys($module_catalog) as $module_key) {
             if (isset($overridden_lookup[$module_key])) {
                 $module_toggle_map[$module_key] = false;
+                continue;
+            }
+            if (isset($module_catalog[$module_key]['available']) && false === $module_catalog[$module_key]['available']) {
+                $module_toggle_map[$module_key] = array_key_exists($module_key, $existing_module_toggles)
+                    ? (bool) $existing_module_toggles[$module_key]
+                    : true;
                 continue;
             }
 
@@ -485,11 +494,18 @@ function modules_handle_modules_admin_post()
         $overridden_lookup = (is_array($override_state) && isset($override_state['overridden_by_key']) && is_array($override_state['overridden_by_key']))
             ? $override_state['overridden_by_key']
             : array();
+        $existing_block_toggles = function_exists('lonestar_get_block_toggle_map') ? lonestar_get_block_toggle_map() : array();
 
         $block_toggle_map = array();
         foreach (array_keys($block_catalog) as $block_key) {
             if (isset($overridden_lookup[$block_key])) {
                 $block_toggle_map[$block_key] = false;
+                continue;
+            }
+            if (isset($block_catalog[$block_key]['available']) && false === $block_catalog[$block_key]['available']) {
+                $block_toggle_map[$block_key] = array_key_exists($block_key, $existing_block_toggles)
+                    ? (bool) $existing_block_toggles[$block_key]
+                    : true;
                 continue;
             }
 
@@ -605,6 +621,8 @@ function modules_render_module_table($catalog, $enabled_keys, $source_label, $ov
         $version = isset($module['version']) ? sanitize_text_field((string) $module['version']) : '';
         $author = isset($module['author']) ? sanitize_text_field((string) $module['author']) : '';
         $admin_links = isset($module['admin_links']) && is_array($module['admin_links']) ? $module['admin_links'] : array();
+        $is_available = !isset($module['available']) || true === $module['available'];
+        $status_message = isset($module['status']) ? sanitize_text_field((string) $module['status']) : '';
         $is_enabled = in_array($module_key, $enabled_keys, true);
         $is_overridden = isset($overridden_lookup[$module_key]);
         $overriding_module_key = $is_overridden ? sanitize_key((string) $overridden_lookup[$module_key]) : '';
@@ -623,7 +641,7 @@ function modules_render_module_table($catalog, $enabled_keys, $source_label, $ov
         echo '<tr>';
         echo '<td style="width: 90px;">';
         echo '<label for="' . esc_attr('lonestar-module-' . $module_key) . '" class="screen-reader-text">' . esc_html($label) . '</label>';
-        echo '<input id="' . esc_attr('lonestar-module-' . $module_key) . '" type="checkbox" name="lonestar_modules[]" value="' . esc_attr($module_key) . '"' . checked($is_enabled && !$is_overridden, true, false) . disabled($is_overridden, true, false) . ' />';
+        echo '<input id="' . esc_attr('lonestar-module-' . $module_key) . '" type="checkbox" name="lonestar_modules[]" value="' . esc_attr($module_key) . '"' . checked($is_enabled && !$is_overridden && $is_available, true, false) . disabled($is_overridden || !$is_available, true, false) . ' />';
         echo '</td>';
 
         echo '<td>';
@@ -632,6 +650,9 @@ function modules_render_module_table($catalog, $enabled_keys, $source_label, $ov
         if ($is_overridden) {
             $source_label_text = ('' !== $overriding_source) ? modules_get_source_label($overriding_source) : __('Child Theme', 'lonestar-theme');
             echo '<br /><span class="description">' . esc_html(sprintf(__('Overridden by %s.', 'lonestar-theme'), $source_label_text)) . '</span>';
+        }
+        if (!$is_available && '' !== $status_message) {
+            echo '<br /><span class="description">' . esc_html($status_message) . '</span>';
         }
 
         if ($is_enabled && !$is_overridden && !empty($admin_links)) {
@@ -719,7 +740,9 @@ function modules_render_block_table($catalog, $enabled_keys, $source_label, $ove
 
         $label = isset($block['label']) ? sanitize_text_field((string) $block['label']) : __('Unknown Block', 'lonestar-theme');
         $name = isset($block['name']) ? sanitize_text_field((string) $block['name']) : '';
-        $type = isset($block['type']) ? sanitize_key((string) $block['type']) : 'unknown';
+        $type_label = isset($block['type_label']) ? sanitize_text_field((string) $block['type_label']) : '';
+        $is_available = !isset($block['available']) || true === $block['available'];
+        $status_message = isset($block['status']) ? sanitize_text_field((string) $block['status']) : '';
         $relative_path = isset($block['relative_path']) ? sanitize_text_field((string) $block['relative_path']) : '';
         $is_enabled = in_array($block_key, $enabled_keys, true);
         $is_overridden = isset($overridden_lookup[$block_key]);
@@ -735,7 +758,7 @@ function modules_render_block_table($catalog, $enabled_keys, $source_label, $ove
         echo '<tr>';
         echo '<td style="width: 90px;">';
         echo '<label for="' . esc_attr('lonestar-block-' . $block_key) . '" class="screen-reader-text">' . esc_html($label) . '</label>';
-        echo '<input id="' . esc_attr('lonestar-block-' . $block_key) . '" type="checkbox" name="lonestar_blocks[]" value="' . esc_attr($block_key) . '"' . checked($is_enabled && !$is_overridden, true, false) . disabled($is_overridden, true, false) . ' />';
+        echo '<input id="' . esc_attr('lonestar-block-' . $block_key) . '" type="checkbox" name="lonestar_blocks[]" value="' . esc_attr($block_key) . '"' . checked($is_enabled && !$is_overridden && $is_available, true, false) . disabled($is_overridden || !$is_available, true, false) . ' />';
         echo '</td>';
 
         echo '<td>';
@@ -747,15 +770,12 @@ function modules_render_block_table($catalog, $enabled_keys, $source_label, $ove
             $source_label_text = ('' !== $overriding_source) ? modules_get_source_label($overriding_source) : __('Child Theme', 'lonestar-theme');
             echo '<br /><span class="description">' . esc_html(sprintf(__('Overridden by %s.', 'lonestar-theme'), $source_label_text)) . '</span>';
         }
+        if (!$is_available && '' !== $status_message) {
+            echo '<br /><span class="description">' . esc_html($status_message) . '</span>';
+        }
         echo '</td>';
 
-        if ('acf' === $type) {
-            echo '<td>' . esc_html__('ACF', 'lonestar-theme') . '</td>';
-        } elseif ('native' === $type) {
-            echo '<td>' . esc_html__('Native', 'lonestar-theme') . '</td>';
-        } else {
-            echo '<td>' . esc_html__('Unknown', 'lonestar-theme') . '</td>';
-        }
+        echo '<td>' . esc_html('' !== $type_label ? $type_label : __('Unknown', 'lonestar-theme')) . '</td>';
 
         echo '<td><code>' . esc_html($relative_path) . '</code></td>';
         echo '</tr>';

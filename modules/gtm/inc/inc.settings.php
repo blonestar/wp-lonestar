@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) {
 add_filter('lonestar_theme_settings_tabs', 'lonestar_module_register_gtm_settings_tab');
 add_action('lonestar_render_theme_settings_tab', 'lonestar_module_render_gtm_settings_tab');
 add_action('lonestar_theme_settings_handle_tab_post', 'lonestar_module_handle_gtm_settings_post');
+add_action('admin_init', 'lonestar_module_migrate_gtm_settings_from_acf', 20);
 
 /**
  * Return GTM module option key.
@@ -137,13 +138,30 @@ function lonestar_module_get_gtm_settings()
         return $cached_settings;
     }
 
+    $cached_settings = lonestar_module_get_gtm_settings_from_acf();
+    return $cached_settings;
+}
+
+/**
+ * Migrate legacy ACF settings only during an explicit admin lifecycle.
+ *
+ * @return void
+ */
+function lonestar_module_migrate_gtm_settings_from_acf()
+{
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+
+    $option_key = lonestar_module_get_gtm_settings_option_key();
+    if (is_array(get_option($option_key, null))) {
+        return;
+    }
+
     $fallback_settings = lonestar_module_get_gtm_settings_from_acf();
     if ($fallback_settings['enabled'] || '' !== $fallback_settings['container_id']) {
         update_option($option_key, $fallback_settings, false);
     }
-
-    $cached_settings = $fallback_settings;
-    return $cached_settings;
 }
 
 /**

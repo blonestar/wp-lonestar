@@ -4,7 +4,44 @@ All notable changes to the Lonestar parent theme are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Git checkouts now skip parent release checks and block update downloads unless `LONESTAR_ALLOW_UPDATES` explicitly overrides the policy.
+
+## [0.3.0] - 2026-07-10
+
 ### Added
+
+- Added a shared parent/child CSS compatibility contract with standards-based nesting, WordPress Browserslist targets, Autoprefixer, and automated pipeline tests.
+- Added explicit ACF, native static/dynamic, and WordPress 7 PHP-only block contracts with reference blocks and child-over-parent discovery.
+- Added a bundled local field group for the ACF reference block and dependency-aware block/module availability.
+- Added verified GitHub Release updates through `Update URI`, strict SemVer/asset validation, SHA-256 pre-download checks, and Site Health/About diagnostics.
+- Added Node contract tests, JSON/package checks, Node 22/24 and PHP 8.2/8.4 CI, Dependabot, release attestations, and pinned Actions.
+- Added separate `lonestar-child` boilerplate repository scaffold with all three block roots and independent Vite build.
+
+### Changed
+
+- Replaced redundant `postcss-import` and Sass-like `postcss-nested` processing with Vite import handling and standards-based `postcss-nesting`; Tailwind is explicitly outside the framework stack.
+- Upgraded both parent and child tooling to Vite 8/Rolldown, raised the Node minimum to 22.12, and removed redundant `cross-env` usage.
+- Raised the minimum WordPress version to 7.0 and Node.js development baseline to 22.12.
+- Replaced glob-based core bootstrap with an explicit load order and introduced prefixed path constants with compatibility aliases.
+- Hardened release packaging so tracked `dist/`, exact changelog/version metadata, ZIP layout, checksum, and GitHub asset digest must agree before publication.
+- Module settings links and dependencies are now explicit `module.json` metadata; unavailable modules cannot boot.
+- Module toggle reconciliation moved from frontend reads to the admin lifecycle.
+- Full-site templates now use a `main` landmark, navigation uses its mobile overlay, and CSS aliases resolve theme.json tokens/system fonts.
+
+### Fixed
+
+- Native dynamic output now honors block wrapper attributes and preserves allowed RichText markup safely.
+- Native block scripts now declare their WordPress editor dependencies.
+
+### Removed
+
+- Removed the empty duplicate ACF Theme Options page.
+- Removed runtime ACF options-page source scanning from the module contract.
+
+### Added
+
 - Theme Settings now includes a dedicated `Changelog` tab.
 - Theme Settings tabs are now structured for growth: `Modules`, `Blocks`, `Changelog`.
 - Changelog tab shows `CHANGELOG.md` from active parent and child themes.
@@ -26,6 +63,7 @@ All notable changes to the Lonestar parent theme are documented in this file.
 - Added required semantic versioning rule to `AGENTS.md` with `style.css`/`package.json` (and `package-lock.json` when present) alignment.
 
 ### Changed
+
 - Block conflict resolution now enforces child-theme override priority over parent blocks with the same identity.
 - In Theme Settings > Blocks, overridden parent blocks are shown as disabled checkboxes with override note.
 - In Theme Settings > Modules, overridden parent modules are now shown as disabled checkboxes with override note.
@@ -59,6 +97,7 @@ All notable changes to the Lonestar parent theme are documented in this file.
 - Parent theme version was bumped from `0.2.0` to `0.2.1` in `style.css`, `package.json`, and `package-lock.json`.
 
 ### Fixed
+
 - ACF block registration now follows resolved enabled block directories (avoids double registration in parent+child duplicates).
 - Block discovery and asset caches were version-bumped to prevent stale conflict results.
 - Module settings save now forces overridden parent modules to `false` to match child-priority runtime behavior.
@@ -68,9 +107,11 @@ All notable changes to the Lonestar parent theme are documented in this file.
 - Module catalog cache keys now include parent/child `modules/` filesystem fingerprint, so deleted child modules stop showing as overrides without waiting for transient expiry.
 
 ### Removed
+
 - Removed GTM module dependency on ACF options subpage and local ACF field registration files.
 
 ## [0.1.0] - 2026-02-22
 
 ### Added
+
 - Initial framework setup (modules system, blocks pipeline, Vite integration, docs baseline).
