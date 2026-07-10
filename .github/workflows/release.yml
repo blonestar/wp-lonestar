@@ -157,7 +157,7 @@ jobs:
           fi
 
           (cd "$(dirname "$OUTPUT")" && sha256sum "$ASSET" > "$CHECKSUM")
-          sha256sum --check "$CHECKSUM"
+          (cd "$(dirname "$OUTPUT")" && sha256sum --check "$(basename "$CHECKSUM")")
           echo "asset_path=$OUTPUT" >> "$GITHUB_OUTPUT"
           echo "checksum_path=$CHECKSUM" >> "$GITHUB_OUTPUT"
 
