@@ -196,7 +196,12 @@ jobs:
             --title "Lonestar v$VERSION" \
             --notes-file "$NOTES"
 
-          RELEASE_ID="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq "map(select(.tag_name == \"$TAG\" and .draft == true)) | first | .id // empty")"
+          RELEASE_ID=""
+          for attempt in 1 2 3 4 5; do
+            RELEASE_ID="$(gh release view "$TAG" --json databaseId --jq '.databaseId' 2>/dev/null || true)"
+            test -n "$RELEASE_ID" && break
+            sleep 2
+          done
           test -n "$RELEASE_ID" || { echo "GitHub draft release was not found"; exit 1; }
 
           EXPECTED="$(cut -d' ' -f1 "$CHECKSUM_PATH")"
@@ -205,5 +210,5 @@ jobs:
           test "$EXPECTED" = "$ACTUAL" || { echo "GitHub asset digest mismatch"; exit 1; }
 
           gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
-            -f draft=false \
+            -F draft=false \
             -f make_latest=true >/dev/null
