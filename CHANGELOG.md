@@ -32,6 +32,7 @@ All notable changes to the Lonestar parent theme are documented in this file.
 
 ### Fixed
 
+- Draft publication now retries GitHub's eventually consistent release lookup before failing closed.
 - Draft release digest verification now resolves the release by ID before publishing, avoiding GitHub's draft tag-endpoint limitation.
 - Release checksum verification now runs from the artifact directory so the generated relative ZIP path resolves correctly.
 - Native dynamic output now honors block wrapper attributes and preserves allowed RichText markup safely.
