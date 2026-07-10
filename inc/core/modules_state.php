@@ -71,12 +71,15 @@ function modules_get_enabled_module_keys($available_keys = null)
         return array();
     }
 
-    $toggle_map = modules_persist_missing_enabled_modules($available_keys, $toggle_map);
     $force_disabled = modules_get_forced_disabled_module_slugs();
+    $catalog = modules_get_module_catalog();
 
     $enabled_keys = array();
     foreach ($available_keys as $module_key) {
         if ('' === $module_key) {
+            continue;
+        }
+        if (isset($catalog[$module_key]['available']) && false === $catalog[$module_key]['available']) {
             continue;
         }
 
@@ -120,6 +123,19 @@ function modules_get_enabled_module_keys($available_keys = null)
 
     sort($enabled_keys, SORT_NATURAL);
     return $enabled_keys;
+}
+
+/**
+ * Reconcile removed module toggles during an explicit admin lifecycle.
+ *
+ * @return void
+ */
+function modules_reconcile_missing_enabled_modules()
+{
+    modules_persist_missing_enabled_modules(
+        array_keys(modules_get_module_catalog()),
+        modules_get_module_toggle_map()
+    );
 }
 
 /**
@@ -589,7 +605,7 @@ function modules_get_enabled_module_root_paths($relative_path)
 /**
  * Return enabled module block roots.
  *
- * @param string $block_type Block type: acf|native|all.
+ * @param string $block_type Block type: acf|native|php-only|all.
  * @return array<int,string>
  */
 function modules_get_enabled_module_block_root_paths($block_type = 'all')
@@ -602,6 +618,9 @@ function modules_get_enabled_module_block_root_paths($block_type = 'all')
     }
     if ('all' === $block_type || 'native' === $block_type) {
         $paths = array_merge($paths, modules_get_enabled_module_root_paths('blocks/native'));
+    }
+    if ('all' === $block_type || 'php-only' === $block_type) {
+        $paths = array_merge($paths, modules_get_enabled_module_root_paths('blocks/php-only'));
     }
 
     $paths = array_values(array_unique($paths));

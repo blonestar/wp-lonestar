@@ -1,0 +1,16 @@
+.wp-block-lonestar-example-native-static {
+    border: 1px dashed #687386;
+    border-radius: 6px;
+    padding: 1rem;
+    margin: 1rem 0;
+    background: #ffffff;
+
+    & h3 {
+        margin: 0 0 0.5rem;
+        font-size: 1.125rem;
+    }
+
+    & p {
+        margin: 0;
+    }
+}

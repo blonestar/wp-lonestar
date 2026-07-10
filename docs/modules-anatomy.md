@@ -5,15 +5,17 @@ This document explains how Lonestar modules are structured and executed in paren
 ## 1) Where Module Discovery Happens
 
 Module catalog and bootstrap are implemented in parent core:
+
 - `inc/core/modules.php`
 - `inc/core/modules_catalog.php`
 - `inc/core/modules_state.php`
 - `inc/core/modules_bootstrap.php`
 
 Important default:
+
 - module sources are discovered from:
-  - parent: `get_template_directory() . '/modules'`
-  - child (when active): `get_stylesheet_directory() . '/modules'`
+    - parent: `get_template_directory() . '/modules'`
+    - child (when active): `get_stylesheet_directory() . '/modules'`
 - catalog keys are source-aware (`template__<slug>`, `stylesheet__<slug>`).
 - if the same slug is enabled in both sources, child-source module wins at runtime.
 - in Theme Settings, overridden parent-module rows are shown as disabled with an override note.
@@ -53,6 +55,7 @@ modules/<slug>/
 |-- assets/
 |-- blocks/acf/
 |-- blocks/native/
+|-- blocks/php-only/
 `-- acf-json/
 ```
 
@@ -82,17 +85,19 @@ flowchart TD
 ```
 
 Parent module state also supports:
+
 - forced disable constants:
-  - `MODULES_DISABLE_ALL`
-  - `MODULES_DISABLED`
-  - `LONESTAR_DISABLE_ALL_MODULES`
-  - `LONESTAR_DISABLED_MODULES`
+    - `MODULES_DISABLE_ALL`
+    - `MODULES_DISABLED`
+    - `LONESTAR_DISABLE_ALL_MODULES`
+    - `LONESTAR_DISABLED_MODULES`
 - sentinel file: `.disable-modules`
 - module catalog cache key now fingerprints parent/child `modules/` roots, so module add/remove changes refresh discovery automatically.
 
 ## 4) Convention Paths Used By Module Runtime
 
 Depending on module shape and code, common module internals include:
+
 - `inc/inc.*.php`
 - `inc/helpers/*.php`
 - `inc/shortcodes/*.php`
@@ -100,9 +105,11 @@ Depending on module shape and code, common module internals include:
 - `assets/*`
 - `blocks/acf/*`
 - `blocks/native/*`
+- `blocks/php-only/*`
 - `acf-json/*`
 
 For block-related assets:
+
 - enabled module block roots are merged into the block asset/discovery pipeline.
 
 ## 5) GTM Module Anatomy (Example)
@@ -120,6 +127,7 @@ modules/gtm/
 ```
 
 Responsibility split:
+
 - `module.gtm.php`  
   Bootstrap: requires `inc/inc.*.php`.
 - `module.json`  
@@ -136,6 +144,7 @@ Responsibility split:
 Child modules are auto-discovered when a child theme is active.
 
 Practical recommendation:
+
 - keep reusable modules in parent `modules/`,
 - keep project-specific modules in child `modules/`,
 - avoid duplicate slug/function naming across parent+child module implementations unless intentionally overriding behavior.
@@ -143,22 +152,23 @@ Practical recommendation:
 ## 7) Creating a New Module (Recommended Process)
 
 1. Pick module type (flat vs folder).
-2. Create `module.<slug>.php` with metadata docblock.
+2. Create `module.<slug>.php` and explicit `module.json` metadata.
 3. Add logic in `inc/` files and register hooks.
 4. If needed, add ACF options/fields and `acf-json`.
-5. If needed, add `blocks/acf` or `blocks/native` assets.
-6. Enable via `Appearance -> Theme Settings`.
-7. Validate frontend/admin and build artifacts.
+5. Declare `requires` and `admin_links` in `module.json`; source scanning is not used.
+6. If needed, add `blocks/acf`, `blocks/native`, or `blocks/php-only` assets.
+7. Enable via `Appearance -> Theme Settings`.
+8. Validate frontend/admin and build artifacts.
 
 ## 8) Troubleshooting
 
 - Module does not appear in admin list:
-  - verify filename pattern `module.<slug>.php`,
-  - verify module is under `modules/` of parent or active child theme.
+    - verify filename pattern `module.<slug>.php`,
+    - verify module is under `modules/` of parent or active child theme.
 - Module appears but has no effect:
-  - verify toggle is enabled,
-  - if same slug exists in both sources, verify which source is enabled and expected to win,
-  - verify hooks fire on expected action timing.
+    - verify toggle is enabled,
+    - if same slug exists in both sources, verify which source is enabled and expected to win,
+    - verify hooks fire on expected action timing.
 - GTM settings tab missing:
-  - verify GTM module is enabled in `Appearance -> Theme Settings -> Modules`,
-  - verify no fatal errors in GTM module files.
+    - verify GTM module is enabled in `Appearance -> Theme Settings -> Modules`,
+    - verify no fatal errors in GTM module files.

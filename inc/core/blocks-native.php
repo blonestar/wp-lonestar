@@ -86,21 +86,21 @@ function lonestar_register_native_block_types()
             continue;
         }
 
-        $args = array();
-        $render_file = wp_normalize_path($block_directory . '/render.php');
+        $variant = function_exists('lonestar_get_block_variant')
+            ? lonestar_get_block_variant('native', $metadata, $block_directory)
+            : 'native-static';
+        $errors = function_exists('lonestar_validate_block_contract')
+            ? lonestar_validate_block_contract('native', $variant, $metadata, $block_directory)
+            : array();
 
-        if (file_exists($render_file) && is_readable($render_file)) {
-            $args['render_callback'] = function ($attributes, $content, $block) use ($render_file) {
-                $attributes = is_array($attributes) ? $attributes : array();
-                $content = is_string($content) ? $content : '';
-
-                ob_start();
-                include $render_file;
-                return (string) ob_get_clean();
-            };
+        if (!empty($errors)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[lonestar-theme] Invalid native block contract: ' . implode(' ', $errors));
+            }
+            continue;
         }
 
-        register_block_type_from_metadata($block_directory, $args);
+        register_block_type_from_metadata($block_directory);
     }
 }
 
@@ -122,6 +122,7 @@ function lonestar_flush_block_discovery_caches($upgrader_object = null, $options
     delete_transient('lonestar_acf_blocks_to_load_v2');
     delete_transient('lonestar_acf_blocks_to_load_v3');
     delete_transient('lonestar_native_blocks_to_load_v2');
+    delete_transient('lonestar_php_only_blocks_to_load_v1');
     delete_transient('lonestar_blocks_to_scan_' . $cache_namespace);
     delete_transient('lonestar_blocks_to_scan_v2_' . $cache_namespace);
     delete_transient('lonestar_blocks_to_scan_v3_' . $cache_namespace);

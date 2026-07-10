@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "lonestar/example-native-static",
+  "title": "Lonestar Example Native Static",
+  "category": "lonestar-blocks",
+  "icon": "media-text",
+  "description": "Example native block whose frontend markup is saved by JavaScript.",
+  "textdomain": "lonestar-theme",
+  "keywords": ["lonestar", "native", "static", "example"],
+  "attributes": {
+    "heading": {
+      "type": "string",
+      "source": "html",
+      "selector": "h3",
+      "default": "Example Native Static Block"
+    },
+    "description": {
+      "type": "string",
+      "source": "html",
+      "selector": "p",
+      "default": "This markup is saved in post content by the block editor."
+    }
+  },
+  "supports": {
+    "anchor": true,
+    "align": ["wide", "full"],
+    "html": false
+  },
+  "style": "lonestar-example-native-static",
+  "editorStyle": "lonestar-example-native-static",
+  "editorScript": "example-native-static"
+}

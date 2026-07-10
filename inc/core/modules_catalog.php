@@ -226,7 +226,7 @@ function modules_get_module_catalog_transient_key()
         $theme_fingerprint = md5((string) get_template_directory());
     }
 
-    $catalog_schema_version = 'v3';
+    $catalog_schema_version = 'v4';
     $source_fingerprint = modules_get_module_source_fingerprint();
     $cache_seed = $catalog_schema_version . '|' . $theme_fingerprint . '|' . $source_fingerprint;
     $transient_key = 'lonestar_mod_catalog_' . $catalog_schema_version . '_' . substr(md5((string) $cache_seed), 0, 12);
@@ -293,7 +293,7 @@ function modules_get_module_catalog()
     if ($use_cache) {
         $cached_catalog = get_transient($cache_key);
         if (is_array($cached_catalog)) {
-            $catalog = $cached_catalog;
+            $catalog = modules_refresh_module_catalog_availability($cached_catalog);
             return $catalog;
         }
     }
@@ -331,6 +331,8 @@ function modules_get_module_catalog()
                 $module_directory = untrailingslashit(wp_normalize_path(dirname($module_file)));
                 $entry_file = wp_normalize_path($module_file);
                 $resolved_meta = modules_resolve_module_metadata($slug, $module_directory, $entry_file, 'file');
+                $requirements = modules_get_module_requirements($module_directory, $entry_file, 'file');
+                $availability = modules_get_module_availability($requirements);
 
                 $catalog[$module_key] = array(
                     'key'         => $module_key,
@@ -342,6 +344,9 @@ function modules_get_module_catalog()
                     'source'      => $source,
                     'source_label'=> modules_get_source_label($source),
                     'admin_links' => modules_get_module_admin_links($slug, $module_directory, $entry_file, 'file'),
+                    'requires'    => $requirements,
+                    'available'   => $availability['available'],
+                    'status'      => $availability['status'],
                     'mode'        => 'file',
                     'directory'   => $module_directory,
                     'entry_file'  => $entry_file,
@@ -372,6 +377,8 @@ function modules_get_module_catalog()
 
                 // Folder module takes precedence over flat module with the same key (source + slug).
                 $resolved_meta = modules_resolve_module_metadata($slug, $module_directory, $entry_file, 'folder');
+                $requirements = modules_get_module_requirements($module_directory, $entry_file, 'folder');
+                $availability = modules_get_module_availability($requirements);
                 $catalog[$module_key] = array(
                     'key'         => $module_key,
                     'slug'        => $slug,
@@ -382,6 +389,9 @@ function modules_get_module_catalog()
                     'source'      => $source,
                     'source_label'=> modules_get_source_label($source),
                     'admin_links' => modules_get_module_admin_links($slug, $module_directory, $entry_file, 'folder'),
+                    'requires'    => $requirements,
+                    'available'   => $availability['available'],
+                    'status'      => $availability['status'],
                     'mode'        => 'folder',
                     'directory'   => $module_directory,
                     'entry_file'  => $entry_file,
@@ -400,6 +410,8 @@ function modules_get_module_catalog()
     if (!is_array($catalog)) {
         $catalog = array();
     }
+
+    $catalog = modules_refresh_module_catalog_availability($catalog);
 
     ksort($catalog, SORT_NATURAL);
 
@@ -569,6 +581,96 @@ function modules_get_module_json_metadata($module_directory, $entry_file = '', $
     }
 
     return array();
+}
+
+/**
+ * Read explicit module runtime requirements from module JSON metadata.
+ *
+ * @param string $module_directory Module directory.
+ * @param string $entry_file Module entry file.
+ * @param string $mode Module mode.
+ * @return array<int,string>
+ */
+function modules_get_module_requirements($module_directory, $entry_file = '', $mode = 'folder')
+{
+    $metadata = modules_get_module_json_metadata($module_directory, $entry_file, $mode);
+    $requirements = isset($metadata['requires']) ? $metadata['requires'] : array();
+    if (is_string($requirements)) {
+        $requirements = array($requirements);
+    }
+    if (!is_array($requirements)) {
+        return array();
+    }
+
+    $requirements = array_values(array_unique(array_filter(array_map('sanitize_key', $requirements), 'strlen')));
+    sort($requirements, SORT_NATURAL);
+    return $requirements;
+}
+
+/**
+ * Resolve whether declared module requirements are available.
+ *
+ * @param array<int,string> $requirements Requirement slugs.
+ * @return array{available:bool,status:string}
+ */
+function modules_get_module_availability($requirements)
+{
+    $missing = array();
+    $labels = array(
+        'acf'           => __('ACF Pro', 'lonestar-theme'),
+        'gravity-forms' => __('Gravity Forms', 'lonestar-theme'),
+    );
+
+    foreach (is_array($requirements) ? $requirements : array() as $requirement) {
+        $requirement = sanitize_key((string) $requirement);
+        if ('' === $requirement) {
+            continue;
+        }
+
+        if ('acf' === $requirement) {
+            $available = function_exists('acf_register_block_type') || class_exists('ACF');
+        } elseif ('gravity-forms' === $requirement) {
+            $available = class_exists('GFForms') || class_exists('RGFormsModel');
+        } else {
+            $available = (bool) apply_filters('lonestar_module_requirement_available', false, $requirement);
+        }
+
+        if (!$available) {
+            $missing[] = isset($labels[$requirement]) ? $labels[$requirement] : $requirement;
+        }
+    }
+
+    return array(
+        'available' => empty($missing),
+        'status'    => empty($missing)
+            ? ''
+            : sprintf(__('Requires: %s.', 'lonestar-theme'), implode(', ', $missing)),
+    );
+}
+
+/**
+ * Re-evaluate dependency availability after reading a cached catalog.
+ *
+ * @param array<string,array> $catalog Module catalog.
+ * @return array<string,array>
+ */
+function modules_refresh_module_catalog_availability($catalog)
+{
+    if (!is_array($catalog)) {
+        return array();
+    }
+
+    foreach ($catalog as $module_key => $module) {
+        if (!is_array($module)) {
+            continue;
+        }
+        $requirements = isset($module['requires']) && is_array($module['requires']) ? $module['requires'] : array();
+        $availability = modules_get_module_availability($requirements);
+        $catalog[$module_key]['available'] = $availability['available'];
+        $catalog[$module_key]['status'] = $availability['status'];
+    }
+
+    return $catalog;
 }
 
 /**
@@ -801,9 +903,7 @@ function modules_extract_module_docblock_summary($file_path)
 /**
  * Resolve module admin links (settings pages).
  *
- * Strategy:
- * 1) module.json `admin_links`
- * 2) Auto-detect ACF options pages from module PHP files
+ * Links must be declared in module.json `admin_links`.
  *
  * @param string $slug Module slug.
  * @param string $module_directory Module directory.
@@ -826,7 +926,7 @@ function modules_get_module_admin_links($slug, $module_directory, $entry_file = 
     $seen_pages = array();
     $seen_urls = array();
 
-    // 1) Explicit links from module.json
+    // Explicit links from module.json.
     $descriptor_candidates = array();
     if ('folder' === $mode) {
         $descriptor_candidates[] = $module_directory . '/module.json';
@@ -885,7 +985,9 @@ function modules_get_module_admin_links($slug, $module_directory, $entry_file = 
         }
     }
 
-    // 2) Auto-discover ACF options pages/subpages in module PHP files
+    return $links;
+
+    // Deprecated unreachable compatibility code. It will be removed in the next major release.
     if ('file' === $mode) {
         $php_files = ('' !== $entry_file && file_exists($entry_file) && is_readable($entry_file))
             ? array($entry_file)
@@ -1050,6 +1152,7 @@ function modules_detect_module_features($module_directory, $entry_file = '')
         'entry'         => ('' !== $entry_file),
         'blocks_acf'    => is_dir($module_directory . '/blocks/acf'),
         'blocks_native' => is_dir($module_directory . '/blocks/native'),
+        'blocks_php_only' => is_dir($module_directory . '/blocks/php-only'),
         'assets'        => is_dir($module_directory . '/assets'),
         'acf_json'      => is_dir($module_directory . '/acf-json'),
         'inc'           => is_dir($module_directory . '/inc'),

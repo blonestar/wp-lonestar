@@ -1,0 +1,5 @@
+{
+  "name": "ACF Number with Unit",
+  "description": "Adds a reusable ACF number field with an associated CSS unit.",
+  "requires": ["acf"]
+}

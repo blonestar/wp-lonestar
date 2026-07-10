@@ -13,11 +13,44 @@ if (!defined('ABSPATH')) {
 /**
  * Define Constants
  */
-define('TEMPLATE_PATH', trailingslashit(get_template_directory()));
-define('TEMPLATE_URI', trailingslashit(get_template_directory_uri()));
-define('ACF_BLOCKS_PATH', 'blocks/acf/');
-define('NATIVE_BLOCKS_PATH', 'blocks/native/');
-define('DIST_REL_PATH', 'dist/');
+if (!defined('LONESTAR_TEMPLATE_PATH')) {
+    define('LONESTAR_TEMPLATE_PATH', trailingslashit(get_template_directory()));
+}
+if (!defined('LONESTAR_TEMPLATE_URI')) {
+    define('LONESTAR_TEMPLATE_URI', trailingslashit(get_template_directory_uri()));
+}
+if (!defined('LONESTAR_ACF_BLOCKS_PATH')) {
+    define('LONESTAR_ACF_BLOCKS_PATH', 'blocks/acf/');
+}
+if (!defined('LONESTAR_NATIVE_BLOCKS_PATH')) {
+    define('LONESTAR_NATIVE_BLOCKS_PATH', 'blocks/native/');
+}
+if (!defined('LONESTAR_PHP_ONLY_BLOCKS_PATH')) {
+    define('LONESTAR_PHP_ONLY_BLOCKS_PATH', 'blocks/php-only/');
+}
+if (!defined('LONESTAR_DIST_REL_PATH')) {
+    define('LONESTAR_DIST_REL_PATH', 'dist/');
+}
+
+// Backward-compatible aliases. New integrations should use LONESTAR_* constants.
+if (!defined('TEMPLATE_PATH')) {
+    define('TEMPLATE_PATH', LONESTAR_TEMPLATE_PATH);
+}
+if (!defined('TEMPLATE_URI')) {
+    define('TEMPLATE_URI', LONESTAR_TEMPLATE_URI);
+}
+if (!defined('ACF_BLOCKS_PATH')) {
+    define('ACF_BLOCKS_PATH', LONESTAR_ACF_BLOCKS_PATH);
+}
+if (!defined('NATIVE_BLOCKS_PATH')) {
+    define('NATIVE_BLOCKS_PATH', LONESTAR_NATIVE_BLOCKS_PATH);
+}
+if (!defined('PHP_ONLY_BLOCKS_PATH')) {
+    define('PHP_ONLY_BLOCKS_PATH', LONESTAR_PHP_ONLY_BLOCKS_PATH);
+}
+if (!defined('DIST_REL_PATH')) {
+    define('DIST_REL_PATH', LONESTAR_DIST_REL_PATH);
+}
 
 if (!function_exists('lonestar_get_theme_cache_namespace')) {
     /**
@@ -64,27 +97,36 @@ if (!function_exists('lonestar_get_theme_cache_namespace')) {
  * Load core theme functionality
  * These files should not be modified for project-specific needs
  */
-foreach (glob(get_template_directory() . '/inc/core/*.php') as $file) {
-    $is_module_system_disabled = (
-        (defined('MODULES_DISABLE_SYSTEM') && true === MODULES_DISABLE_SYSTEM) ||
-        (defined('LONESTAR_DISABLE_MODULE_SYSTEM') && true === LONESTAR_DISABLE_MODULE_SYSTEM)
-    );
-    $core_file_basename = basename((string) $file);
-    $is_module_core_file = (1 === preg_match('/^modules(?:_.+)?\.php$/', $core_file_basename));
+// Explicit order keeps bootstrap dependencies reviewable and deterministic.
+$lonestar_core_files = array(
+    'vite.php',
+    'modules.php',
+    'blocks-acf-enqueue.php',
+    'blocks-state.php',
+    'blocks-acf.php',
+    'blocks-native.php',
+    'blocks-php-only.php',
+    'helpers.php',
+    'shortcodes.php',
+    'theme-updates.php',
+);
 
-    if ($is_module_core_file) {
-        if ($is_module_system_disabled) {
-            continue;
-        }
+$lonestar_module_system_disabled = (
+    (defined('MODULES_DISABLE_SYSTEM') && true === MODULES_DISABLE_SYSTEM) ||
+    (defined('LONESTAR_DISABLE_MODULE_SYSTEM') && true === LONESTAR_DISABLE_MODULE_SYSTEM)
+);
 
-        // `modules.php` is the entrypoint and loads modules_* parts via require_once.
-        if ('modules.php' !== $core_file_basename) {
-            continue;
-        }
+foreach ($lonestar_core_files as $lonestar_core_file) {
+    if ('modules.php' === $lonestar_core_file && $lonestar_module_system_disabled) {
+        continue;
     }
 
-    require_once $file;
+    $lonestar_core_path = LONESTAR_TEMPLATE_PATH . 'inc/core/' . $lonestar_core_file;
+    if (is_readable($lonestar_core_path)) {
+        require_once $lonestar_core_path;
+    }
 }
+unset($lonestar_core_file, $lonestar_core_files, $lonestar_core_path, $lonestar_module_system_disabled);
 
 /**
  * Load project-specific functionality

@@ -11,7 +11,11 @@ const LONESTAR_IGNORED_DIRECTORIES = new Set(["node_modules", "dist", "build", "
  * @returns {string[]} - An array of block roots.
  */
 export function lonestarGetBlockRoots(themeRoot) {
-    const roots = [resolve(themeRoot, "blocks/acf"), resolve(themeRoot, "blocks/native")];
+    const roots = [
+        resolve(themeRoot, "blocks/acf"),
+        resolve(themeRoot, "blocks/native"),
+        resolve(themeRoot, "blocks/php-only"),
+    ];
     const modulesRoot = resolve(themeRoot, "modules");
 
     if (!existsSync(modulesRoot)) {
@@ -24,7 +28,11 @@ export function lonestarGetBlockRoots(themeRoot) {
         if (entry.name.startsWith(".")) return;
 
         const moduleRoot = resolve(modulesRoot, entry.name);
-        const moduleBlockRoots = [resolve(moduleRoot, "blocks/acf"), resolve(moduleRoot, "blocks/native")];
+        const moduleBlockRoots = [
+            resolve(moduleRoot, "blocks/acf"),
+            resolve(moduleRoot, "blocks/native"),
+            resolve(moduleRoot, "blocks/php-only"),
+        ];
 
         moduleBlockRoots.forEach((blockRoot) => {
             if (!existsSync(blockRoot)) return;

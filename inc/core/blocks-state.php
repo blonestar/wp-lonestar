@@ -107,8 +107,121 @@ function lonestar_get_block_type_from_directory($block_directory)
     if (false !== strpos($block_directory, '/blocks/native/')) {
         return 'native';
     }
+    if (false !== strpos($block_directory, '/blocks/php-only/')) {
+        return 'php-only';
+    }
 
     return 'unknown';
+}
+
+/**
+ * Whether the ACF block runtime is available.
+ *
+ * @return bool
+ */
+function lonestar_is_acf_block_runtime_available()
+{
+    return function_exists('acf_register_block_type') && function_exists('get_field');
+}
+
+/**
+ * Resolve the user-facing block implementation variant.
+ *
+ * @param string $type Block family.
+ * @param array<string,mixed> $metadata Parsed block metadata.
+ * @param string $block_directory Absolute block directory.
+ * @return string
+ */
+function lonestar_get_block_variant($type, $metadata, $block_directory)
+{
+    $type = sanitize_key((string) $type);
+    $metadata = is_array($metadata) ? $metadata : array();
+    $block_directory = untrailingslashit(wp_normalize_path((string) $block_directory));
+
+    if ('native' === $type) {
+        $metadata_render = isset($metadata['render']) && is_string($metadata['render']) ? trim($metadata['render']) : '';
+        return ('' !== $metadata_render || is_readable($block_directory . '/render.php')) ? 'native-dynamic' : 'native-static';
+    }
+
+    return $type;
+}
+
+/**
+ * Validate the filesystem and metadata contract for one block.
+ *
+ * @param string $type Block family.
+ * @param string $variant Block implementation variant.
+ * @param array<string,mixed> $metadata Parsed block metadata.
+ * @param string $block_directory Absolute block directory.
+ * @return array<int,string>
+ */
+function lonestar_validate_block_contract($type, $variant, $metadata, $block_directory)
+{
+    $errors = array();
+    $type = sanitize_key((string) $type);
+    $variant = sanitize_key((string) $variant);
+    $metadata = is_array($metadata) ? $metadata : array();
+    $block_directory = untrailingslashit(wp_normalize_path((string) $block_directory));
+
+    if (empty($metadata['name']) || !is_string($metadata['name']) || 1 !== preg_match('/^[a-z0-9-]+\/[a-z0-9-]+$/', $metadata['name'])) {
+        $errors[] = __('Block name must use the namespace/slug format.', 'lonestar-theme');
+    }
+
+    if ('acf' === $type) {
+        $render_template = isset($metadata['acf']['renderTemplate']) && is_string($metadata['acf']['renderTemplate'])
+            ? ltrim($metadata['acf']['renderTemplate'], './')
+            : '';
+        if ('' === $render_template || !is_readable($block_directory . '/' . $render_template)) {
+            $errors[] = __('ACF blocks require a readable acf.renderTemplate file.', 'lonestar-theme');
+        }
+    } elseif ('native' === $type) {
+        if (empty($metadata['editorScript'])) {
+            $errors[] = __('Native blocks require an editorScript.', 'lonestar-theme');
+        }
+        if ('native-dynamic' === $variant) {
+            $render_path = $block_directory . '/render.php';
+            if (!is_readable($render_path)) {
+                $errors[] = __('Native dynamic blocks require a readable render.php file.', 'lonestar-theme');
+            }
+        }
+    } elseif ('php-only' === $type) {
+        $auto_register = isset($metadata['supports']['autoRegister']) && true === $metadata['supports']['autoRegister'];
+        $render = isset($metadata['render']) && is_string($metadata['render']) ? $metadata['render'] : '';
+        $render_path = 0 === strpos($render, 'file:') ? $block_directory . '/' . ltrim(substr($render, 5), './') : '';
+
+        if (!$auto_register) {
+            $errors[] = __('PHP-only blocks require supports.autoRegister=true.', 'lonestar-theme');
+        }
+        if ('' === $render_path || !is_readable($render_path)) {
+            $errors[] = __('PHP-only blocks require a readable file: render target.', 'lonestar-theme');
+        }
+        if (!empty($metadata['editorScript'])) {
+            $errors[] = __('PHP-only blocks must not declare editorScript.', 'lonestar-theme');
+        }
+    } else {
+        $errors[] = __('Block is outside a supported block root.', 'lonestar-theme');
+    }
+
+    return $errors;
+}
+
+/**
+ * Return a translated implementation label.
+ *
+ * @param string $variant Block variant.
+ * @return string
+ */
+function lonestar_get_block_variant_label($variant)
+{
+    $labels = array(
+        'acf'            => __('ACF', 'lonestar-theme'),
+        'native-static'  => __('Native static', 'lonestar-theme'),
+        'native-dynamic' => __('Native dynamic', 'lonestar-theme'),
+        'php-only'       => __('PHP-only', 'lonestar-theme'),
+    );
+    $variant = sanitize_key((string) $variant);
+
+    return isset($labels[$variant]) ? $labels[$variant] : __('Unknown', 'lonestar-theme');
 }
 
 /**
@@ -370,6 +483,20 @@ function lonestar_get_block_catalog()
             $metadata = array();
         }
 
+        $variant = lonestar_get_block_variant($type, $metadata, $block_directory);
+        $validation_errors = lonestar_validate_block_contract($type, $variant, $metadata, $block_directory);
+        $available = empty($validation_errors);
+        $status_message = '';
+        if ('acf' === $type && !lonestar_is_acf_block_runtime_available()) {
+            $available = false;
+            $status_message = __('Requires ACF Pro.', 'lonestar-theme');
+        } elseif ('php-only' === $type && version_compare((string) get_bloginfo('version'), '7.0', '<')) {
+            $available = false;
+            $status_message = __('Requires WordPress 7.0 or newer.', 'lonestar-theme');
+        } elseif (!empty($validation_errors)) {
+            $status_message = implode(' ', $validation_errors);
+        }
+
         $block_name = isset($metadata['name']) && is_string($metadata['name']) ? sanitize_text_field($metadata['name']) : '';
         $block_title = isset($metadata['title']) && is_string($metadata['title']) ? sanitize_text_field($metadata['title']) : '';
         if ('' === $block_title && '' !== $block_name) {
@@ -385,6 +512,11 @@ function lonestar_get_block_catalog()
             'name'          => $block_name,
             'label'         => $block_title,
             'type'          => $type,
+            'variant'       => $variant,
+            'type_label'    => lonestar_get_block_variant_label($variant),
+            'available'     => $available,
+            'status'        => $status_message,
+            'errors'        => $validation_errors,
             'source'        => $source,
             'source_label'  => function_exists('modules_get_source_label') ? modules_get_source_label($source) : ucfirst($source),
             'relative_path' => $relative_path,
@@ -440,9 +572,14 @@ function lonestar_get_enabled_block_keys($available_keys = null)
     $available_keys = array_values(array_unique(array_map('sanitize_key', $available_keys)));
     $available_lookup = array_fill_keys($available_keys, true);
     $toggle_map = lonestar_get_block_toggle_map();
+    $catalog = lonestar_get_block_catalog();
 
     $enabled_keys = array();
     foreach ($available_keys as $block_key) {
+        $catalog_entry = isset($catalog[$block_key]) && is_array($catalog[$block_key]) ? $catalog[$block_key] : array();
+        if (isset($catalog_entry['available']) && false === $catalog_entry['available']) {
+            continue;
+        }
         if (array_key_exists($block_key, $toggle_map) && false === $toggle_map[$block_key]) {
             continue;
         }
@@ -470,7 +607,6 @@ function lonestar_get_enabled_block_keys($available_keys = null)
         )
     );
 
-    $catalog = lonestar_get_block_catalog();
     $catalog_subset = array();
     foreach ($available_keys as $available_key) {
         if (isset($catalog[$available_key]) && is_array($catalog[$available_key])) {

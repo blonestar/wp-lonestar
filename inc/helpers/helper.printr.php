@@ -3,16 +3,16 @@
 /**
  * Helper for quick onscreen debug
  */
-if (!function_exists('printr')) {
+if (!function_exists('printr') && defined('WP_DEBUG') && WP_DEBUG && function_exists('wp_get_environment_type') && 'production' !== wp_get_environment_type()) {
     function printr($arr, $die = false)
     {
-        if (!(defined('WP_DEBUG') && WP_DEBUG)) {
+        if (!current_user_can('manage_options')) {
             return;
         }
 
-        echo "<pre>";
-        print_r($arr);
-        echo "</pre>";
+        echo '<pre>';
+        echo esc_html(print_r($arr, true));
+        echo '</pre>';
 
         if ($die)
             exit;

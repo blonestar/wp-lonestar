@@ -1,0 +1,5 @@
+{
+  "name": "ACF Gravity Forms Selector",
+  "description": "Adds an ACF field for selecting an active Gravity Forms form.",
+  "requires": ["acf", "gravity-forms"]
+}

@@ -3,17 +3,17 @@
     /* Core colors */
     --color-white: #ffffff;
     --color-black: #111111;
-    --color-bg: #f7f8fa;
-    --color-surface: #ffffff;
+    --color-bg: var(--wp--preset--color--background, #f7f8fa);
+    --color-surface: var(--wp--preset--color--surface, #ffffff);
     --color-border: #d9dee7;
-    --color-text: #1a1f29;
+    --color-text: var(--wp--preset--color--text, #1a1f29);
     --color-text-muted: #5c6675;
-    --color-brand: #005f99;
-    --color-brand-strong: #004a78;
+    --color-brand: var(--wp--preset--color--brand, #005f99);
+    --color-brand-strong: var(--wp--preset--color--brand-strong, #004a78);
 
     /* Typography */
-    --font-base: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-    --font-heading: "Merriweather", Georgia, "Times New Roman", serif;
+    --font-base: var(--wp--preset--font-family--body, system-ui, sans-serif);
+    --font-heading: var(--wp--preset--font-family--heading, Georgia, serif);
 
     /* Spacing */
     --spacing-xs: 0.5rem;

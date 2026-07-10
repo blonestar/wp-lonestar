@@ -34,7 +34,7 @@ export default defineConfig(({ command }) => ({
         cssCodeSplit: true,
 
         // bundle entries discovered from block directories + main.js
-        rollupOptions: {
+        rolldownOptions: {
             treeshake: false,
             input: lonestarGetBlockEntryPoints(__dirname),
 
@@ -52,7 +52,7 @@ export default defineConfig(({ command }) => ({
 
     server: {
         // required to load scripts from custom host
-        cors: true,
+        cors: { origin: /^https?:\/\/(?:[a-z0-9-]+\.)?local(?::\d+)?$/i },
 
         // we need a strict port to match on PHP side
         // change freely, but update in your inc/core/vite.php to match the same port

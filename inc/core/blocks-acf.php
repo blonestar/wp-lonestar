@@ -23,6 +23,10 @@ add_action('init', 'lonestar_register_acf_block_types');
  */
 function lonestar_register_acf_block_types()
 {
+    if (!function_exists('lonestar_is_acf_block_runtime_available') || !lonestar_is_acf_block_runtime_available()) {
+        return;
+    }
+
     $transient_key = 'lonestar_acf_blocks_to_load_v3';
     $cache_namespace = function_exists('lonestar_get_theme_cache_namespace') ? lonestar_get_theme_cache_namespace() : 'default';
     $use_cache = !lonestar_is_vite_dev_mode();
@@ -101,6 +105,28 @@ function lonestar_register_acf_block_types()
     }
 
     foreach ($blocks as $block) {
+        $block_directory = dirname((string) $block);
+        $metadata_raw = file_get_contents($block);
+        $metadata = is_string($metadata_raw) ? json_decode($metadata_raw, true) : array();
+        $errors = function_exists('lonestar_validate_block_contract')
+            ? lonestar_validate_block_contract('acf', 'acf', $metadata, $block_directory)
+            : array();
+
+        if (!empty($errors)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[lonestar-theme] Invalid ACF block contract: ' . implode(' ', $errors));
+            }
+            continue;
+        }
+
+        $fields_path = wp_normalize_path($block_directory . '/fields.php');
+        if (function_exists('acf_add_local_field_group') && is_readable($fields_path)) {
+            $field_group = include $fields_path;
+            if (is_array($field_group) && !empty($field_group['key'])) {
+                acf_add_local_field_group($field_group);
+            }
+        }
+
         register_block_type($block);
     }
 }
