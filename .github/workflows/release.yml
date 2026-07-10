@@ -196,9 +196,14 @@ jobs:
             --title "Lonestar v$VERSION" \
             --notes-file "$NOTES"
 
+          RELEASE_ID="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq "map(select(.tag_name == \"$TAG\" and .draft == true)) | first | .id // empty")"
+          test -n "$RELEASE_ID" || { echo "GitHub draft release was not found"; exit 1; }
+
           EXPECTED="$(cut -d' ' -f1 "$CHECKSUM_PATH")"
-          ACTUAL="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq ".assets[] | select(.name == \"$ASSET_NAME\") | .digest" | sed 's/^sha256://')"
+          ACTUAL="$(gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" --jq ".assets[] | select(.name == \"$ASSET_NAME\") | .digest" | sed 's/^sha256://')"
           test -n "$ACTUAL" || { echo "GitHub did not expose an asset digest"; exit 1; }
           test "$EXPECTED" = "$ACTUAL" || { echo "GitHub asset digest mismatch"; exit 1; }
 
-          gh release edit "$TAG" --draft=false --latest
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+            -f draft=false \
+            -f make_latest=true >/dev/null
