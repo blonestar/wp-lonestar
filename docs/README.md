@@ -12,6 +12,8 @@ Location:
   Parent-theme developer workflow for local setup, development, validation, and deployment.
 - `block-types.md`
   Decision matrix and contracts for ACF, native static/dynamic, and WordPress 7 PHP-only blocks.
+- `content-types.md`
+  Declarative parent/child post type and taxonomy discovery, precedence, and rewrite lifecycle.
 - `child-theme-guide.md`  
   Child-theme-specific structure, conventions, and implementation patterns.
 - `modules-anatomy.md`  
@@ -30,7 +32,8 @@ Location:
 
 1. `developer-guide.md`
 2. `block-types.md`
-3. `child-theme-guide.md`
-4. `modules-anatomy.md`
-5. `parent-release-updates.md`
-6. `git-workflow.md`
+3. `content-types.md`
+4. `child-theme-guide.md`
+5. `modules-anatomy.md`
+6. `parent-release-updates.md`
+7. `git-workflow.md`

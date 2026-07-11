@@ -20,6 +20,7 @@ For child-theme-specific procedures, see:
     - core bootstrap/runtime,
     - module catalog and module boot process,
     - shared blocks and asset pipeline.
+    - declarative content-type discovery and registration from parent/child `inc/content-types/` roots.
 - Keep project-specific behavior out of parent.
 
 ## 3) Initial Setup
@@ -48,6 +49,7 @@ npm run build
 npm run browsers
 npm run format
 npm run check
+php tests/content-types-runtime.php
 ```
 
 `npm run browsers` prints the browser matrix inherited from the official WordPress Browserslist profile.
@@ -102,9 +104,11 @@ Recommended:
 - Shipping changes without smoke test of editor + frontend.
 - Bumping version outside release flow.
 - Putting a PHP-only block under `blocks/native/` instead of `blocks/php-only/`.
+- Editing child `functions.php` just to register a content type; use `inc/content-types/*.php` and the validated return contract in `docs/content-types.md`.
 - Using Sass-like nesting, Tailwind utilities, or an implicit browser target outside the documented CSS pipeline.
 
 The complete block selection and filesystem contract is in `docs/block-types.md`.
+The content-type discovery, validation, and rewrite contract is in `docs/content-types.md`.
 
 ## 10) Parent Development Flow (Mermaid)
 

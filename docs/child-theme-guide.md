@@ -74,6 +74,7 @@ Common child extension paths:
 - `inc/shortcodes/shortcode.*.php` for child shortcode overrides (same basename override strategy).
 - `templates/`, `parts/`, `patterns/` for project-level rendering overrides where needed.
 - `blocks/acf/`, `blocks/native/`, and `blocks/php-only/` for the three supported block families.
+- `inc/content-types/*.php` for declarative project post types and taxonomies; discovery is automatic, so no child `functions.php` bootstrap edit is needed. See `docs/content-types.md`.
 
 ## 8) Quality Baseline
 

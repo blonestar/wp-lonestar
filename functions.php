@@ -101,6 +101,7 @@ if (!function_exists('lonestar_get_theme_cache_namespace')) {
 $lonestar_core_files = array(
     'vite.php',
     'modules.php',
+    'content-types.php',
     'blocks-acf-enqueue.php',
     'blocks-state.php',
     'blocks-acf.php',
