@@ -4,13 +4,11 @@ All notable changes to the Lonestar parent theme are documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-11
+
 ### Added
 
 - Added declarative parent/child content type discovery for post types and taxonomies, with slug-based child overrides, diagnostics, and admin-only rewrite signature refreshes.
-
-### Changed
-
-- Git checkouts now skip parent release checks and block update downloads unless `LONESTAR_ALLOW_UPDATES` explicitly overrides the policy.
 
 ## [0.3.0] - 2026-07-10
 
@@ -25,6 +23,7 @@ All notable changes to the Lonestar parent theme are documented in this file.
 
 ### Changed
 
+- Git checkouts now skip parent release checks and block update downloads unless `LONESTAR_ALLOW_UPDATES` explicitly overrides the policy.
 - Replaced redundant `postcss-import` and Sass-like `postcss-nested` processing with Vite import handling and standards-based `postcss-nesting`; Tailwind is explicitly outside the framework stack.
 - Upgraded both parent and child tooling to Vite 8/Rolldown, raised the Node minimum to 22.12, and removed redundant `cross-env` usage.
 - Raised the minimum WordPress version to 7.0 and Node.js development baseline to 22.12.
