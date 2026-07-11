@@ -10,6 +10,7 @@
 
 - `functions.php` loads core entrypoints in an explicit dependency order.
 - Blocks are discovered from parent, active child, and enabled folder modules. Child block/module identities override parent identities.
+- Content types are declarative direct PHP files in `inc/content-types/` from parent then active child; child entities override parent by slug, and at `init` priority 5 all post types register before taxonomies.
 - Supported block roots are `blocks/acf`, `blocks/native`, and `blocks/php-only`.
 - Native blocks are static (JavaScript `save`) or dynamic (`render.php`). PHP-only blocks require WordPress 7, `supports.autoRegister`, a `file:` render target, and no `editorScript`.
 - ACF blocks/modules remain visible as unavailable when ACF Pro is absent; non-ACF runtime must keep working.
@@ -33,6 +34,7 @@
     ```bash
     npm ci
     npm run check
+    php tests/content-types-runtime.php
     find . -path './node_modules' -prune -o -type f -name '*.php' -print0 \
       | while IFS= read -r -d '' file; do php -l "$file" || exit 1; done
     git diff --check

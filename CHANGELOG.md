@@ -4,6 +4,10 @@ All notable changes to the Lonestar parent theme are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added declarative parent/child content type discovery for post types and taxonomies, with slug-based child overrides, diagnostics, and admin-only rewrite signature refreshes.
+
 ### Changed
 
 - Git checkouts now skip parent release checks and block update downloads unless `LONESTAR_ALLOW_UPDATES` explicitly overrides the policy.

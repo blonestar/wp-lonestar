@@ -6,6 +6,7 @@
     - `docs/README.md`
     - `docs/developer-guide.md`
     - `docs/block-types.md`
+    - `docs/content-types.md`
     - `docs/child-theme-guide.md`
     - `docs/modules-anatomy.md`
     - `docs/parent-release-updates.md`
@@ -78,6 +79,7 @@ Important:
 - `blocks/acf/` - ACF blocks
 - `blocks/native/` - native static and native dynamic blocks
 - `blocks/php-only/` - WordPress 7 PHP-only blocks
+- `inc/content-types/` - declarative parent/child post type and taxonomy definitions
 - `assets/css/`, `assets/js/` - source assets
 - `dist/` - built assets and Vite manifest
 
