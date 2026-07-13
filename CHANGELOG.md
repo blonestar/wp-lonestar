@@ -4,6 +4,10 @@ All notable changes to the Lonestar parent theme are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added a read-only Theme Settings `Content Types` overview backed by the shared runtime content-type catalog.
+
 ## [0.4.0] - 2026-07-11
 
 ### Added

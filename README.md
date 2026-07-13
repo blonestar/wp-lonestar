@@ -97,7 +97,7 @@ Important:
     - `inc/*.php`, `inc/helpers/`, `inc/shortcodes/`, `inc/walkers/`
     - `acf-json/`
 - Enabled module block roots are scanned by the same block discovery/asset pipeline as theme roots.
-- Manage module and block toggles in admin: `Appearance -> Theme Settings`.
+- Manage module and block toggles in admin: `Appearance -> Theme Settings`. The adjacent `Content Types` tab is an informational, read-only view of resolved post type and taxonomy definitions.
 - Toggle state is stored in option: `lonestar_module_toggles`.
 - Block toggle state is stored in option: `lonestar_block_toggles`.
 - Module metadata supports `Module`, `Description`, `Author`, `Version` headers in `module.<slug>.php` docblock.

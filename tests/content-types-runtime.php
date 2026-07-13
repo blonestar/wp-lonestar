@@ -62,7 +62,34 @@ reset_runtime(); $registered_post_types['project'] = array('existing' => true); 
 assert_true(true === $registered_post_types['project']['existing'] && true === $registered_taxonomies['topic']['existing'], 'already registered entities must be skipped');
 assert_true(isset($registered_post_types['case_sort']) && isset($registered_taxonomies['audience']), 'skipped existing entities must not block other registrations');
 add_filter('lonestar_content_type_definitions', function ($definitions) { $definitions['post_types']['BAD SLUG'] = array(); $definitions['taxonomies']['filtered'] = array('object_types'=>array('Bad Slug'), 'args'=>array()); return $definitions; });
-$definitions = lonestar_get_content_type_definitions(); assert_true(!isset($definitions['post_types']['BAD SLUG']) && !isset($definitions['taxonomies']['filtered']), 'filter output revalidation failed');
+$definitions = lonestar_get_content_type_definitions(true); assert_true(!isset($definitions['post_types']['BAD SLUG']) && !isset($definitions['taxonomies']['filtered']), 'filter output revalidation failed');
+$stylesheet = $base . '/child';
+reset_runtime();
+$catalog_filter_calls = 0;
+add_filter('lonestar_content_type_definitions', function ($definitions) use (&$catalog_filter_calls) { ++$catalog_filter_calls; unset($definitions['post_types']['case_sort']); $definitions['post_types']['project']['show_in_rest'] = true; $definitions['post_types']['filter_type'] = array('public' => true); return $definitions; });
+$catalog = lonestar_get_content_type_catalog(true);
+assert_true(isset($catalog['post_types']['entries']['template:project']) && isset($catalog['post_types']['entries']['stylesheet:project']), 'catalog must retain parent and child entries');
+assert_true($catalog['post_types']['entries']['template:project']['overridden'] && 'stylesheet' === $catalog['post_types']['entries']['template:project']['overriding_source'], 'catalog child override metadata failed');
+assert_true($catalog['post_types']['entries']['stylesheet:project']['filtered'] && !isset($catalog['post_types']['entries']['stylesheet:project']['declared_args']['show_in_rest']) && true === $catalog['post_types']['entries']['stylesheet:project']['effective_args']['show_in_rest'], 'catalog must preserve declared and effective filter values');
+assert_true($catalog['post_types']['entries']['template:case_sort']['filtered_out'] && !$catalog['post_types']['entries']['template:case_sort']['effective'], 'catalog filter-removed entry failed');
+assert_true(isset($catalog['post_types']['entries']['filter:filter_type']) && '' === $catalog['post_types']['entries']['filter:filter_type']['file'], 'catalog filter-only entry failed');
+assert_true(isset($catalog['post_types']['effective']['project']) && true === $catalog['post_types']['effective']['project']['show_in_rest'] && isset($catalog['post_types']['effective']['filter_type']) && !isset($catalog['post_types']['effective']['case_sort']), 'catalog effective map must equal filtered resolution');
+assert_true(!empty($catalog['diagnostics']), 'catalog must expose request-local diagnostics');
+$cached_catalog = lonestar_get_content_type_catalog(); assert_true(1 === $catalog_filter_calls && $cached_catalog['post_types']['effective'] === $catalog['post_types']['effective'], 'catalog must be built once and shared within the request');
+$definitions = lonestar_get_content_type_definitions(); assert_true(isset($definitions['post_types']['filter_type']) && !isset($definitions['post_types']['case_sort']), 'compatibility definitions API must wrap catalog effective maps');
+
+reset_runtime();
+add_filter('lonestar_content_type_definitions', function ($definitions) { unset($definitions['post_types']['project']); return $definitions; });
+add_filter('lonestar_content_type_definitions', function ($definitions) { $definitions['post_types']['project'] = array('public' => true, 'label' => 'Re-added'); return $definitions; });
+$readded_catalog = lonestar_get_content_type_catalog(true);
+assert_true(isset($readded_catalog['post_types']['effective']['project']) && 'Re-added' === $readded_catalog['post_types']['effective']['project']['label'], 'final filter output must retain a removed-then-readded file slug');
+
+reset_runtime();
+add_filter('lonestar_content_type_definitions', function ($definitions) { throw new Exception('filter fixture'); });
+$filter_threw = false;
+try { lonestar_get_content_type_catalog(true); } catch (Throwable $throwable) { $filter_threw = true; }
+assert_true($filter_threw && !isset($GLOBALS['lonestar_content_type_catalog_diagnostics']), 'catalog must restore the diagnostic collector after a throwing filter');
+reset_runtime(); lonestar_get_content_type_catalog(true);
 
 $admin = false; $can_manage = true; $options = array(); $option_updates = array(); $flushes = 0; lonestar_maybe_refresh_content_type_rewrites(); assert_true(0 === $flushes && empty($options), 'frontend must not write options');
 $empty_base = sys_get_temp_dir() . '/lonestar-content-types-empty-' . uniqid(); $empty_template = $empty_base . '/parent'; mkdir($empty_template . '/inc/content-types', 0777, true); $template = $empty_template; $stylesheet = $template;
