@@ -150,7 +150,7 @@ function lonestar_theme_blocks_category($categories, $post)
 
     $categories[] = array(
         'slug'  => 'lonestar-blocks',
-        'title' => __('Lonestar Blocks', 'lonestar-theme'),
+        'title' => __('Lonestar Blocks', 'lonestar'),
         'icon'  => 'wordpress',
     );
 

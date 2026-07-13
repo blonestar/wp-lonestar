@@ -22,6 +22,8 @@ Location:
   Parent-theme release runbook (current manual flow + target automation blueprint).
 - `git-workflow.md`  
   Practical Git workflow for solo development with optional PR flow.
+- `internationalization.md`
+  Parent text-domain, POT regeneration, and child-domain guidance.
 
 ## Audience
 
@@ -37,3 +39,4 @@ Location:
 5. `modules-anatomy.md`
 6. `parent-release-updates.md`
 7. `git-workflow.md`
+8. `internationalization.md`

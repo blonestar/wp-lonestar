@@ -58,13 +58,13 @@ function lonestar_get_parent_theme_update_policy_label()
 {
     if (defined('LONESTAR_ALLOW_UPDATES')) {
         return LONESTAR_ALLOW_UPDATES
-            ? __('Enabled by LONESTAR_ALLOW_UPDATES.', 'lonestar-theme')
-            : __('Disabled by LONESTAR_ALLOW_UPDATES.', 'lonestar-theme');
+            ? __('Enabled by LONESTAR_ALLOW_UPDATES.', 'lonestar')
+            : __('Disabled by LONESTAR_ALLOW_UPDATES.', 'lonestar');
     }
 
     return lonestar_parent_theme_updates_allowed()
-        ? __('Enabled for release installation.', 'lonestar-theme')
-        : __('Disabled for Git checkout.', 'lonestar-theme');
+        ? __('Enabled for release installation.', 'lonestar')
+        : __('Disabled for Git checkout.', 'lonestar');
 }
 
 /**
@@ -152,7 +152,7 @@ function lonestar_get_latest_parent_release_payload()
 
     $repo = trim((string) LONESTAR_UPDATE_REPO, " \t\n\r\0\x0B/");
     if (1 !== preg_match('/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/', $repo)) {
-        return lonestar_cache_parent_theme_update_error(__('Invalid GitHub repository configuration.', 'lonestar-theme'));
+        return lonestar_cache_parent_theme_update_error(__('Invalid GitHub repository configuration.', 'lonestar'));
     }
 
     $theme = wp_get_theme('lonestar');
@@ -181,23 +181,23 @@ function lonestar_get_latest_parent_release_payload()
 
     $status_code = (int) wp_remote_retrieve_response_code($response);
     if (200 !== $status_code) {
-        return lonestar_cache_parent_theme_update_error(
-            sprintf(__('GitHub release API returned HTTP %d.', 'lonestar-theme'), $status_code)
-        );
+        /* translators: %d: HTTP response status code. */
+        $status_message = sprintf(__('GitHub release API returned HTTP %d.', 'lonestar'), $status_code);
+        return lonestar_cache_parent_theme_update_error($status_message);
     }
 
     $release = json_decode((string) wp_remote_retrieve_body($response), true);
     if (!is_array($release)) {
-        return lonestar_cache_parent_theme_update_error(__('GitHub returned invalid release JSON.', 'lonestar-theme'));
+        return lonestar_cache_parent_theme_update_error(__('GitHub returned invalid release JSON.', 'lonestar'));
     }
     if (!empty($release['draft']) || !empty($release['prerelease'])) {
-        return lonestar_cache_parent_theme_update_error(__('Latest GitHub release is not stable.', 'lonestar-theme'));
+        return lonestar_cache_parent_theme_update_error(__('Latest GitHub release is not stable.', 'lonestar'));
     }
 
     $tag_name = isset($release['tag_name']) ? sanitize_text_field((string) $release['tag_name']) : '';
     $tag_pattern = '/^' . preg_quote((string) LONESTAR_UPDATE_TAG_PREFIX, '/') . '(\d+\.\d+\.\d+)$/';
     if (1 !== preg_match($tag_pattern, $tag_name, $tag_match)) {
-        return lonestar_cache_parent_theme_update_error(__('Release tag does not match lonestar-vX.Y.Z.', 'lonestar-theme'));
+        return lonestar_cache_parent_theme_update_error(__('Release tag does not match lonestar-vX.Y.Z.', 'lonestar'));
     }
 
     $version = $tag_match[1];
@@ -212,14 +212,14 @@ function lonestar_get_latest_parent_release_payload()
     }
 
     if (!is_array($matched_asset)) {
-        return lonestar_cache_parent_theme_update_error(__('Release is missing the exact Lonestar ZIP asset.', 'lonestar-theme'));
+        return lonestar_cache_parent_theme_update_error(__('Release is missing the exact Lonestar ZIP asset.', 'lonestar'));
     }
 
     $package_url = isset($matched_asset['browser_download_url']) ? esc_url_raw((string) $matched_asset['browser_download_url']) : '';
     $digest_value = isset($matched_asset['digest']) ? strtolower(trim((string) $matched_asset['digest'])) : '';
     $asset_size = isset($matched_asset['size']) ? (int) $matched_asset['size'] : 0;
     if ('' === $package_url || 1 !== preg_match('/^sha256:([a-f0-9]{64})$/', $digest_value, $digest_match) || $asset_size < 1) {
-        return lonestar_cache_parent_theme_update_error(__('Release asset URL, size, or SHA-256 digest is invalid.', 'lonestar-theme'));
+        return lonestar_cache_parent_theme_update_error(__('Release asset URL, size, or SHA-256 digest is invalid.', 'lonestar'));
     }
 
     $payload = array(
@@ -332,12 +332,12 @@ function lonestar_verify_parent_theme_update_download($reply, $package, $upgrade
     }
 
     if (!lonestar_parent_theme_updates_allowed()) {
-        return new WP_Error('lonestar_updates_disabled', __('Lonestar updates are disabled for this Git checkout.', 'lonestar-theme'));
+        return new WP_Error('lonestar_updates_disabled', __('Lonestar updates are disabled for this Git checkout.', 'lonestar'));
     }
 
     $payload = lonestar_get_latest_parent_release_payload();
     if (!is_array($payload) || (string) $payload['package_url'] !== (string) $package || empty($payload['sha256'])) {
-        return new WP_Error('lonestar_update_unverified', __('Lonestar update package does not match the verified GitHub release.', 'lonestar-theme'));
+        return new WP_Error('lonestar_update_unverified', __('Lonestar update package does not match the verified GitHub release.', 'lonestar'));
     }
 
     if (!function_exists('download_url')) {
@@ -369,12 +369,12 @@ function lonestar_verify_parent_theme_package_checksum($file_path, $expected_dig
     $file_path = wp_normalize_path((string) $file_path);
     $expected_digest = strtolower(trim((string) $expected_digest));
     if (!is_readable($file_path) || 1 !== preg_match('/^[a-f0-9]{64}$/', $expected_digest)) {
-        return new WP_Error('lonestar_update_checksum_invalid', __('Lonestar update checksum metadata is invalid.', 'lonestar-theme'));
+        return new WP_Error('lonestar_update_checksum_invalid', __('Lonestar update checksum metadata is invalid.', 'lonestar'));
     }
 
     $actual_digest = hash_file('sha256', $file_path);
     if (!is_string($actual_digest) || !hash_equals($expected_digest, strtolower($actual_digest))) {
-        return new WP_Error('lonestar_update_checksum_mismatch', __('Lonestar update failed SHA-256 verification.', 'lonestar-theme'));
+        return new WP_Error('lonestar_update_checksum_mismatch', __('Lonestar update failed SHA-256 verification.', 'lonestar'));
     }
 
     return true;
@@ -390,15 +390,15 @@ function lonestar_add_parent_update_site_health_info($debug_info)
 {
     $status = lonestar_get_cached_parent_theme_update_status();
     $debug_info['lonestar-update'] = array(
-        'label'  => __('Lonestar parent update', 'lonestar-theme'),
+        'label'  => __('Lonestar parent update', 'lonestar'),
         'fields' => array(
-            'installed_version' => array('label' => __('Installed version', 'lonestar-theme'), 'value' => (string) wp_get_theme('lonestar')->get('Version')),
-            'update_policy'     => array('label' => __('Update policy', 'lonestar-theme'), 'value' => lonestar_get_parent_theme_update_policy_label()),
-            'latest_version'    => array('label' => __('Latest checked version', 'lonestar-theme'), 'value' => (string) ($status['version'] ?? __('Unknown', 'lonestar-theme'))),
-            'checked_at'        => array('label' => __('Last check (UTC)', 'lonestar-theme'), 'value' => (string) ($status['checked_at'] ?? __('Not checked', 'lonestar-theme'))),
-            'release_url'       => array('label' => __('Release URL', 'lonestar-theme'), 'value' => (string) ($status['release_url'] ?? '')),
-            'sha256'            => array('label' => __('SHA-256', 'lonestar-theme'), 'value' => (string) ($status['sha256'] ?? '')),
-            'error'             => array('label' => __('Last error', 'lonestar-theme'), 'value' => (string) ($status['error'] ?? '')),
+            'installed_version' => array('label' => __('Installed version', 'lonestar'), 'value' => (string) wp_get_theme('lonestar')->get('Version')),
+            'update_policy'     => array('label' => __('Update policy', 'lonestar'), 'value' => lonestar_get_parent_theme_update_policy_label()),
+            'latest_version'    => array('label' => __('Latest checked version', 'lonestar'), 'value' => (string) ($status['version'] ?? __('Unknown', 'lonestar'))),
+            'checked_at'        => array('label' => __('Last check (UTC)', 'lonestar'), 'value' => (string) ($status['checked_at'] ?? __('Not checked', 'lonestar'))),
+            'release_url'       => array('label' => __('Release URL', 'lonestar'), 'value' => (string) ($status['release_url'] ?? '')),
+            'sha256'            => array('label' => __('SHA-256', 'lonestar'), 'value' => (string) ($status['sha256'] ?? '')),
+            'error'             => array('label' => __('Last error', 'lonestar'), 'value' => (string) ($status['error'] ?? '')),
         ),
     );
 
@@ -413,13 +413,13 @@ function lonestar_add_parent_update_site_health_info($debug_info)
 function lonestar_render_parent_update_status()
 {
     $status = lonestar_get_cached_parent_theme_update_status();
-    echo '<h3 style="margin-top:20px;">' . esc_html__('Parent Update Status', 'lonestar-theme') . '</h3>';
+    echo '<h3 style="margin-top:20px;">' . esc_html__('Parent Update Status', 'lonestar') . '</h3>';
     echo '<table class="widefat striped" style="max-width:1200px;"><tbody>';
-    echo '<tr><th style="width:260px;">' . esc_html__('Installed version', 'lonestar-theme') . '</th><td><code>' . esc_html((string) wp_get_theme('lonestar')->get('Version')) . '</code></td></tr>';
-    echo '<tr><th>' . esc_html__('Update policy', 'lonestar-theme') . '</th><td>' . esc_html(lonestar_get_parent_theme_update_policy_label()) . '</td></tr>';
-    echo '<tr><th>' . esc_html__('Latest checked version', 'lonestar-theme') . '</th><td>' . esc_html((string) ($status['version'] ?? __('Unknown', 'lonestar-theme'))) . '</td></tr>';
-    echo '<tr><th>' . esc_html__('Last check (UTC)', 'lonestar-theme') . '</th><td>' . esc_html((string) ($status['checked_at'] ?? __('Not checked', 'lonestar-theme'))) . '</td></tr>';
-    echo '<tr><th>' . esc_html__('SHA-256', 'lonestar-theme') . '</th><td><code>' . esc_html((string) ($status['sha256'] ?? '')) . '</code></td></tr>';
-    echo '<tr><th>' . esc_html__('Status', 'lonestar-theme') . '</th><td>' . esc_html(!empty($status['success']) ? __('Verified release metadata available.', 'lonestar-theme') : (string) ($status['error'] ?? __('No cached check yet.', 'lonestar-theme'))) . '</td></tr>';
+    echo '<tr><th style="width:260px;">' . esc_html__('Installed version', 'lonestar') . '</th><td><code>' . esc_html((string) wp_get_theme('lonestar')->get('Version')) . '</code></td></tr>';
+    echo '<tr><th>' . esc_html__('Update policy', 'lonestar') . '</th><td>' . esc_html(lonestar_get_parent_theme_update_policy_label()) . '</td></tr>';
+    echo '<tr><th>' . esc_html__('Latest checked version', 'lonestar') . '</th><td>' . esc_html((string) ($status['version'] ?? __('Unknown', 'lonestar'))) . '</td></tr>';
+    echo '<tr><th>' . esc_html__('Last check (UTC)', 'lonestar') . '</th><td>' . esc_html((string) ($status['checked_at'] ?? __('Not checked', 'lonestar'))) . '</td></tr>';
+    echo '<tr><th>' . esc_html__('SHA-256', 'lonestar') . '</th><td><code>' . esc_html((string) ($status['sha256'] ?? '')) . '</code></td></tr>';
+    echo '<tr><th>' . esc_html__('Status', 'lonestar') . '</th><td>' . esc_html(!empty($status['success']) ? __('Verified release metadata available.', 'lonestar') : (string) ($status['error'] ?? __('No cached check yet.', 'lonestar'))) . '</td></tr>';
     echo '</tbody></table>';
 }

@@ -44,10 +44,10 @@ function modules_get_source_label($source)
 {
     $source = modules_normalize_source($source);
     if ('stylesheet' === $source) {
-        return __('Child Theme', 'lonestar-theme');
+        return __('Child Theme', 'lonestar');
     }
 
-    return __('Parent Theme', 'lonestar-theme');
+    return __('Parent Theme', 'lonestar');
 }
 
 /**
@@ -330,7 +330,7 @@ function modules_get_module_catalog()
 
                 $module_directory = untrailingslashit(wp_normalize_path(dirname($module_file)));
                 $entry_file = wp_normalize_path($module_file);
-                $resolved_meta = modules_resolve_module_metadata($slug, $module_directory, $entry_file, 'file');
+                $resolved_meta = modules_resolve_module_metadata($slug, $module_directory, $entry_file, 'file', $source);
                 $requirements = modules_get_module_requirements($module_directory, $entry_file, 'file');
                 $availability = modules_get_module_availability($requirements);
 
@@ -343,7 +343,7 @@ function modules_get_module_catalog()
                     'author'      => isset($resolved_meta['author']) ? (string) $resolved_meta['author'] : '',
                     'source'      => $source,
                     'source_label'=> modules_get_source_label($source),
-                    'admin_links' => modules_get_module_admin_links($slug, $module_directory, $entry_file, 'file'),
+                    'admin_links' => modules_get_module_admin_links($slug, $module_directory, $entry_file, 'file', $source),
                     'requires'    => $requirements,
                     'available'   => $availability['available'],
                     'status'      => $availability['status'],
@@ -376,7 +376,7 @@ function modules_get_module_catalog()
                 }
 
                 // Folder module takes precedence over flat module with the same key (source + slug).
-                $resolved_meta = modules_resolve_module_metadata($slug, $module_directory, $entry_file, 'folder');
+                $resolved_meta = modules_resolve_module_metadata($slug, $module_directory, $entry_file, 'folder', $source);
                 $requirements = modules_get_module_requirements($module_directory, $entry_file, 'folder');
                 $availability = modules_get_module_availability($requirements);
                 $catalog[$module_key] = array(
@@ -388,7 +388,7 @@ function modules_get_module_catalog()
                     'author'      => isset($resolved_meta['author']) ? (string) $resolved_meta['author'] : '',
                     'source'      => $source,
                     'source_label'=> modules_get_source_label($source),
-                    'admin_links' => modules_get_module_admin_links($slug, $module_directory, $entry_file, 'folder'),
+                    'admin_links' => modules_get_module_admin_links($slug, $module_directory, $entry_file, 'folder', $source),
                     'requires'    => $requirements,
                     'available'   => $availability['available'],
                     'status'      => $availability['status'],
@@ -461,9 +461,10 @@ function modules_module_label_from_slug($slug)
  * @param string $module_directory Module directory.
  * @param string $entry_file Module entry file path.
  * @param string $mode Module mode (file|folder).
+ * @param string $source Theme source (template|stylesheet).
  * @return array{label:string,description:string,version:string,author:string}
  */
-function modules_resolve_module_metadata($slug, $module_directory, $entry_file = '', $mode = 'folder')
+function modules_resolve_module_metadata($slug, $module_directory, $entry_file = '', $mode = 'folder', $source = 'template')
 {
     $slug = sanitize_key((string) $slug);
     $label = modules_module_label_from_slug($slug);
@@ -474,10 +475,11 @@ function modules_resolve_module_metadata($slug, $module_directory, $entry_file =
 
     $json_meta = modules_get_module_json_metadata($module_directory, $entry_file, $mode);
     $doc_meta = modules_extract_module_docblock_metadata($entry_file);
+    $textdomain = modules_get_module_metadata_textdomain($json_meta, $source);
 
     $label_candidates = array(
-        isset($json_meta['name']) ? (string) $json_meta['name'] : '',
-        isset($json_meta['title']) ? (string) $json_meta['title'] : '',
+        isset($json_meta['name']) ? modules_translate_module_metadata_value($json_meta['name'], $textdomain) : '',
+        isset($json_meta['title']) ? modules_translate_module_metadata_value($json_meta['title'], $textdomain) : '',
         isset($doc_meta['module']) ? (string) $doc_meta['module'] : '',
         isset($doc_meta['name']) ? (string) $doc_meta['name'] : '',
     );
@@ -490,7 +492,7 @@ function modules_resolve_module_metadata($slug, $module_directory, $entry_file =
     }
 
     $description_candidates = array(
-        isset($json_meta['description']) ? (string) $json_meta['description'] : '',
+        isset($json_meta['description']) ? modules_translate_module_metadata_value($json_meta['description'], $textdomain) : '',
         isset($doc_meta['description']) ? (string) $doc_meta['description'] : '',
         modules_extract_module_readme_description($module_directory . '/README.md'),
         modules_extract_module_docblock_summary($entry_file),
@@ -504,7 +506,7 @@ function modules_resolve_module_metadata($slug, $module_directory, $entry_file =
     }
 
     if ('' === $description) {
-        $description = sprintf(__('Module: %s', 'lonestar-theme'), $label);
+        $description = sprintf(__('Module: %s', 'lonestar'), $label);
     }
 
     $version_candidates = array(
@@ -537,6 +539,42 @@ function modules_resolve_module_metadata($slug, $module_directory, $entry_file =
         'version'     => $version,
         'author'      => $author,
     );
+}
+
+/**
+ * Resolve the translation domain for declarative module metadata.
+ *
+ * Parent metadata defaults to the framework domain. Child metadata remains
+ * literal unless its owner explicitly declares a textdomain in module.json.
+ *
+ * @param array  $metadata Parsed module metadata.
+ * @param string $source Theme source.
+ * @return string
+ */
+function modules_get_module_metadata_textdomain($metadata, $source)
+{
+    if (is_array($metadata) && isset($metadata['textdomain']) && is_string($metadata['textdomain'])) {
+        return sanitize_key($metadata['textdomain']);
+    }
+
+    return ('template' === modules_normalize_source($source)) ? 'lonestar' : '';
+}
+
+/**
+ * Translate an extractable declarative metadata value when it has a domain.
+ *
+ * @param mixed  $value Metadata value.
+ * @param string $textdomain Translation domain.
+ * @return string
+ */
+function modules_translate_module_metadata_value($value, $textdomain)
+{
+    $value = sanitize_text_field((string) $value);
+    if ('' === $value || '' === $textdomain) {
+        return $value;
+    }
+
+    return translate($value, $textdomain);
 }
 
 /**
@@ -617,8 +655,8 @@ function modules_get_module_availability($requirements)
 {
     $missing = array();
     $labels = array(
-        'acf'           => __('ACF Pro', 'lonestar-theme'),
-        'gravity-forms' => __('Gravity Forms', 'lonestar-theme'),
+        'acf'           => __('ACF Pro', 'lonestar'),
+        'gravity-forms' => __('Gravity Forms', 'lonestar'),
     );
 
     foreach (is_array($requirements) ? $requirements : array() as $requirement) {
@@ -640,11 +678,14 @@ function modules_get_module_availability($requirements)
         }
     }
 
+    /* translators: %s: Comma-separated list of missing module requirements. */
+    $requires_message = sprintf(__('Requires: %s.', 'lonestar'), implode(', ', $missing));
+
     return array(
         'available' => empty($missing),
         'status'    => empty($missing)
             ? ''
-            : sprintf(__('Requires: %s.', 'lonestar-theme'), implode(', ', $missing)),
+            : $requires_message,
     );
 }
 
@@ -808,7 +849,7 @@ function modules_get_module_description($slug, $module_directory, $entry_file = 
     $description = is_string($description) ? trim($description) : '';
 
     if ('' === $description) {
-        return sprintf(__('Module: %s', 'lonestar-theme'), modules_module_label_from_slug($slug));
+        return sprintf(__('Module: %s', 'lonestar'), modules_module_label_from_slug($slug));
     }
 
     return sanitize_text_field($description);
@@ -911,7 +952,7 @@ function modules_extract_module_docblock_summary($file_path)
  * @param string $mode Module mode (file|folder).
  * @return array<int,array{label:string,url:string}>
  */
-function modules_get_module_admin_links($slug, $module_directory, $entry_file = '', $mode = 'folder')
+function modules_get_module_admin_links($slug, $module_directory, $entry_file = '', $mode = 'folder', $source = 'template')
 {
     unset($slug);
 
@@ -947,12 +988,15 @@ function modules_get_module_admin_links($slug, $module_directory, $entry_file = 
             continue;
         }
 
+        $textdomain = modules_get_module_metadata_textdomain($json, $source);
         foreach ($json['admin_links'] as $item) {
             if (!is_array($item)) {
                 continue;
             }
 
-            $label = isset($item['label']) ? sanitize_text_field((string) $item['label']) : __('Settings', 'lonestar-theme');
+            $label = isset($item['label'])
+                ? modules_translate_module_metadata_value($item['label'], $textdomain)
+                : __('Settings', 'lonestar');
             $page_slug = isset($item['page']) ? sanitize_key((string) $item['page']) : '';
             $raw_url = isset($item['url']) ? trim((string) $item['url']) : '';
 
@@ -1028,7 +1072,7 @@ function modules_get_module_admin_links($slug, $module_directory, $entry_file = 
                 }
 
                 if ('' !== $menu_slug) {
-                    $label = '' !== $menu_title ? $menu_title : ('' !== $page_title ? $page_title : __('Settings', 'lonestar-theme'));
+                    $label = '' !== $menu_title ? $menu_title : ('' !== $page_title ? $page_title : __('Settings', 'lonestar'));
                     modules_add_module_admin_page_link($links, $seen_pages, $menu_slug, $label);
                 }
             }
@@ -1040,7 +1084,7 @@ function modules_get_module_admin_links($slug, $module_directory, $entry_file = 
             foreach ($pages as $page_slug) {
                 $page_slug = sanitize_key((string) $page_slug);
                 if ('' !== $page_slug) {
-                    modules_add_module_admin_page_link($links, $seen_pages, $page_slug, __('Settings', 'lonestar-theme'));
+                    modules_add_module_admin_page_link($links, $seen_pages, $page_slug, __('Settings', 'lonestar'));
                 }
             }
         }
@@ -1071,7 +1115,7 @@ function modules_add_module_admin_page_link(&$links, &$seen_pages, $page_slug, $
 
     $label = sanitize_text_field((string) $label);
     if ('' === $label) {
-        $label = __('Settings', 'lonestar-theme');
+        $label = __('Settings', 'lonestar');
     }
 
     $url = add_query_arg('page', $page_slug, admin_url('admin.php'));

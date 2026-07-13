@@ -164,7 +164,7 @@ function lonestar_validate_block_contract($type, $variant, $metadata, $block_dir
     $block_directory = untrailingslashit(wp_normalize_path((string) $block_directory));
 
     if (empty($metadata['name']) || !is_string($metadata['name']) || 1 !== preg_match('/^[a-z0-9-]+\/[a-z0-9-]+$/', $metadata['name'])) {
-        $errors[] = __('Block name must use the namespace/slug format.', 'lonestar-theme');
+        $errors[] = __('Block name must use the namespace/slug format.', 'lonestar');
     }
 
     if ('acf' === $type) {
@@ -172,16 +172,16 @@ function lonestar_validate_block_contract($type, $variant, $metadata, $block_dir
             ? ltrim($metadata['acf']['renderTemplate'], './')
             : '';
         if ('' === $render_template || !is_readable($block_directory . '/' . $render_template)) {
-            $errors[] = __('ACF blocks require a readable acf.renderTemplate file.', 'lonestar-theme');
+            $errors[] = __('ACF blocks require a readable acf.renderTemplate file.', 'lonestar');
         }
     } elseif ('native' === $type) {
         if (empty($metadata['editorScript'])) {
-            $errors[] = __('Native blocks require an editorScript.', 'lonestar-theme');
+            $errors[] = __('Native blocks require an editorScript.', 'lonestar');
         }
         if ('native-dynamic' === $variant) {
             $render_path = $block_directory . '/render.php';
             if (!is_readable($render_path)) {
-                $errors[] = __('Native dynamic blocks require a readable render.php file.', 'lonestar-theme');
+                $errors[] = __('Native dynamic blocks require a readable render.php file.', 'lonestar');
             }
         }
     } elseif ('php-only' === $type) {
@@ -190,16 +190,16 @@ function lonestar_validate_block_contract($type, $variant, $metadata, $block_dir
         $render_path = 0 === strpos($render, 'file:') ? $block_directory . '/' . ltrim(substr($render, 5), './') : '';
 
         if (!$auto_register) {
-            $errors[] = __('PHP-only blocks require supports.autoRegister=true.', 'lonestar-theme');
+            $errors[] = __('PHP-only blocks require supports.autoRegister=true.', 'lonestar');
         }
         if ('' === $render_path || !is_readable($render_path)) {
-            $errors[] = __('PHP-only blocks require a readable file: render target.', 'lonestar-theme');
+            $errors[] = __('PHP-only blocks require a readable file: render target.', 'lonestar');
         }
         if (!empty($metadata['editorScript'])) {
-            $errors[] = __('PHP-only blocks must not declare editorScript.', 'lonestar-theme');
+            $errors[] = __('PHP-only blocks must not declare editorScript.', 'lonestar');
         }
     } else {
-        $errors[] = __('Block is outside a supported block root.', 'lonestar-theme');
+        $errors[] = __('Block is outside a supported block root.', 'lonestar');
     }
 
     return $errors;
@@ -214,14 +214,14 @@ function lonestar_validate_block_contract($type, $variant, $metadata, $block_dir
 function lonestar_get_block_variant_label($variant)
 {
     $labels = array(
-        'acf'            => __('ACF', 'lonestar-theme'),
-        'native-static'  => __('Native static', 'lonestar-theme'),
-        'native-dynamic' => __('Native dynamic', 'lonestar-theme'),
-        'php-only'       => __('PHP-only', 'lonestar-theme'),
+        'acf'            => __('ACF', 'lonestar'),
+        'native-static'  => __('Native static', 'lonestar'),
+        'native-dynamic' => __('Native dynamic', 'lonestar'),
+        'php-only'       => __('PHP-only', 'lonestar'),
     );
     $variant = sanitize_key((string) $variant);
 
-    return isset($labels[$variant]) ? $labels[$variant] : __('Unknown', 'lonestar-theme');
+    return isset($labels[$variant]) ? $labels[$variant] : __('Unknown', 'lonestar');
 }
 
 /**
@@ -489,10 +489,10 @@ function lonestar_get_block_catalog()
         $status_message = '';
         if ('acf' === $type && !lonestar_is_acf_block_runtime_available()) {
             $available = false;
-            $status_message = __('Requires ACF Pro.', 'lonestar-theme');
+            $status_message = __('Requires ACF Pro.', 'lonestar');
         } elseif ('php-only' === $type && version_compare((string) get_bloginfo('version'), '7.0', '<')) {
             $available = false;
-            $status_message = __('Requires WordPress 7.0 or newer.', 'lonestar-theme');
+            $status_message = __('Requires WordPress 7.0 or newer.', 'lonestar');
         } elseif (!empty($validation_errors)) {
             $status_message = implode(' ', $validation_errors);
         }

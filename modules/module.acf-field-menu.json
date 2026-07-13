@@ -1,5 +1,6 @@
 {
   "name": "ACF Menu Selector",
   "description": "Adds an ACF field for selecting a registered WordPress menu.",
+  "textdomain": "lonestar",
   "requires": ["acf"]
 }

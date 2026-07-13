@@ -53,7 +53,7 @@ add_filter('acf/location/rule_match/taxonomy', 'lonestar_match_taxonomy_acf', 10
 if (!function_exists('lonestar_reusable_blocks_ui')) {
     function lonestar_reusable_blocks_ui()
     {
-        add_submenu_page('themes.php', __('Reusable Blocks', 'lonestar-theme'), __('Reusable Blocks', 'lonestar-theme'), 'edit_posts', 'edit.php?post_type=wp_block', '', 22);
+        add_submenu_page('themes.php', __('Reusable Blocks', 'lonestar'), __('Reusable Blocks', 'lonestar'), 'edit_posts', 'edit.php?post_type=wp_block', '', 22);
     }
     add_action('admin_menu', 'lonestar_reusable_blocks_ui');
 }

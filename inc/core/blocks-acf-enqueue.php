@@ -620,6 +620,44 @@ function lonestar_get_block_script_dependencies($metadata)
 }
 
 /**
+ * Resolve a block script text domain without claiming child-owned strings.
+ *
+ * @param array  $metadata Parsed block metadata.
+ * @param string $source_context Theme source context.
+ * @return string
+ */
+function lonestar_get_block_script_textdomain($metadata, $source_context)
+{
+	if (is_array($metadata) && isset($metadata['textdomain']) && is_string($metadata['textdomain'])) {
+		return sanitize_key($metadata['textdomain']);
+	}
+
+	return ('template' === $source_context) ? 'lonestar' : '';
+}
+
+/**
+ * Register translations for a block script after its script handle exists.
+ *
+ * @param string $handle Script handle.
+ * @param string $textdomain Script text domain.
+ * @param string $source_context Theme source context.
+ * @return void
+ */
+function lonestar_register_block_script_translations($handle, $textdomain, $source_context)
+{
+	if ('' === $handle || '' === $textdomain || !function_exists('wp_set_script_translations')) {
+		return;
+	}
+
+	$contexts = lonestar_get_theme_source_contexts();
+	$languages_path = isset($contexts[$source_context]['path'])
+		? trailingslashit($contexts[$source_context]['path']) . 'languages'
+		: trailingslashit(get_template_directory()) . 'languages';
+
+	wp_set_script_translations($handle, $textdomain, $languages_path);
+}
+
+/**
  * Build block asset registration map from discovered blocks.
  *
  * @param array $block_directories List of block directories.
@@ -665,10 +703,13 @@ function lonestar_build_block_asset_registration_map($block_directories)
 		$separator_pos = strrpos($raw_handle, '/');
 		$fallback_js_handle = (false !== $separator_pos) ? substr($raw_handle, $separator_pos + 1) : $raw_handle;
 
+		$source_context = lonestar_get_source_context_key_for_path($block_directory);
 		$map[] = array(
 			'css_handles' => lonestar_collect_metadata_handles($json_contents, array('style', 'editorStyle', 'viewStyle'), $fallback_css_handle),
 			'js_handles'  => lonestar_collect_metadata_handles($json_contents, array('script', 'editorScript', 'viewScript', 'viewScriptModule'), $fallback_js_handle),
 			'js_dependencies' => lonestar_get_block_script_dependencies($json_contents),
+			'js_textdomain'   => lonestar_get_block_script_textdomain($json_contents, $source_context),
+			'source_context'  => $source_context,
 			'js_source'   => lonestar_get_block_source_file($block_directory, 'js'),
 			'css_source'  => lonestar_get_block_source_file($block_directory, 'css'),
 		);
@@ -720,6 +761,8 @@ function lonestar_register_block_files()
 		$css_source = isset($asset_map['css_source']) && is_string($asset_map['css_source']) ? $asset_map['css_source'] : '';
 		$js_handles = isset($asset_map['js_handles']) && is_array($asset_map['js_handles']) ? $asset_map['js_handles'] : array();
 		$js_dependencies = isset($asset_map['js_dependencies']) && is_array($asset_map['js_dependencies']) ? $asset_map['js_dependencies'] : array();
+		$js_textdomain = isset($asset_map['js_textdomain']) ? sanitize_key((string) $asset_map['js_textdomain']) : '';
+		$source_context = isset($asset_map['source_context']) ? sanitize_key((string) $asset_map['source_context']) : 'template';
 		$css_handles = isset($asset_map['css_handles']) && is_array($asset_map['css_handles']) ? $asset_map['css_handles'] : array();
 
 		if ($is_vite_dev_mode) {
@@ -732,6 +775,7 @@ function lonestar_register_block_files()
 						}
 						wp_register_script($js_handle, $js_url, $js_dependencies, null, true);
 						wp_script_add_data($js_handle, 'type', 'module');
+						lonestar_register_block_script_translations($js_handle, $js_textdomain, $source_context);
 					}
 				}
 			}
@@ -783,6 +827,7 @@ function lonestar_register_block_files()
 					}
 					wp_register_script($js_handle, $js_file_path, $js_dependencies, $js_file_version, true);
 					wp_script_add_data($js_handle, 'type', 'module');
+					lonestar_register_block_script_translations($js_handle, $js_textdomain, $source_context);
 				}
 			}
 		}

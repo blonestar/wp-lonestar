@@ -52,13 +52,13 @@ function lonestar_module_register_gtm_settings_tab($tabs)
         $updated_tabs[$tab_key] = $tab_label;
 
         if ('blocks' === sanitize_key((string) $tab_key)) {
-            $updated_tabs['gtm'] = __('GTM', 'lonestar-theme');
+            $updated_tabs['gtm'] = __('GTM', 'lonestar');
             $is_inserted = true;
         }
     }
 
     if (!$is_inserted) {
-        $updated_tabs['gtm'] = __('GTM', 'lonestar-theme');
+        $updated_tabs['gtm'] = __('GTM', 'lonestar');
     }
 
     return $updated_tabs;
@@ -217,30 +217,30 @@ function lonestar_module_render_gtm_settings_tab($current_tab)
         delete_transient($notice_key);
     }
 
-    echo '<h2>' . esc_html__('Google Tag Manager', 'lonestar-theme') . '</h2>';
-    echo '<p>' . esc_html__('Configure GTM output for wp_head and wp_body_open hooks.', 'lonestar-theme') . '</p>';
+    echo '<h2>' . esc_html__('Google Tag Manager', 'lonestar') . '</h2>';
+    echo '<p>' . esc_html__('Configure GTM output for wp_head and wp_body_open hooks.', 'lonestar') . '</p>';
 
     if ($is_saved) {
-        echo '<div class="notice notice-success inline"><p>' . esc_html__('GTM settings updated.', 'lonestar-theme') . '</p></div>';
+        echo '<div class="notice notice-success inline"><p>' . esc_html__('GTM settings updated.', 'lonestar') . '</p></div>';
     }
 
     echo '<table class="form-table" role="presentation"><tbody>';
 
     echo '<tr>';
-    echo '<th scope="row">' . esc_html__('Enable GTM', 'lonestar-theme') . '</th>';
+    echo '<th scope="row">' . esc_html__('Enable GTM', 'lonestar') . '</th>';
     echo '<td>';
     echo '<label for="lonestar-gtm-enabled">';
     echo '<input id="lonestar-gtm-enabled" type="checkbox" name="lonestar_gtm[enabled]" value="1"' . checked($is_enabled, true, false) . ' />';
-    echo ' ' . esc_html__('Output GTM script and noscript snippets.', 'lonestar-theme');
+    echo ' ' . esc_html__('Output GTM script and noscript snippets.', 'lonestar');
     echo '</label>';
     echo '</td>';
     echo '</tr>';
 
     echo '<tr>';
-    echo '<th scope="row"><label for="lonestar-gtm-container-id">' . esc_html__('GTM Container ID', 'lonestar-theme') . '</label></th>';
+    echo '<th scope="row"><label for="lonestar-gtm-container-id">' . esc_html__('GTM Container ID', 'lonestar') . '</label></th>';
     echo '<td>';
     echo '<input id="lonestar-gtm-container-id" type="text" class="regular-text" name="lonestar_gtm[container_id]" value="' . esc_attr($container_id) . '" placeholder="GTM-XXXXXX" />';
-    echo '<p class="description">' . esc_html__('Example: GTM-ABC1234. Prefix is optional and normalized automatically. GTM remains disabled when ID is empty or invalid.', 'lonestar-theme') . '</p>';
+    echo '<p class="description">' . esc_html__('Example: GTM-ABC1234. Prefix is optional and normalized automatically. GTM remains disabled when ID is empty or invalid.', 'lonestar') . '</p>';
     echo '</td>';
     echo '</tr>';
 

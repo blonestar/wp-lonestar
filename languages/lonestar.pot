@@ -1,0 +1,831 @@
+# Copyright (C) 2026 Bojan Ab
+# This file is distributed under the GNU General Public License v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Lonestar Framework 0.4.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/theme/wp-lonestar\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: lonestar\n"
+
+#. Theme Name of the theme
+#: style.css
+msgid "Lonestar Framework"
+msgstr ""
+
+#. Theme URI of the theme
+#: style.css
+msgid "https://github.com/blonestar/wp-lonestar"
+msgstr ""
+
+#. Description of the theme
+#: style.css
+msgid "Reusable block-first parent framework theme for site-specific child themes."
+msgstr ""
+
+#. Author of the theme
+#: style.css
+msgid "Bojan Ab"
+msgstr ""
+
+#. Author URI of the theme
+#: style.css
+msgid "https://github.com/blonestar"
+msgstr ""
+
+#: blocks/acf/example-acf/fields.php:9
+msgid "Lonestar Example ACF"
+msgstr ""
+
+#: blocks/acf/example-acf/fields.php:13
+msgid "Title"
+msgstr ""
+
+#: blocks/acf/example-acf/fields.php:19
+msgid "Text"
+msgstr ""
+
+#: blocks/acf/example-acf/render.php:11
+msgid "Example ACF Block"
+msgstr ""
+
+#: blocks/acf/example-acf/render.php:15
+msgid "This starter block is powered by its bundled local ACF field group."
+msgstr ""
+
+#: blocks/native/example-native/render.php:18
+msgid "Example Native Block"
+msgstr ""
+
+#: blocks/native/example-native/render.php:22
+msgid "This block is rendered by PHP and edited in the block editor."
+msgstr ""
+
+#: blocks/php-only/example-php-only/render.php:19
+msgid "Example PHP-only Block"
+msgstr ""
+
+#: blocks/php-only/example-php-only/render.php:22
+msgid "This block is registered, edited, and rendered without block JavaScript."
+msgstr ""
+
+#: inc/core/blocks-acf.php:153
+msgid "Lonestar Blocks"
+msgstr ""
+
+#: inc/core/blocks-state.php:167
+msgid "Block name must use the namespace/slug format."
+msgstr ""
+
+#: inc/core/blocks-state.php:175
+msgid "ACF blocks require a readable acf.renderTemplate file."
+msgstr ""
+
+#: inc/core/blocks-state.php:179
+msgid "Native blocks require an editorScript."
+msgstr ""
+
+#: inc/core/blocks-state.php:184
+msgid "Native dynamic blocks require a readable render.php file."
+msgstr ""
+
+#: inc/core/blocks-state.php:193
+msgid "PHP-only blocks require supports.autoRegister=true."
+msgstr ""
+
+#: inc/core/blocks-state.php:196
+msgid "PHP-only blocks require a readable file: render target."
+msgstr ""
+
+#: inc/core/blocks-state.php:199
+msgid "PHP-only blocks must not declare editorScript."
+msgstr ""
+
+#: inc/core/blocks-state.php:202
+msgid "Block is outside a supported block root."
+msgstr ""
+
+#: inc/core/blocks-state.php:217
+msgid "ACF"
+msgstr ""
+
+#: inc/core/blocks-state.php:218
+msgid "Native static"
+msgstr ""
+
+#: inc/core/blocks-state.php:219
+msgid "Native dynamic"
+msgstr ""
+
+#: inc/core/blocks-state.php:220
+msgid "PHP-only"
+msgstr ""
+
+#: inc/core/blocks-state.php:224
+#: inc/core/modules_admin.php:790
+#: inc/core/theme-updates.php:397
+#: inc/core/theme-updates.php:420
+msgid "Unknown"
+msgstr ""
+
+#: inc/core/blocks-state.php:492
+msgid "Requires ACF Pro."
+msgstr ""
+
+#: inc/core/blocks-state.php:495
+msgid "Requires WordPress 7.0 or newer."
+msgstr ""
+
+#: inc/core/module-metadata-i18n.php:19
+msgid "ACF Number with Unit"
+msgstr ""
+
+#: inc/core/module-metadata-i18n.php:20
+msgid "Adds a reusable ACF number field with an associated CSS unit."
+msgstr ""
+
+#: inc/core/module-metadata-i18n.php:21
+msgid "ACF Menu Selector"
+msgstr ""
+
+#: inc/core/module-metadata-i18n.php:22
+msgid "Adds an ACF field for selecting a registered WordPress menu."
+msgstr ""
+
+#: inc/core/module-metadata-i18n.php:23
+msgid "ACF Gravity Forms Selector"
+msgstr ""
+
+#: inc/core/module-metadata-i18n.php:24
+msgid "Adds an ACF field for selecting an active Gravity Forms form."
+msgstr ""
+
+#: inc/core/module-metadata-i18n.php:25
+#: modules/gtm/inc/inc.settings.php:55
+#: modules/gtm/inc/inc.settings.php:61
+msgid "GTM"
+msgstr ""
+
+#: inc/core/module-metadata-i18n.php:26
+msgid "Outputs Google Tag Manager snippets with native Theme Settings configuration."
+msgstr ""
+
+#: inc/core/module-metadata-i18n.php:27
+msgid "GTM Settings"
+msgstr ""
+
+#: inc/core/modules_admin.php:39
+#: inc/core/modules_admin.php:40
+#: inc/core/modules_admin.php:1018
+msgid "Theme Settings"
+msgstr ""
+
+#: inc/core/modules_admin.php:75
+#: inc/core/modules_admin.php:90
+#: inc/core/modules_admin.php:111
+#: inc/core/modules_admin.php:1052
+msgid "Modules"
+msgstr ""
+
+#: inc/core/modules_admin.php:76
+#: inc/core/modules_admin.php:91
+#: inc/core/modules_admin.php:112
+#: inc/core/modules_admin.php:1056
+msgid "Blocks"
+msgstr ""
+
+#: inc/core/modules_admin.php:77
+#: inc/core/modules_admin.php:92
+#: inc/core/modules_admin.php:113
+msgid "Content Types"
+msgstr ""
+
+#: inc/core/modules_admin.php:78
+#: inc/core/modules_admin.php:93
+#: inc/core/modules_admin.php:114
+#: inc/core/modules_admin.php:254
+msgid "Changelog"
+msgstr ""
+
+#: inc/core/modules_admin.php:79
+#: inc/core/modules_admin.php:94
+#: inc/core/modules_admin.php:115
+#: inc/core/modules_admin.php:356
+msgid "About"
+msgstr ""
+
+#: inc/core/modules_admin.php:255
+msgid "This tab shows CHANGELOG files for active parent and child themes."
+msgstr ""
+
+#. translators: %s: Changelog modification date and time.
+#: inc/core/modules_admin.php:271
+#, php-format
+msgid "Last updated: %s"
+msgstr ""
+
+#: inc/core/modules_admin.php:276
+msgid "CHANGELOG.md not found for this theme source."
+msgstr ""
+
+#: inc/core/modules_admin.php:280
+msgid "CHANGELOG.md is not readable."
+msgstr ""
+
+#: inc/core/modules_admin.php:285
+msgid "CHANGELOG.md is currently empty."
+msgstr ""
+
+#: inc/core/modules_admin.php:357
+msgid "Overview of active theme stack and framework context."
+msgstr ""
+
+#: inc/core/modules_admin.php:359
+msgid "Theme Mode:"
+msgstr ""
+
+#: inc/core/modules_admin.php:359
+msgid "Child Theme Active"
+msgstr ""
+
+#: inc/core/modules_admin.php:359
+msgid "Parent Theme Only"
+msgstr ""
+
+#: inc/core/modules_admin.php:361
+#: inc/core/modules_admin.php:662
+#: inc/core/modules_admin.php:782
+#: inc/core/modules_catalog.php:47
+msgid "Child Theme"
+msgstr ""
+
+#: inc/core/modules_admin.php:364
+#: inc/core/modules_admin.php:399
+msgid "Name"
+msgstr ""
+
+#: inc/core/modules_admin.php:365
+#: inc/core/modules_admin.php:400
+#: inc/core/modules_admin.php:616
+msgid "Version"
+msgstr ""
+
+#: inc/core/modules_admin.php:366
+#: inc/core/modules_admin.php:401
+#: inc/core/modules_admin.php:617
+msgid "Author"
+msgstr ""
+
+#: inc/core/modules_admin.php:367
+#: inc/core/modules_admin.php:402
+#: inc/core/modules_admin.php:615
+msgid "Description"
+msgstr ""
+
+#: inc/core/modules_admin.php:368
+#: inc/core/modules_admin.php:403
+msgid "Text Domain"
+msgstr ""
+
+#: inc/core/modules_admin.php:369
+#: inc/core/modules_admin.php:404
+msgid "Requires"
+msgstr ""
+
+#. translators: %s: Minimum required WordPress version.
+#: inc/core/modules_admin.php:371
+#: inc/core/modules_admin.php:405
+#, php-format
+msgid "WP %s+"
+msgstr ""
+
+#. translators: %s: Minimum required WordPress version.
+#: inc/core/modules_admin.php:371
+#: inc/core/modules_admin.php:405
+msgid "WP n/a"
+msgstr ""
+
+#. translators: %s: Minimum required PHP version.
+#: inc/core/modules_admin.php:374
+#: inc/core/modules_admin.php:407
+#, php-format
+msgid "PHP %s+"
+msgstr ""
+
+#. translators: %s: Minimum required PHP version.
+#: inc/core/modules_admin.php:374
+#: inc/core/modules_admin.php:407
+msgid "PHP n/a"
+msgstr ""
+
+#: inc/core/modules_admin.php:376
+#: inc/core/modules_admin.php:409
+msgid "Theme URI"
+msgstr ""
+
+#: inc/core/modules_admin.php:383
+#: inc/core/modules_admin.php:416
+msgid "Author URI"
+msgstr ""
+
+#: inc/core/modules_admin.php:390
+#: inc/core/modules_admin.php:423
+msgid "Slug"
+msgstr ""
+
+#: inc/core/modules_admin.php:391
+#: inc/core/modules_admin.php:424
+#: inc/core/modules_admin.php:744
+msgid "Path"
+msgstr ""
+
+#: inc/core/modules_admin.php:393
+#: inc/core/theme-updates.php:423
+msgid "Status"
+msgstr ""
+
+#: inc/core/modules_admin.php:393
+msgid "No child theme is active."
+msgstr ""
+
+#: inc/core/modules_admin.php:397
+#: inc/core/modules_catalog.php:50
+msgid "Parent Theme"
+msgstr ""
+
+#: inc/core/modules_admin.php:425
+msgid "Repository"
+msgstr ""
+
+#: inc/core/modules_admin.php:601
+msgid "No modules found for this source."
+msgstr ""
+
+#: inc/core/modules_admin.php:613
+#: inc/core/modules_admin.php:741
+msgid "Enabled"
+msgstr ""
+
+#: inc/core/modules_admin.php:614
+msgid "Module"
+msgstr ""
+
+#: inc/core/modules_admin.php:618
+#: inc/core/modules_admin.php:743
+msgid "Type"
+msgstr ""
+
+#. translators: %s: Module name.
+#: inc/core/modules_admin.php:649
+#: inc/core/modules_catalog.php:509
+#: inc/core/modules_catalog.php:852
+#, php-format
+msgid "Module: %s"
+msgstr ""
+
+#. translators: %s: Theme source overriding the parent module.
+#: inc/core/modules_admin.php:664
+#: inc/core/modules_admin.php:783
+#, php-format
+msgid "Overridden by %s."
+msgstr ""
+
+#: inc/core/modules_admin.php:682
+#: inc/core/modules_admin.php:684
+#: inc/core/modules_catalog.php:999
+#: inc/core/modules_catalog.php:1075
+#: inc/core/modules_catalog.php:1087
+#: inc/core/modules_catalog.php:1118
+msgid "Settings"
+msgstr ""
+
+#: inc/core/modules_admin.php:708
+msgid "Folder"
+msgstr ""
+
+#: inc/core/modules_admin.php:708
+msgid "File"
+msgstr ""
+
+#: inc/core/modules_admin.php:729
+msgid "No blocks found for this source."
+msgstr ""
+
+#: inc/core/modules_admin.php:742
+msgid "Block"
+msgstr ""
+
+#: inc/core/modules_admin.php:753
+msgid "Unknown Block"
+msgstr ""
+
+#: inc/core/modules_admin.php:1019
+msgid "Manage module and block availability, and review informational theme runtime details."
+msgstr ""
+
+#: inc/core/modules_admin.php:1023
+msgid "Theme settings updated."
+msgstr ""
+
+#: inc/core/modules_admin.php:1067
+msgid "Save Modules"
+msgstr ""
+
+#: inc/core/modules_admin.php:1069
+msgid "Save Blocks"
+msgstr ""
+
+#: inc/core/modules_admin.php:1071
+msgid "Save Settings"
+msgstr ""
+
+#: inc/core/modules_catalog.php:658
+msgid "ACF Pro"
+msgstr ""
+
+#: inc/core/modules_catalog.php:659
+msgid "Gravity Forms"
+msgstr ""
+
+#. translators: %s: Comma-separated list of missing module requirements.
+#: inc/core/modules_catalog.php:682
+#, php-format
+msgid "Requires: %s."
+msgstr ""
+
+#: inc/core/theme-updates.php:61
+msgid "Enabled by LONESTAR_ALLOW_UPDATES."
+msgstr ""
+
+#: inc/core/theme-updates.php:62
+msgid "Disabled by LONESTAR_ALLOW_UPDATES."
+msgstr ""
+
+#: inc/core/theme-updates.php:66
+msgid "Enabled for release installation."
+msgstr ""
+
+#: inc/core/theme-updates.php:67
+msgid "Disabled for Git checkout."
+msgstr ""
+
+#: inc/core/theme-updates.php:155
+msgid "Invalid GitHub repository configuration."
+msgstr ""
+
+#. translators: %d: HTTP response status code.
+#: inc/core/theme-updates.php:185
+#, php-format
+msgid "GitHub release API returned HTTP %d."
+msgstr ""
+
+#: inc/core/theme-updates.php:191
+msgid "GitHub returned invalid release JSON."
+msgstr ""
+
+#: inc/core/theme-updates.php:194
+msgid "Latest GitHub release is not stable."
+msgstr ""
+
+#: inc/core/theme-updates.php:200
+msgid "Release tag does not match lonestar-vX.Y.Z."
+msgstr ""
+
+#: inc/core/theme-updates.php:215
+msgid "Release is missing the exact Lonestar ZIP asset."
+msgstr ""
+
+#: inc/core/theme-updates.php:222
+msgid "Release asset URL, size, or SHA-256 digest is invalid."
+msgstr ""
+
+#: inc/core/theme-updates.php:335
+msgid "Lonestar updates are disabled for this Git checkout."
+msgstr ""
+
+#: inc/core/theme-updates.php:340
+msgid "Lonestar update package does not match the verified GitHub release."
+msgstr ""
+
+#: inc/core/theme-updates.php:372
+msgid "Lonestar update checksum metadata is invalid."
+msgstr ""
+
+#: inc/core/theme-updates.php:377
+msgid "Lonestar update failed SHA-256 verification."
+msgstr ""
+
+#: inc/core/theme-updates.php:393
+msgid "Lonestar parent update"
+msgstr ""
+
+#: inc/core/theme-updates.php:395
+#: inc/core/theme-updates.php:418
+msgid "Installed version"
+msgstr ""
+
+#: inc/core/theme-updates.php:396
+#: inc/core/theme-updates.php:419
+msgid "Update policy"
+msgstr ""
+
+#: inc/core/theme-updates.php:397
+#: inc/core/theme-updates.php:420
+msgid "Latest checked version"
+msgstr ""
+
+#: inc/core/theme-updates.php:398
+#: inc/core/theme-updates.php:421
+msgid "Last check (UTC)"
+msgstr ""
+
+#: inc/core/theme-updates.php:398
+#: inc/core/theme-updates.php:421
+msgid "Not checked"
+msgstr ""
+
+#: inc/core/theme-updates.php:399
+msgid "Release URL"
+msgstr ""
+
+#: inc/core/theme-updates.php:400
+#: inc/core/theme-updates.php:422
+msgid "SHA-256"
+msgstr ""
+
+#: inc/core/theme-updates.php:401
+msgid "Last error"
+msgstr ""
+
+#: inc/core/theme-updates.php:416
+msgid "Parent Update Status"
+msgstr ""
+
+#: inc/core/theme-updates.php:423
+msgid "Verified release metadata available."
+msgstr ""
+
+#: inc/core/theme-updates.php:423
+msgid "No cached check yet."
+msgstr ""
+
+#: inc/core/vite.php:257
+msgid "Lonestar Theme: Vite build artifacts are missing. Run \"npm run build\" before deployment."
+msgstr ""
+
+#: inc/inc.filters.php:56
+msgid "Reusable Blocks"
+msgstr ""
+
+#: modules/gtm/inc/inc.settings.php:220
+msgid "Google Tag Manager"
+msgstr ""
+
+#: modules/gtm/inc/inc.settings.php:221
+msgid "Configure GTM output for wp_head and wp_body_open hooks."
+msgstr ""
+
+#: modules/gtm/inc/inc.settings.php:224
+msgid "GTM settings updated."
+msgstr ""
+
+#: modules/gtm/inc/inc.settings.php:230
+msgid "Enable GTM"
+msgstr ""
+
+#: modules/gtm/inc/inc.settings.php:234
+msgid "Output GTM script and noscript snippets."
+msgstr ""
+
+#: modules/gtm/inc/inc.settings.php:240
+msgid "GTM Container ID"
+msgstr ""
+
+#: modules/gtm/inc/inc.settings.php:243
+msgid "Example: GTM-ABC1234. Prefix is optional and normalized automatically. GTM remains disabled when ID is empty or invalid."
+msgstr ""
+
+#: modules/module.acf-field-gravity-forms.php:26
+msgid "Gravity Form Selector"
+msgstr ""
+
+#: modules/module.acf-field-gravity-forms.php:51
+#: modules/module.acf-field-menu.php:51
+msgid "None"
+msgstr ""
+
+#: modules/module.acf-field-menu.php:26
+msgid "Menu Selector"
+msgstr ""
+
+#: modules/module.acf-number-with-unit.php:26
+msgid "Number with Unit"
+msgstr ""
+
+#: modules/module.acf-number-with-unit.php:47
+msgid "Units"
+msgstr ""
+
+#: modules/module.acf-number-with-unit.php:48
+msgid "Comma-separated list. Example: %, px, rem"
+msgstr ""
+
+#: modules/module.acf-number-with-unit.php:58
+msgid "Default Unit"
+msgstr ""
+
+#: modules/module.acf-number-with-unit.php:67
+msgid "Return Format"
+msgstr ""
+
+#: modules/module.acf-number-with-unit.php:71
+msgid "Combined String (e.g. 24px)"
+msgstr ""
+
+#: modules/module.acf-number-with-unit.php:72
+msgid "Array (value/unit/combined)"
+msgstr ""
+
+#: modules/module.acf-number-with-unit.php:148
+msgid "Invalid value format."
+msgstr ""
+
+#: modules/module.acf-number-with-unit.php:156
+msgid "This field is required."
+msgstr ""
+
+#: modules/module.acf-number-with-unit.php:160
+msgid "The value must be numeric."
+msgstr ""
+
+#: modules/module.acf-number-with-unit.php:164
+msgid "Selected unit is not allowed."
+msgstr ""
+
+#: blocks/native/example-native-static/example-native-static.js:40
+#: blocks/native/example-native/example-native.js:30
+msgid "Block heading"
+msgstr ""
+
+#: blocks/native/example-native-static/example-native-static.js:47
+#: blocks/native/example-native/example-native.js:37
+msgid "Block description"
+msgstr ""
+
+#: blocks/acf/example-acf/block.json
+msgctxt "block title"
+msgid "Lonestar Example ACF"
+msgstr ""
+
+#: blocks/acf/example-acf/block.json
+msgctxt "block description"
+msgid "Example ACF block for theme starter usage."
+msgstr ""
+
+#: blocks/acf/example-acf/block.json
+#: blocks/native/example-native-static/block.json
+#: blocks/native/example-native/block.json
+#: blocks/php-only/example-php-only/block.json
+msgctxt "block keyword"
+msgid "lonestar"
+msgstr ""
+
+#: blocks/acf/example-acf/block.json
+msgctxt "block keyword"
+msgid "acf"
+msgstr ""
+
+#: blocks/acf/example-acf/block.json
+#: blocks/native/example-native-static/block.json
+#: blocks/native/example-native/block.json
+#: blocks/php-only/example-php-only/block.json
+msgctxt "block keyword"
+msgid "example"
+msgstr ""
+
+#: blocks/native/example-native-static/block.json
+msgctxt "block title"
+msgid "Lonestar Example Native Static"
+msgstr ""
+
+#: blocks/native/example-native-static/block.json
+msgctxt "block description"
+msgid "Example native block whose frontend markup is saved by JavaScript."
+msgstr ""
+
+#: blocks/native/example-native-static/block.json
+#: blocks/native/example-native/block.json
+msgctxt "block keyword"
+msgid "native"
+msgstr ""
+
+#: blocks/native/example-native-static/block.json
+msgctxt "block keyword"
+msgid "static"
+msgstr ""
+
+#: blocks/native/example-native/block.json
+msgctxt "block title"
+msgid "Lonestar Example Native"
+msgstr ""
+
+#: blocks/native/example-native/block.json
+msgctxt "block description"
+msgid "Example native block with dynamic render callback."
+msgstr ""
+
+#: blocks/php-only/example-php-only/block.json
+msgctxt "block title"
+msgid "Lonestar Example PHP-only"
+msgstr ""
+
+#: blocks/php-only/example-php-only/block.json
+msgctxt "block description"
+msgid "WordPress 7 PHP-only block with automatically generated editor controls."
+msgstr ""
+
+#: blocks/php-only/example-php-only/block.json
+msgctxt "block keyword"
+msgid "php"
+msgstr ""
+
+#: blocks/php-only/example-php-only/block.json
+msgctxt "block keyword"
+msgid "server"
+msgstr ""
+
+#: theme.json
+msgctxt "Color name"
+msgid "Background"
+msgstr ""
+
+#: theme.json
+msgctxt "Color name"
+msgid "Surface"
+msgstr ""
+
+#: theme.json
+msgctxt "Color name"
+msgid "Text"
+msgstr ""
+
+#: theme.json
+msgctxt "Color name"
+msgid "Brand"
+msgstr ""
+
+#: theme.json
+msgctxt "Color name"
+msgid "Brand Strong"
+msgstr ""
+
+#: theme.json
+msgctxt "Font family name"
+msgid "System Sans"
+msgstr ""
+
+#: theme.json
+msgctxt "Font family name"
+msgid "System Serif"
+msgstr ""
+
+#: theme.json
+msgctxt "Font size name"
+msgid "Small"
+msgstr ""
+
+#: theme.json
+msgctxt "Font size name"
+msgid "Medium"
+msgstr ""
+
+#: theme.json
+msgctxt "Font size name"
+msgid "Large"
+msgstr ""
+
+#: theme.json
+msgctxt "Font size name"
+msgid "Extra Large"
+msgstr ""
+
+#: theme.json
+msgctxt "Custom template name"
+msgid "Blank"
+msgstr ""
+
+#: theme.json
+msgctxt "Template part name"
+msgid "Header"
+msgstr ""
+
+#: theme.json
+msgctxt "Template part name"
+msgid "Footer"
+msgstr ""

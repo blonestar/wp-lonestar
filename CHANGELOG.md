@@ -7,6 +7,7 @@ All notable changes to the Lonestar parent theme are documented in this file.
 ### Added
 
 - Added a read-only Theme Settings `Content Types` overview backed by the shared runtime content-type catalog.
+- Added gettext-ready parent-theme strings, `lonestar` block and module metadata domains, JavaScript script-translation registration, and a repeatable `npm run i18n:pot` workflow.
 
 ## [0.4.0] - 2026-07-11
 

@@ -6,7 +6,7 @@
   "category": "lonestar-blocks",
   "icon": "media-text",
   "description": "Example native block whose frontend markup is saved by JavaScript.",
-  "textdomain": "lonestar-theme",
+  "textdomain": "lonestar",
   "keywords": ["lonestar", "native", "static", "example"],
   "attributes": {
     "heading": {

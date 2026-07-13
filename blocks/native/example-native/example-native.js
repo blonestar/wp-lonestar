@@ -1,11 +1,12 @@
 (function (wp) {
-    if (!wp || !wp.blocks || !wp.blockEditor || !wp.element) {
+    if (!wp || !wp.blocks || !wp.blockEditor || !wp.element || !wp.i18n) {
         return;
     }
 
     const { registerBlockType, getBlockType } = wp.blocks;
     const { RichText, useBlockProps } = wp.blockEditor;
     const { createElement: el } = wp.element;
+    const { __ } = wp.i18n;
     const blockName = "lonestar/example-native";
 
     if (getBlockType(blockName)) {
@@ -26,14 +27,14 @@
                 el(RichText, {
                     tagName: "h3",
                     value: heading,
-                    placeholder: "Block heading",
+                    placeholder: __("Block heading", "lonestar"),
                     allowedFormats: [],
                     onChange: (value) => setAttributes({ heading: value }),
                 }),
                 el(RichText, {
                     tagName: "p",
                     value: description,
-                    placeholder: "Block description",
+                    placeholder: __("Block description", "lonestar"),
                     allowedFormats: ["core/bold", "core/italic", "core/link"],
                     onChange: (value) => setAttributes({ description: value }),
                 }),
