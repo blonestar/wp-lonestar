@@ -23,7 +23,7 @@ function lonestar_module_register_acf_menu_selector_field()
             public function __construct()
             {
                 $this->name = 'menu_selector';
-                $this->label = __('Menu Selector', 'lonestar-theme');
+                $this->label = __('Menu Selector', 'lonestar');
                 $this->category = 'choice';
                 parent::__construct();
             }
@@ -48,7 +48,7 @@ function lonestar_module_register_acf_menu_selector_field()
                     esc_attr($input_name),
                     esc_attr($input_class)
                 );
-                echo '<option value="">' . esc_html__('None', 'lonestar-theme') . '</option>';
+                echo '<option value="">' . esc_html__('None', 'lonestar') . '</option>';
 
                 foreach ($menus as $menu) {
                     printf(

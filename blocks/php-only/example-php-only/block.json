@@ -6,7 +6,7 @@
   "category": "lonestar-blocks",
   "icon": "editor-code",
   "description": "WordPress 7 PHP-only block with automatically generated editor controls.",
-  "textdomain": "lonestar-theme",
+  "textdomain": "lonestar",
   "keywords": ["lonestar", "php", "server", "example"],
   "attributes": {
     "heading": {

@@ -16,10 +16,10 @@ $tone = isset($attributes['tone']) && in_array($attributes['tone'], array('neutr
 $show_divider = !isset($attributes['showDivider']) || true === $attributes['showDivider'];
 
 if ('' === $heading) {
-    $heading = __('Example PHP-only Block', 'lonestar-theme');
+    $heading = __('Example PHP-only Block', 'lonestar');
 }
 if ('' === $description) {
-    $description = __('This block is registered, edited, and rendered without block JavaScript.', 'lonestar-theme');
+    $description = __('This block is registered, edited, and rendered without block JavaScript.', 'lonestar');
 }
 
 $wrapper_attributes = get_block_wrapper_attributes(

@@ -19,6 +19,7 @@
     "test": "node --test tests/*.test.mjs",
     "validate:json": "node scripts/validate-json.mjs",
     "package:check": "node scripts/validate-package.mjs",
+    "i18n:pot": "wp i18n make-pot . languages/lonestar.pot --domain=lonestar --exclude=node_modules,vendor,.git,dist,build,coverage,tests --headers='{\"POT-Creation-Date\":\"\"}'",
     "audit": "npm audit --audit-level=high",
     "check": "npm run validate:json && npm run format:check && npm test && npm run build && npm run package:check"
   },

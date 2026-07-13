@@ -23,7 +23,7 @@ function lonestar_module_register_acf_number_with_unit_field()
             public function __construct()
             {
                 $this->name = 'number_with_unit';
-                $this->label = __('Number with Unit', 'lonestar-theme');
+                $this->label = __('Number with Unit', 'lonestar');
                 $this->category = 'basic';
                 $this->defaults = array(
                     'units'         => '%,px,em,vw,vh',
@@ -44,8 +44,8 @@ function lonestar_module_register_acf_number_with_unit_field()
                 acf_render_field_setting(
                     $field,
                     array(
-                        'label'        => __('Units', 'lonestar-theme'),
-                        'instructions' => __('Comma-separated list. Example: %, px, rem', 'lonestar-theme'),
+                        'label'        => __('Units', 'lonestar'),
+                        'instructions' => __('Comma-separated list. Example: %, px, rem', 'lonestar'),
                         'type'         => 'text',
                         'name'         => 'units',
                         'required'     => true,
@@ -55,7 +55,7 @@ function lonestar_module_register_acf_number_with_unit_field()
                 acf_render_field_setting(
                     $field,
                     array(
-                        'label' => __('Default Unit', 'lonestar-theme'),
+                        'label' => __('Default Unit', 'lonestar'),
                         'type'  => 'text',
                         'name'  => 'default_unit',
                     )
@@ -64,12 +64,12 @@ function lonestar_module_register_acf_number_with_unit_field()
                 acf_render_field_setting(
                     $field,
                     array(
-                        'label'   => __('Return Format', 'lonestar-theme'),
+                        'label'   => __('Return Format', 'lonestar'),
                         'type'    => 'radio',
                         'name'    => 'return_format',
                         'choices' => array(
-                            'string' => __('Combined String (e.g. 24px)', 'lonestar-theme'),
-                            'array'  => __('Array (value/unit/combined)', 'lonestar-theme'),
+                            'string' => __('Combined String (e.g. 24px)', 'lonestar'),
+                            'array'  => __('Array (value/unit/combined)', 'lonestar'),
                         ),
                     )
                 );
@@ -145,7 +145,7 @@ function lonestar_module_register_acf_number_with_unit_field()
                 }
 
                 if (!is_array($value)) {
-                    return __('Invalid value format.', 'lonestar-theme');
+                    return __('Invalid value format.', 'lonestar');
                 }
 
                 $number = isset($value['value']) ? trim((string) $value['value']) : '';
@@ -153,15 +153,15 @@ function lonestar_module_register_acf_number_with_unit_field()
                 $allowed_units = $this->parse_units(isset($field['units']) ? $field['units'] : '');
 
                 if (!empty($field['required']) && ('' === $number || '' === $unit)) {
-                    return __('This field is required.', 'lonestar-theme');
+                    return __('This field is required.', 'lonestar');
                 }
 
                 if ('' !== $number && !is_numeric($number)) {
-                    return __('The value must be numeric.', 'lonestar-theme');
+                    return __('The value must be numeric.', 'lonestar');
                 }
 
                 if ('' !== $unit && !empty($allowed_units) && !in_array($unit, $allowed_units, true)) {
-                    return __('Selected unit is not allowed.', 'lonestar-theme');
+                    return __('Selected unit is not allowed.', 'lonestar');
                 }
 
                 return $valid;

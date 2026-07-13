@@ -254,7 +254,7 @@ function lonestar_missing_vite_build_notice()
     }
 
     echo '<div class="notice notice-warning"><p>';
-    echo esc_html__('Lonestar Theme: Vite build artifacts are missing. Run "npm run build" before deployment.', 'lonestar-theme');
+    echo esc_html__('Lonestar Theme: Vite build artifacts are missing. Run "npm run build" before deployment.', 'lonestar');
     echo '</p></div>';
 }
 

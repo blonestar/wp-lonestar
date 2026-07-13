@@ -4,7 +4,7 @@
 
 - This repository is the reusable `lonestar` parent framework. Keep client behavior in a child theme.
 - Do not edit WordPress core.
-- The installed folder/stylesheet is `lonestar`; the GitHub repository may remain `wp-lonestar`.
+- This LocalWP development checkout uses folder/stylesheet `wp-lonestar`; release archives keep the public ZIP root `lonestar/`.
 
 ## Runtime architecture
 
@@ -18,6 +18,7 @@
 - Module `requires` and `admin_links` are explicit JSON metadata. Frontend state reads must not write options.
 - `dist/` is tracked production output and ships in releases.
 - Parent updates are disabled automatically when the installed parent contains `.git`; `LONESTAR_ALLOW_UPDATES` is the explicit override.
+- Parent source strings use the sole `lonestar` text domain and English sources. Regenerate `languages/lonestar.pot` with `npm run i18n:pot` after changing translatable PHP, JavaScript, block metadata, or parent module metadata.
 
 ## CSS architecture
 

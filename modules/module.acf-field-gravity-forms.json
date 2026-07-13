@@ -1,5 +1,6 @@
 {
   "name": "ACF Gravity Forms Selector",
   "description": "Adds an ACF field for selecting an active Gravity Forms form.",
+  "textdomain": "lonestar",
   "requires": ["acf", "gravity-forms"]
 }

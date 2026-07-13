@@ -36,8 +36,8 @@ function modules_get_legacy_settings_page_slug()
 function modules_register_modules_admin_page()
 {
     add_theme_page(
-        __('Theme Settings', 'lonestar-theme'),
-        __('Theme Settings', 'lonestar-theme'),
+        __('Theme Settings', 'lonestar'),
+        __('Theme Settings', 'lonestar'),
         'manage_options',
         modules_get_settings_page_slug(),
         'modules_render_modules_admin_page'
@@ -72,11 +72,11 @@ function modules_is_settings_page_slug($page_slug)
 function modules_get_settings_tabs()
 {
     $tabs = array(
-        'modules' => __('Modules', 'lonestar-theme'),
-        'blocks'  => __('Blocks', 'lonestar-theme'),
-        'content-types' => __('Content Types', 'lonestar-theme'),
-        'changelog' => __('Changelog', 'lonestar-theme'),
-        'about' => __('About', 'lonestar-theme'),
+        'modules' => __('Modules', 'lonestar'),
+        'blocks'  => __('Blocks', 'lonestar'),
+        'content-types' => __('Content Types', 'lonestar'),
+        'changelog' => __('Changelog', 'lonestar'),
+        'about' => __('About', 'lonestar'),
     );
 
     /**
@@ -87,11 +87,11 @@ function modules_get_settings_tabs()
     $tabs = apply_filters('lonestar_theme_settings_tabs', $tabs);
     if (!is_array($tabs) || empty($tabs)) {
         return array(
-            'modules' => __('Modules', 'lonestar-theme'),
-            'blocks'  => __('Blocks', 'lonestar-theme'),
-            'content-types' => __('Content Types', 'lonestar-theme'),
-            'changelog' => __('Changelog', 'lonestar-theme'),
-            'about' => __('About', 'lonestar-theme'),
+            'modules' => __('Modules', 'lonestar'),
+            'blocks'  => __('Blocks', 'lonestar'),
+            'content-types' => __('Content Types', 'lonestar'),
+            'changelog' => __('Changelog', 'lonestar'),
+            'about' => __('About', 'lonestar'),
         );
     }
 
@@ -108,11 +108,11 @@ function modules_get_settings_tabs()
 
     if (empty($normalized_tabs)) {
         return array(
-            'modules' => __('Modules', 'lonestar-theme'),
-            'blocks'  => __('Blocks', 'lonestar-theme'),
-            'content-types' => __('Content Types', 'lonestar-theme'),
-            'changelog' => __('Changelog', 'lonestar-theme'),
-            'about' => __('About', 'lonestar-theme'),
+            'modules' => __('Modules', 'lonestar'),
+            'blocks'  => __('Blocks', 'lonestar'),
+            'content-types' => __('Content Types', 'lonestar'),
+            'changelog' => __('Changelog', 'lonestar'),
+            'about' => __('About', 'lonestar'),
         );
     }
 
@@ -251,8 +251,8 @@ function modules_render_changelog_tab()
 {
     $file_map = modules_get_changelog_file_map();
 
-    echo '<h2>' . esc_html__('Changelog', 'lonestar-theme') . '</h2>';
-    echo '<p>' . esc_html__('This tab shows CHANGELOG files for active parent and child themes.', 'lonestar-theme') . '</p>';
+    echo '<h2>' . esc_html__('Changelog', 'lonestar') . '</h2>';
+    echo '<p>' . esc_html__('This tab shows CHANGELOG files for active parent and child themes.', 'lonestar') . '</p>';
 
     foreach ($file_map as $source => $entry) {
         $source = sanitize_key((string) $source);
@@ -267,21 +267,22 @@ function modules_render_changelog_tab()
         echo '<h3>' . esc_html($label) . '</h3>';
         echo '<p><code>' . esc_html($display_path) . '</code>';
         if (false !== $mtime) {
-            echo '<br /><span class="description">' . esc_html(sprintf(__('Last updated: %s', 'lonestar-theme'), wp_date('Y-m-d H:i:s', (int) $mtime))) . '</span>';
+            /* translators: %s: Changelog modification date and time. */
+            echo '<br /><span class="description">' . esc_html(sprintf(__('Last updated: %s', 'lonestar'), wp_date('Y-m-d H:i:s', (int) $mtime))) . '</span>';
         }
         echo '</p>';
 
         if (!$file_exists) {
-            echo '<p class="description">' . esc_html__('CHANGELOG.md not found for this theme source.', 'lonestar-theme') . '</p>';
+            echo '<p class="description">' . esc_html__('CHANGELOG.md not found for this theme source.', 'lonestar') . '</p>';
             continue;
         }
         if (!$file_readable) {
-            echo '<p class="description">' . esc_html__('CHANGELOG.md is not readable.', 'lonestar-theme') . '</p>';
+            echo '<p class="description">' . esc_html__('CHANGELOG.md is not readable.', 'lonestar') . '</p>';
             continue;
         }
 
         if ('' === $file_contents) {
-            echo '<p class="description">' . esc_html__('CHANGELOG.md is currently empty.', 'lonestar-theme') . '</p>';
+            echo '<p class="description">' . esc_html__('CHANGELOG.md is currently empty.', 'lonestar') . '</p>';
             continue;
         }
 
@@ -352,74 +353,76 @@ function modules_render_about_tab()
     $active_requires_php = ($stylesheet_theme instanceof \WP_Theme) ? (string) $stylesheet_theme->get('RequiresPHP') : '';
     $active_path = wp_normalize_path((string) get_stylesheet_directory());
 
-    echo '<h2>' . esc_html__('About', 'lonestar-theme') . '</h2>';
-    echo '<p>' . esc_html__('Overview of active theme stack and framework context.', 'lonestar-theme') . '</p>';
+    echo '<h2>' . esc_html__('About', 'lonestar') . '</h2>';
+    echo '<p>' . esc_html__('Overview of active theme stack and framework context.', 'lonestar') . '</p>';
 
-    echo '<p><strong>' . esc_html__('Theme Mode:', 'lonestar-theme') . '</strong> ' . esc_html($is_child_theme ? __('Child Theme Active', 'lonestar-theme') : __('Parent Theme Only', 'lonestar-theme')) . '</p>';
+    echo '<p><strong>' . esc_html__('Theme Mode:', 'lonestar') . '</strong> ' . esc_html($is_child_theme ? __('Child Theme Active', 'lonestar') : __('Parent Theme Only', 'lonestar')) . '</p>';
 
-    echo '<h3>' . esc_html__('Child Theme', 'lonestar-theme') . '</h3>';
+    echo '<h3>' . esc_html__('Child Theme', 'lonestar') . '</h3>';
     echo '<table class="widefat striped" style="max-width: 1200px;"><tbody>';
     if ($is_child_theme) {
-        echo '<tr><th style="width:260px;">' . esc_html__('Name', 'lonestar-theme') . '</th><td><strong>' . esc_html($active_name) . '</strong></td></tr>';
-        echo '<tr><th>' . esc_html__('Version', 'lonestar-theme') . '</th><td>' . ('' !== $active_version ? '<code>' . esc_html($active_version) . '</code>' : '&mdash;') . '</td></tr>';
-        echo '<tr><th>' . esc_html__('Author', 'lonestar-theme') . '</th><td>' . ('' !== $active_author ? esc_html($active_author) : '&mdash;') . '</td></tr>';
-        echo '<tr><th>' . esc_html__('Description', 'lonestar-theme') . '</th><td>' . ('' !== $active_description ? esc_html($active_description) : '&mdash;') . '</td></tr>';
-        echo '<tr><th>' . esc_html__('Text Domain', 'lonestar-theme') . '</th><td>' . ('' !== $active_text_domain ? '<code>' . esc_html($active_text_domain) . '</code>' : '&mdash;') . '</td></tr>';
-        echo '<tr><th>' . esc_html__('Requires', 'lonestar-theme') . '</th><td>';
-        echo ('' !== $active_requires_wp ? esc_html(sprintf(__('WP %s+', 'lonestar-theme'), $active_requires_wp)) : esc_html__('WP n/a', 'lonestar-theme'));
+        echo '<tr><th style="width:260px;">' . esc_html__('Name', 'lonestar') . '</th><td><strong>' . esc_html($active_name) . '</strong></td></tr>';
+        echo '<tr><th>' . esc_html__('Version', 'lonestar') . '</th><td>' . ('' !== $active_version ? '<code>' . esc_html($active_version) . '</code>' : '&mdash;') . '</td></tr>';
+        echo '<tr><th>' . esc_html__('Author', 'lonestar') . '</th><td>' . ('' !== $active_author ? esc_html($active_author) : '&mdash;') . '</td></tr>';
+        echo '<tr><th>' . esc_html__('Description', 'lonestar') . '</th><td>' . ('' !== $active_description ? esc_html($active_description) : '&mdash;') . '</td></tr>';
+        echo '<tr><th>' . esc_html__('Text Domain', 'lonestar') . '</th><td>' . ('' !== $active_text_domain ? '<code>' . esc_html($active_text_domain) . '</code>' : '&mdash;') . '</td></tr>';
+        echo '<tr><th>' . esc_html__('Requires', 'lonestar') . '</th><td>';
+        /* translators: %s: Minimum required WordPress version. */
+        echo ('' !== $active_requires_wp ? esc_html(sprintf(__('WP %s+', 'lonestar'), $active_requires_wp)) : esc_html__('WP n/a', 'lonestar'));
         echo ' / ';
-        echo ('' !== $active_requires_php ? esc_html(sprintf(__('PHP %s+', 'lonestar-theme'), $active_requires_php)) : esc_html__('PHP n/a', 'lonestar-theme'));
+        /* translators: %s: Minimum required PHP version. */
+        echo ('' !== $active_requires_php ? esc_html(sprintf(__('PHP %s+', 'lonestar'), $active_requires_php)) : esc_html__('PHP n/a', 'lonestar'));
         echo '</td></tr>';
-        echo '<tr><th>' . esc_html__('Theme URI', 'lonestar-theme') . '</th><td>';
+        echo '<tr><th>' . esc_html__('Theme URI', 'lonestar') . '</th><td>';
         if ('' !== $active_theme_uri) {
             echo '<a href="' . esc_url($active_theme_uri) . '" target="_blank" rel="noopener noreferrer">' . esc_html($active_theme_uri) . '</a>';
         } else {
             echo '&mdash;';
         }
         echo '</td></tr>';
-        echo '<tr><th>' . esc_html__('Author URI', 'lonestar-theme') . '</th><td>';
+        echo '<tr><th>' . esc_html__('Author URI', 'lonestar') . '</th><td>';
         if ('' !== $active_author_uri) {
             echo '<a href="' . esc_url($active_author_uri) . '" target="_blank" rel="noopener noreferrer">' . esc_html($active_author_uri) . '</a>';
         } else {
             echo '&mdash;';
         }
         echo '</td></tr>';
-        echo '<tr><th>' . esc_html__('Slug', 'lonestar-theme') . '</th><td><code>' . esc_html($stylesheet_slug) . '</code></td></tr>';
-        echo '<tr><th>' . esc_html__('Path', 'lonestar-theme') . '</th><td><code>' . esc_html(modules_get_display_path($active_path)) . '</code></td></tr>';
+        echo '<tr><th>' . esc_html__('Slug', 'lonestar') . '</th><td><code>' . esc_html($stylesheet_slug) . '</code></td></tr>';
+        echo '<tr><th>' . esc_html__('Path', 'lonestar') . '</th><td><code>' . esc_html(modules_get_display_path($active_path)) . '</code></td></tr>';
     } else {
-        echo '<tr><th style="width:260px;">' . esc_html__('Status', 'lonestar-theme') . '</th><td>' . esc_html__('No child theme is active.', 'lonestar-theme') . '</td></tr>';
+        echo '<tr><th style="width:260px;">' . esc_html__('Status', 'lonestar') . '</th><td>' . esc_html__('No child theme is active.', 'lonestar') . '</td></tr>';
     }
     echo '</tbody></table>';
 
-    echo '<h3 style="margin-top:20px;">' . esc_html__('Parent Theme', 'lonestar-theme') . '</h3>';
+    echo '<h3 style="margin-top:20px;">' . esc_html__('Parent Theme', 'lonestar') . '</h3>';
     echo '<table class="widefat striped" style="max-width: 1200px;"><tbody>';
-    echo '<tr><th style="width:260px;">' . esc_html__('Name', 'lonestar-theme') . '</th><td><strong>' . esc_html($template_name) . '</strong></td></tr>';
-    echo '<tr><th>' . esc_html__('Version', 'lonestar-theme') . '</th><td>' . ('' !== $template_version ? '<code>' . esc_html($template_version) . '</code>' : '&mdash;') . '</td></tr>';
-    echo '<tr><th>' . esc_html__('Author', 'lonestar-theme') . '</th><td>' . ('' !== $template_author ? esc_html($template_author) : '&mdash;') . '</td></tr>';
-    echo '<tr><th>' . esc_html__('Description', 'lonestar-theme') . '</th><td>' . ('' !== $template_description ? esc_html($template_description) : '&mdash;') . '</td></tr>';
-    echo '<tr><th>' . esc_html__('Text Domain', 'lonestar-theme') . '</th><td>' . ('' !== $template_text_domain ? '<code>' . esc_html($template_text_domain) . '</code>' : '&mdash;') . '</td></tr>';
-    echo '<tr><th>' . esc_html__('Requires', 'lonestar-theme') . '</th><td>';
-    echo ('' !== $template_requires_wp ? esc_html(sprintf(__('WP %s+', 'lonestar-theme'), $template_requires_wp)) : esc_html__('WP n/a', 'lonestar-theme'));
+    echo '<tr><th style="width:260px;">' . esc_html__('Name', 'lonestar') . '</th><td><strong>' . esc_html($template_name) . '</strong></td></tr>';
+    echo '<tr><th>' . esc_html__('Version', 'lonestar') . '</th><td>' . ('' !== $template_version ? '<code>' . esc_html($template_version) . '</code>' : '&mdash;') . '</td></tr>';
+    echo '<tr><th>' . esc_html__('Author', 'lonestar') . '</th><td>' . ('' !== $template_author ? esc_html($template_author) : '&mdash;') . '</td></tr>';
+    echo '<tr><th>' . esc_html__('Description', 'lonestar') . '</th><td>' . ('' !== $template_description ? esc_html($template_description) : '&mdash;') . '</td></tr>';
+    echo '<tr><th>' . esc_html__('Text Domain', 'lonestar') . '</th><td>' . ('' !== $template_text_domain ? '<code>' . esc_html($template_text_domain) . '</code>' : '&mdash;') . '</td></tr>';
+    echo '<tr><th>' . esc_html__('Requires', 'lonestar') . '</th><td>';
+    echo ('' !== $template_requires_wp ? esc_html(sprintf(__('WP %s+', 'lonestar'), $template_requires_wp)) : esc_html__('WP n/a', 'lonestar'));
     echo ' / ';
-    echo ('' !== $template_requires_php ? esc_html(sprintf(__('PHP %s+', 'lonestar-theme'), $template_requires_php)) : esc_html__('PHP n/a', 'lonestar-theme'));
+    echo ('' !== $template_requires_php ? esc_html(sprintf(__('PHP %s+', 'lonestar'), $template_requires_php)) : esc_html__('PHP n/a', 'lonestar'));
     echo '</td></tr>';
-    echo '<tr><th>' . esc_html__('Theme URI', 'lonestar-theme') . '</th><td>';
+    echo '<tr><th>' . esc_html__('Theme URI', 'lonestar') . '</th><td>';
     if ('' !== $template_theme_uri) {
         echo '<a href="' . esc_url($template_theme_uri) . '" target="_blank" rel="noopener noreferrer">' . esc_html($template_theme_uri) . '</a>';
     } else {
         echo '&mdash;';
     }
     echo '</td></tr>';
-    echo '<tr><th>' . esc_html__('Author URI', 'lonestar-theme') . '</th><td>';
+    echo '<tr><th>' . esc_html__('Author URI', 'lonestar') . '</th><td>';
     if ('' !== $template_author_uri) {
         echo '<a href="' . esc_url($template_author_uri) . '" target="_blank" rel="noopener noreferrer">' . esc_html($template_author_uri) . '</a>';
     } else {
         echo '&mdash;';
     }
     echo '</td></tr>';
-    echo '<tr><th>' . esc_html__('Slug', 'lonestar-theme') . '</th><td><code>' . esc_html($template_slug) . '</code></td></tr>';
-    echo '<tr><th>' . esc_html__('Path', 'lonestar-theme') . '</th><td><code>' . esc_html(modules_get_display_path($template_path)) . '</code></td></tr>';
-    echo '<tr><th>' . esc_html__('Repository', 'lonestar-theme') . '</th><td>';
+    echo '<tr><th>' . esc_html__('Slug', 'lonestar') . '</th><td><code>' . esc_html($template_slug) . '</code></td></tr>';
+    echo '<tr><th>' . esc_html__('Path', 'lonestar') . '</th><td><code>' . esc_html(modules_get_display_path($template_path)) . '</code></td></tr>';
+    echo '<tr><th>' . esc_html__('Repository', 'lonestar') . '</th><td>';
     if ('' !== $repository_url) {
         echo '<a href="' . esc_url($repository_url) . '" target="_blank" rel="noopener noreferrer">' . esc_html($repository_url) . '</a>';
     } else {
@@ -595,7 +598,7 @@ function modules_group_catalog_by_source($catalog)
 function modules_render_module_table($catalog, $enabled_keys, $source_label, $override_state = array())
 {
     if (!is_array($catalog) || empty($catalog)) {
-        echo '<p>' . esc_html__('No modules found for this source.', 'lonestar-theme') . '</p>';
+        echo '<p>' . esc_html__('No modules found for this source.', 'lonestar') . '</p>';
         return;
     }
 
@@ -607,12 +610,12 @@ function modules_render_module_table($catalog, $enabled_keys, $source_label, $ov
     echo '<h3>' . esc_html($source_label) . '</h3>';
     echo '<table class="widefat striped" style="max-width: 1200px;">';
     echo '<thead><tr>';
-    echo '<th>' . esc_html__('Enabled', 'lonestar-theme') . '</th>';
-    echo '<th>' . esc_html__('Module', 'lonestar-theme') . '</th>';
-    echo '<th>' . esc_html__('Description', 'lonestar-theme') . '</th>';
-    echo '<th style="width:140px;">' . esc_html__('Version', 'lonestar-theme') . '</th>';
-    echo '<th style="width:180px;">' . esc_html__('Author', 'lonestar-theme') . '</th>';
-    echo '<th style="width:120px;">' . esc_html__('Type', 'lonestar-theme') . '</th>';
+    echo '<th>' . esc_html__('Enabled', 'lonestar') . '</th>';
+    echo '<th>' . esc_html__('Module', 'lonestar') . '</th>';
+    echo '<th>' . esc_html__('Description', 'lonestar') . '</th>';
+    echo '<th style="width:140px;">' . esc_html__('Version', 'lonestar') . '</th>';
+    echo '<th style="width:180px;">' . esc_html__('Author', 'lonestar') . '</th>';
+    echo '<th style="width:120px;">' . esc_html__('Type', 'lonestar') . '</th>';
     echo '</tr></thead><tbody>';
 
     foreach ($catalog as $module_key => $module) {
@@ -642,7 +645,8 @@ function modules_render_module_table($catalog, $enabled_keys, $source_label, $ov
         }
 
         if ('' === $description) {
-            $description = sprintf(__('Module: %s', 'lonestar-theme'), $label);
+            /* translators: %s: Module name. */
+            $description = sprintf(__('Module: %s', 'lonestar'), $label);
         }
 
         echo '<tr>';
@@ -655,8 +659,9 @@ function modules_render_module_table($catalog, $enabled_keys, $source_label, $ov
         echo '<strong>' . esc_html($label) . '</strong><br />';
         echo '<code>' . esc_html($module_slug) . '</code>';
         if ($is_overridden) {
-            $source_label_text = ('' !== $overriding_source) ? modules_get_source_label($overriding_source) : __('Child Theme', 'lonestar-theme');
-            echo '<br /><span class="description">' . esc_html(sprintf(__('Overridden by %s.', 'lonestar-theme'), $source_label_text)) . '</span>';
+            $source_label_text = ('' !== $overriding_source) ? modules_get_source_label($overriding_source) : __('Child Theme', 'lonestar');
+            /* translators: %s: Theme source overriding the parent module. */
+            echo '<br /><span class="description">' . esc_html(sprintf(__('Overridden by %s.', 'lonestar'), $source_label_text)) . '</span>';
         }
         if (!$is_available && '' !== $status_message) {
             echo '<br /><span class="description">' . esc_html($status_message) . '</span>';
@@ -674,9 +679,9 @@ function modules_render_module_table($catalog, $enabled_keys, $source_label, $ov
                     continue;
                 }
 
-                $link_label = isset($admin_link['label']) ? sanitize_text_field((string) $admin_link['label']) : __('Settings', 'lonestar-theme');
+                $link_label = isset($admin_link['label']) ? sanitize_text_field((string) $admin_link['label']) : __('Settings', 'lonestar');
                 if ('' === $link_label) {
-                    $link_label = __('Settings', 'lonestar-theme');
+                    $link_label = __('Settings', 'lonestar');
                 }
 
                 $visible_links[] = array(
@@ -700,7 +705,7 @@ function modules_render_module_table($catalog, $enabled_keys, $source_label, $ov
         echo '<td>' . esc_html($description) . '</td>';
         echo '<td>' . ('' !== $version ? esc_html($version) : '&mdash;') . '</td>';
         echo '<td>' . ('' !== $author ? esc_html($author) : '&mdash;') . '</td>';
-        echo '<td>' . esc_html('folder' === $mode ? __('Folder', 'lonestar-theme') : __('File', 'lonestar-theme')) . '</td>';
+        echo '<td>' . esc_html('folder' === $mode ? __('Folder', 'lonestar') : __('File', 'lonestar')) . '</td>';
         echo '</tr>';
     }
 
@@ -721,7 +726,7 @@ function modules_render_module_table($catalog, $enabled_keys, $source_label, $ov
 function modules_render_block_table($catalog, $enabled_keys, $source_label, $override_state = array())
 {
     if (!is_array($catalog) || empty($catalog)) {
-        echo '<p>' . esc_html__('No blocks found for this source.', 'lonestar-theme') . '</p>';
+        echo '<p>' . esc_html__('No blocks found for this source.', 'lonestar') . '</p>';
         return;
     }
 
@@ -733,10 +738,10 @@ function modules_render_block_table($catalog, $enabled_keys, $source_label, $ove
     echo '<h3>' . esc_html($source_label) . '</h3>';
     echo '<table class="widefat striped" style="max-width: 1200px;">';
     echo '<thead><tr>';
-    echo '<th>' . esc_html__('Enabled', 'lonestar-theme') . '</th>';
-    echo '<th>' . esc_html__('Block', 'lonestar-theme') . '</th>';
-    echo '<th style="width:120px;">' . esc_html__('Type', 'lonestar-theme') . '</th>';
-    echo '<th>' . esc_html__('Path', 'lonestar-theme') . '</th>';
+    echo '<th>' . esc_html__('Enabled', 'lonestar') . '</th>';
+    echo '<th>' . esc_html__('Block', 'lonestar') . '</th>';
+    echo '<th style="width:120px;">' . esc_html__('Type', 'lonestar') . '</th>';
+    echo '<th>' . esc_html__('Path', 'lonestar') . '</th>';
     echo '</tr></thead><tbody>';
 
     foreach ($catalog as $block_key => $block) {
@@ -745,7 +750,7 @@ function modules_render_block_table($catalog, $enabled_keys, $source_label, $ove
             continue;
         }
 
-        $label = isset($block['label']) ? sanitize_text_field((string) $block['label']) : __('Unknown Block', 'lonestar-theme');
+        $label = isset($block['label']) ? sanitize_text_field((string) $block['label']) : __('Unknown Block', 'lonestar');
         $name = isset($block['name']) ? sanitize_text_field((string) $block['name']) : '';
         $type_label = isset($block['type_label']) ? sanitize_text_field((string) $block['type_label']) : '';
         $is_available = !isset($block['available']) || true === $block['available'];
@@ -774,15 +779,15 @@ function modules_render_block_table($catalog, $enabled_keys, $source_label, $ove
             echo '<br /><code>' . esc_html($name) . '</code>';
         }
         if ($is_overridden) {
-            $source_label_text = ('' !== $overriding_source) ? modules_get_source_label($overriding_source) : __('Child Theme', 'lonestar-theme');
-            echo '<br /><span class="description">' . esc_html(sprintf(__('Overridden by %s.', 'lonestar-theme'), $source_label_text)) . '</span>';
+            $source_label_text = ('' !== $overriding_source) ? modules_get_source_label($overriding_source) : __('Child Theme', 'lonestar');
+            echo '<br /><span class="description">' . esc_html(sprintf(__('Overridden by %s.', 'lonestar'), $source_label_text)) . '</span>';
         }
         if (!$is_available && '' !== $status_message) {
             echo '<br /><span class="description">' . esc_html($status_message) . '</span>';
         }
         echo '</td>';
 
-        echo '<td>' . esc_html('' !== $type_label ? $type_label : __('Unknown', 'lonestar-theme')) . '</td>';
+        echo '<td>' . esc_html('' !== $type_label ? $type_label : __('Unknown', 'lonestar')) . '</td>';
 
         echo '<td><code>' . esc_html($relative_path) . '</code></td>';
         echo '</tr>';
@@ -1010,12 +1015,12 @@ function modules_render_modules_admin_page()
     }
     ?>
     <div class="wrap">
-        <h1><?php echo esc_html__('Theme Settings', 'lonestar-theme'); ?></h1>
-        <p><?php echo esc_html__('Manage module and block availability, and review informational theme runtime details.', 'lonestar-theme'); ?></p>
+        <h1><?php echo esc_html__('Theme Settings', 'lonestar'); ?></h1>
+        <p><?php echo esc_html__('Manage module and block availability, and review informational theme runtime details.', 'lonestar'); ?></p>
 
         <?php $is_updated = (isset($_GET['updated']) && '1' === sanitize_text_field((string) wp_unslash($_GET['updated']))); ?>
         <?php if ($is_updated) : ?>
-            <div class="notice notice-success is-dismissible"><p><?php echo esc_html__('Theme settings updated.', 'lonestar-theme'); ?></p></div>
+            <div class="notice notice-success is-dismissible"><p><?php echo esc_html__('Theme settings updated.', 'lonestar'); ?></p></div>
         <?php endif; ?>
 
         <h2 class="nav-tab-wrapper" style="margin-bottom: 16px;">
@@ -1044,11 +1049,11 @@ function modules_render_modules_admin_page()
                 <input type="hidden" name="lonestar_settings_tab" value="<?php echo esc_attr($current_tab); ?>" />
 
                 <?php if ('modules' === $current_tab) : ?>
-                    <h2><?php echo esc_html__('Modules', 'lonestar-theme'); ?></h2>
+                    <h2><?php echo esc_html__('Modules', 'lonestar'); ?></h2>
                     <?php modules_render_module_table($module_groups['template'], $enabled_module_keys, modules_get_source_label('template'), $module_override_state); ?>
                     <?php modules_render_module_table($module_groups['stylesheet'], $enabled_module_keys, modules_get_source_label('stylesheet'), $module_override_state); ?>
                 <?php elseif ('blocks' === $current_tab) : ?>
-                    <h2><?php echo esc_html__('Blocks', 'lonestar-theme'); ?></h2>
+                    <h2><?php echo esc_html__('Blocks', 'lonestar'); ?></h2>
                     <?php modules_render_block_table($block_groups['template'], $enabled_block_keys, modules_get_source_label('template'), $block_override_state); ?>
                     <?php modules_render_block_table($block_groups['stylesheet'], $enabled_block_keys, modules_get_source_label('stylesheet'), $block_override_state); ?>
                 <?php else : ?>
@@ -1059,11 +1064,11 @@ function modules_render_modules_admin_page()
                     <button type="submit" class="button button-primary">
                         <?php
                         if ('modules' === $current_tab) {
-                            echo esc_html__('Save Modules', 'lonestar-theme');
+                            echo esc_html__('Save Modules', 'lonestar');
                         } elseif ('blocks' === $current_tab) {
-                            echo esc_html__('Save Blocks', 'lonestar-theme');
+                            echo esc_html__('Save Blocks', 'lonestar');
                         } else {
-                            echo esc_html__('Save Settings', 'lonestar-theme');
+                            echo esc_html__('Save Settings', 'lonestar');
                         }
                         ?>
                     </button>

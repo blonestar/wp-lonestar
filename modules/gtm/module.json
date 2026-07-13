@@ -1,6 +1,7 @@
 {
   "name": "GTM",
   "description": "Outputs Google Tag Manager snippets with native Theme Settings configuration.",
+  "textdomain": "lonestar",
   "requires": [],
   "admin_links": [
     {

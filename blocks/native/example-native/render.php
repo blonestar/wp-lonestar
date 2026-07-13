@@ -15,11 +15,11 @@ if (isset($attributes['description']) && is_string($attributes['description'])) 
 }
 
 if ('' === trim($heading)) {
-    $heading = __('Example Native Block', 'lonestar-theme');
+    $heading = __('Example Native Block', 'lonestar');
 }
 
 if ('' === trim($description)) {
-    $description = __('This block is rendered by PHP and edited in the block editor.', 'lonestar-theme');
+    $description = __('This block is rendered by PHP and edited in the block editor.', 'lonestar');
 }
 ?>
 <section <?php echo get_block_wrapper_attributes(array('class' => 'wp-block-lonestar-example-native')); ?>>

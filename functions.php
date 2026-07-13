@@ -100,6 +100,7 @@ if (!function_exists('lonestar_get_theme_cache_namespace')) {
 // Explicit order keeps bootstrap dependencies reviewable and deterministic.
 $lonestar_core_files = array(
     'vite.php',
+    'module-metadata-i18n.php',
     'modules.php',
     'content-types.php',
     'blocks-acf-enqueue.php',
@@ -153,7 +154,7 @@ if (!function_exists('lonestar_setup')) {
     function lonestar_setup()
     {
         // Make theme available for translation.
-        load_theme_textdomain('lonestar-theme', get_template_directory() . '/languages');
+        load_theme_textdomain('lonestar', get_template_directory() . '/languages');
 
         /**
          * Enable menu support
