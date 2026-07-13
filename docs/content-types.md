@@ -41,6 +41,12 @@ Files are naturally sorted, parent first and child second. Identity is the post 
 
 After resolution and before registration, `lonestar_content_type_definitions` filters the map with `post_types` and `taxonomies` keys. Filtered values are revalidated. On `init` priority 5, all post types are registered before all taxonomies; types already registered by WordPress or plugins are left untouched.
 
+## Catalog and Theme Settings overview
+
+`lonestar_get_content_type_catalog()` is the request-local source of truth for both runtime registration and the informational `Appearance -> Theme Settings -> Content Types` tab. Its structural result is built once per request, while WordPress existence status is refreshed when the catalog is read. Its `post_types` and `taxonomies` sections each expose `entries` (all valid file and filter entries) and `effective` maps (the exact filtered definitions passed to registration); `diagnostics` contains unique scan, validation, duplicate, and load messages from that catalog build.
+
+Each entry records its stable key, entity type, slug, source (`template`, `stylesheet`, or `filter`), source file (empty for filter-only entries), effective/override/filter state, and current WordPress existence status. File-backed entries preserve `declared_args`/`declared_object_types` separately from `effective_args`/`effective_object_types`, so filter changes never erase the source declaration. The overview is strictly read-only: it has no toggles, form submission, option writes, rewrite action, or generic Theme Settings POST handling. A currently registered entity is shown as a WordPress runtime fact, not as a claim that Lonestar owns that registration.
+
 ## Rewrite lifecycle and recommendations
 
 On `admin_init`, only users who can `manage_options` compare a stable path/content signature with `lonestar_content_types_signature`. A changed source (including removal after a prior signature) triggers one soft rewrite flush and stores the new signature with autoload disabled. Frontend requests never flush or write this option.

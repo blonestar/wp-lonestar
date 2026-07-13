@@ -61,6 +61,15 @@ function lonestar_content_types_diagnostic($message, $context = array())
 {
     $message = (string) $message;
     $context = is_array($context) ? $context : array();
+    if (isset($GLOBALS['lonestar_content_type_catalog_diagnostics']) && is_array($GLOBALS['lonestar_content_type_catalog_diagnostics'])) {
+        $signature = md5($message . "\0" . serialize($context));
+        if (!isset($GLOBALS['lonestar_content_type_catalog_diagnostics'][$signature])) {
+            $GLOBALS['lonestar_content_type_catalog_diagnostics'][$signature] = array(
+                'message' => $message,
+                'context' => $context,
+            );
+        }
+    }
     do_action('lonestar_content_types_diagnostic', $message, $context);
 
     if (defined('WP_DEBUG') && WP_DEBUG && function_exists('_doing_it_wrong')) {
@@ -149,45 +158,222 @@ function lonestar_validate_content_type_definition($definition, $origin)
     return $valid;
 }
 
-/**
- * Load and validate every definition file, with child identities overriding parent.
- *
- * @return array{post_types:array<string,array<string,mixed>>,taxonomies:array<string,array<string,mixed>>}
- */
-function lonestar_get_content_type_definitions()
+/** Return an empty content-type catalog with the stable public shape. */
+function lonestar_get_empty_content_type_catalog()
 {
-    $resolved = array('post_types' => array(), 'taxonomies' => array());
-    foreach (lonestar_get_content_type_definition_files() as $source => $files) {
-        $seen = array('post_types' => array(), 'taxonomies' => array());
-        foreach ($files as $file) {
-            try {
-                $definition = require $file;
-            } catch (Throwable $throwable) {
-                lonestar_content_types_diagnostic('Content type definition could not be loaded.', array('file' => $file, 'error' => $throwable->getMessage()));
-                continue;
-            }
+    return array(
+        'post_types' => array('entries' => array(), 'effective' => array(), 'effective_entry_keys' => array()),
+        'taxonomies' => array('entries' => array(), 'effective' => array(), 'effective_entry_keys' => array()),
+        'diagnostics' => array(),
+    );
+}
 
-            $valid = lonestar_validate_content_type_definition($definition, $file);
-            foreach (array('post_types', 'taxonomies') as $entity_type) {
-                foreach ($valid[$entity_type] as $slug => $entity) {
-                    if (isset($seen[$entity_type][$slug])) {
-                        lonestar_content_types_diagnostic('Duplicate content type identity in one source was skipped.', array('file' => $file, 'source' => $source, 'slug' => $slug));
-                        continue;
+/** Refresh dynamic WordPress existence facts on a catalog copy. */
+function lonestar_apply_content_type_catalog_runtime_status($catalog)
+{
+    foreach (array('post_types', 'taxonomies') as $entity_type) {
+        if (!isset($catalog[$entity_type]['entries']) || !is_array($catalog[$entity_type]['entries'])) {
+            continue;
+        }
+        foreach ($catalog[$entity_type]['entries'] as &$entry) {
+            $slug = isset($entry['slug']) ? (string) $entry['slug'] : '';
+            $entry['exists'] = '' !== $slug && ('post_types' === $entity_type ? post_type_exists($slug) : taxonomy_exists($slug));
+            $entry['registered'] = $entry['exists'];
+        }
+        unset($entry);
+    }
+
+    return $catalog;
+}
+
+/**
+ * Build the authoritative, request-local content type catalog.
+ *
+ * The structural catalog is computed once per request and shared by runtime
+ * registration and Theme Settings. Pass true only when an intentional refresh
+ * is required before registration or in isolated tests.
+ *
+ * @param bool $refresh Force a fresh structural catalog build.
+ * @return array{post_types:array{entries:array<string,array<string,mixed>>,effective:array<string,array<string,mixed>>},taxonomies:array{entries:array<string,array<string,mixed>>,effective:array<string,array<string,mixed>>},diagnostics:array<int,array<string,mixed>>}
+ */
+function lonestar_get_content_type_catalog($refresh = false)
+{
+    static $cached_catalog = null;
+    static $is_building = false;
+
+    if (!$refresh && is_array($cached_catalog)) {
+        return lonestar_apply_content_type_catalog_runtime_status($cached_catalog);
+    }
+    if ($is_building) {
+        return lonestar_apply_content_type_catalog_runtime_status(is_array($cached_catalog) ? $cached_catalog : lonestar_get_empty_content_type_catalog());
+    }
+
+    $is_building = true;
+    $had_previous_diagnostics = array_key_exists('lonestar_content_type_catalog_diagnostics', $GLOBALS);
+    $previous_diagnostics = $had_previous_diagnostics ? $GLOBALS['lonestar_content_type_catalog_diagnostics'] : null;
+    $GLOBALS['lonestar_content_type_catalog_diagnostics'] = array();
+    $catalog = lonestar_get_empty_content_type_catalog();
+
+    try {
+        foreach (lonestar_get_content_type_definition_files() as $source => $files) {
+            $seen = array('post_types' => array(), 'taxonomies' => array());
+            foreach ($files as $file) {
+                try {
+                    $definition = require $file;
+                } catch (Throwable $throwable) {
+                    lonestar_content_types_diagnostic('Content type definition could not be loaded.', array('file' => $file, 'error' => $throwable->getMessage()));
+                    continue;
+                }
+
+                $valid = lonestar_validate_content_type_definition($definition, $file);
+                foreach (array('post_types', 'taxonomies') as $entity_type) {
+                    foreach ($valid[$entity_type] as $slug => $entity) {
+                        if (isset($seen[$entity_type][$slug])) {
+                            lonestar_content_types_diagnostic('Duplicate content type identity in one source was skipped.', array('file' => $file, 'source' => $source, 'slug' => $slug));
+                            continue;
+                        }
+                        $seen[$entity_type][$slug] = true;
+                        $key = $source . ':' . $slug;
+                        $declared_args = 'post_types' === $entity_type ? $entity : $entity['args'];
+                        $declared_object_types = 'taxonomies' === $entity_type ? $entity['object_types'] : array();
+                        $catalog[$entity_type]['entries'][$key] = array(
+                            'key' => $key,
+                            'entity_type' => $entity_type,
+                            'slug' => $slug,
+                            'args' => $declared_args,
+                            'object_types' => $declared_object_types,
+                            'declared_args' => $declared_args,
+                            'declared_object_types' => $declared_object_types,
+                            'effective_args' => $declared_args,
+                            'effective_object_types' => $declared_object_types,
+                            'source' => $source,
+                            'file' => wp_normalize_path($file),
+                            'effective' => true,
+                            'overridden' => false,
+                            'overriding_entry_key' => '',
+                            'overriding_source' => '',
+                            'filtered' => false,
+                            'filtered_out' => false,
+                            'exists' => false,
+                            'registered' => false,
+                        );
+                        if (isset($catalog[$entity_type]['effective_entry_keys'][$slug])) {
+                            $old_key = $catalog[$entity_type]['effective_entry_keys'][$slug];
+                            $catalog[$entity_type]['entries'][$old_key]['effective'] = false;
+                            $catalog[$entity_type]['entries'][$old_key]['overridden'] = true;
+                            $catalog[$entity_type]['entries'][$old_key]['overriding_entry_key'] = $key;
+                            $catalog[$entity_type]['entries'][$old_key]['overriding_source'] = $source;
+                        }
+                        $catalog[$entity_type]['effective'][$slug] = 'post_types' === $entity_type
+                            ? $declared_args
+                            : array('object_types' => $declared_object_types, 'args' => $declared_args);
+                        $catalog[$entity_type]['effective_entry_keys'][$slug] = $key;
                     }
-                    $seen[$entity_type][$slug] = true;
-                    $resolved[$entity_type][$slug] = $entity;
                 }
             }
         }
+
+        /**
+         * Filters resolved content type definitions before registration.
+         *
+         * @param array $resolved Array with post_types and taxonomies maps.
+         */
+        $unfiltered = array(
+            'post_types' => $catalog['post_types']['effective'],
+            'taxonomies' => $catalog['taxonomies']['effective'],
+        );
+        $filtered = lonestar_validate_content_type_resolution(apply_filters('lonestar_content_type_definitions', $unfiltered));
+
+        foreach (array('post_types', 'taxonomies') as $entity_type) {
+            foreach ($catalog[$entity_type]['effective'] as $slug => $definition) {
+                if (isset($filtered[$entity_type][$slug])) {
+                    $entry_key = $catalog[$entity_type]['effective_entry_keys'][$slug];
+                    $entry = &$catalog[$entity_type]['entries'][$entry_key];
+                    $new_args = 'post_types' === $entity_type ? $filtered[$entity_type][$slug] : $filtered[$entity_type][$slug]['args'];
+                    $new_object_types = 'taxonomies' === $entity_type ? $filtered[$entity_type][$slug]['object_types'] : array();
+                    $entry['filtered'] = ($entry['declared_args'] !== $new_args || $entry['declared_object_types'] !== $new_object_types);
+                    $entry['effective_args'] = $new_args;
+                    $entry['effective_object_types'] = $new_object_types;
+                    $catalog[$entity_type]['effective'][$slug] = 'post_types' === $entity_type
+                        ? $new_args
+                        : array('object_types' => $new_object_types, 'args' => $new_args);
+                    unset($entry);
+                    continue;
+                }
+
+                $entry_key = $catalog[$entity_type]['effective_entry_keys'][$slug];
+                $catalog[$entity_type]['entries'][$entry_key]['effective'] = false;
+                $catalog[$entity_type]['entries'][$entry_key]['filtered'] = true;
+                $catalog[$entity_type]['entries'][$entry_key]['filtered_out'] = true;
+                unset($catalog[$entity_type]['effective'][$slug], $catalog[$entity_type]['effective_entry_keys'][$slug]);
+            }
+
+            foreach ($filtered[$entity_type] as $slug => $definition) {
+                if (isset($catalog[$entity_type]['effective'][$slug])) {
+                    continue;
+                }
+                $key = 'filter:' . $slug;
+                $filter_args = 'post_types' === $entity_type ? $definition : $definition['args'];
+                $filter_object_types = 'taxonomies' === $entity_type ? $definition['object_types'] : array();
+                $catalog[$entity_type]['entries'][$key] = array(
+                    'key' => $key,
+                    'entity_type' => $entity_type,
+                    'slug' => $slug,
+                    'args' => $filter_args,
+                    'object_types' => $filter_object_types,
+                    'declared_args' => $filter_args,
+                    'declared_object_types' => $filter_object_types,
+                    'effective_args' => $filter_args,
+                    'effective_object_types' => $filter_object_types,
+                    'source' => 'filter',
+                    'file' => '',
+                    'effective' => true,
+                    'overridden' => false,
+                    'overriding_entry_key' => '',
+                    'overriding_source' => '',
+                    'filtered' => true,
+                    'filtered_out' => false,
+                    'exists' => false,
+                    'registered' => false,
+                );
+                $catalog[$entity_type]['effective'][$slug] = 'post_types' === $entity_type
+                    ? $filter_args
+                    : array('object_types' => $filter_object_types, 'args' => $filter_args);
+                $catalog[$entity_type]['effective_entry_keys'][$slug] = $key;
+            }
+        }
+
+        $catalog['diagnostics'] = array_values($GLOBALS['lonestar_content_type_catalog_diagnostics']);
+        $cached_catalog = $catalog;
+    } finally {
+        if ($had_previous_diagnostics) {
+            $GLOBALS['lonestar_content_type_catalog_diagnostics'] = $previous_diagnostics;
+        } else {
+            unset($GLOBALS['lonestar_content_type_catalog_diagnostics']);
+        }
+        $is_building = false;
     }
 
-    /**
-     * Filters resolved content type definitions before registration.
-     *
-     * @param array $resolved Array with post_types and taxonomies maps.
-     */
-    $resolved = apply_filters('lonestar_content_type_definitions', $resolved);
-    return lonestar_validate_content_type_resolution($resolved);
+    return lonestar_apply_content_type_catalog_runtime_status($cached_catalog);
+}
+
+/**
+ * Return filtered effective definitions for compatibility with the v1 API.
+ *
+ * @param bool $refresh Force a fresh request-local catalog build.
+ * @return array{post_types:array<string,array<string,mixed>>,taxonomies:array<string,array<string,mixed>>}
+ */
+function lonestar_get_content_type_definitions($refresh = false)
+{
+    $catalog = lonestar_get_content_type_catalog($refresh);
+    $definitions = array('post_types' => array(), 'taxonomies' => array());
+    foreach ($catalog['post_types']['effective'] as $slug => $definition) {
+        $definitions['post_types'][$slug] = $definition;
+    }
+    foreach ($catalog['taxonomies']['effective'] as $slug => $definition) {
+        $definitions['taxonomies'][$slug] = $definition;
+    }
+    return $definitions;
 }
 
 /**
@@ -223,7 +409,14 @@ function lonestar_validate_content_type_resolution($definitions)
 /** Register resolved definitions after WordPress has loaded its core types. */
 function lonestar_register_content_types()
 {
-    $definitions = lonestar_get_content_type_definitions();
+    $catalog = lonestar_get_content_type_catalog(true);
+    $definitions = array('post_types' => array(), 'taxonomies' => array());
+    foreach ($catalog['post_types']['effective'] as $slug => $definition) {
+        $definitions['post_types'][$slug] = $definition;
+    }
+    foreach ($catalog['taxonomies']['effective'] as $slug => $definition) {
+        $definitions['taxonomies'][$slug] = $definition;
+    }
     foreach ($definitions['post_types'] as $slug => $args) {
         if (post_type_exists($slug)) {
             lonestar_content_types_diagnostic('Post type already registered; definition skipped.', array('post_type' => $slug));

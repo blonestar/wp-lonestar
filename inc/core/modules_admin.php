@@ -74,6 +74,7 @@ function modules_get_settings_tabs()
     $tabs = array(
         'modules' => __('Modules', 'lonestar-theme'),
         'blocks'  => __('Blocks', 'lonestar-theme'),
+        'content-types' => __('Content Types', 'lonestar-theme'),
         'changelog' => __('Changelog', 'lonestar-theme'),
         'about' => __('About', 'lonestar-theme'),
     );
@@ -88,6 +89,7 @@ function modules_get_settings_tabs()
         return array(
             'modules' => __('Modules', 'lonestar-theme'),
             'blocks'  => __('Blocks', 'lonestar-theme'),
+            'content-types' => __('Content Types', 'lonestar-theme'),
             'changelog' => __('Changelog', 'lonestar-theme'),
             'about' => __('About', 'lonestar-theme'),
         );
@@ -108,6 +110,7 @@ function modules_get_settings_tabs()
         return array(
             'modules' => __('Modules', 'lonestar-theme'),
             'blocks'  => __('Blocks', 'lonestar-theme'),
+            'content-types' => __('Content Types', 'lonestar-theme'),
             'changelog' => __('Changelog', 'lonestar-theme'),
             'about' => __('About', 'lonestar-theme'),
         );
@@ -453,10 +456,14 @@ function modules_handle_modules_admin_post()
         return;
     }
 
-    check_admin_referer('lonestar_save_theme_settings', 'lonestar_theme_settings_nonce');
-
     $submitted_tab = isset($_POST['lonestar_settings_tab']) ? (string) wp_unslash($_POST['lonestar_settings_tab']) : null;
     $current_tab = modules_get_current_settings_tab($submitted_tab);
+    if ('content-types' === $current_tab) {
+        return;
+    }
+
+    check_admin_referer('lonestar_save_theme_settings', 'lonestar_theme_settings_nonce');
+
     $is_updated = false;
 
     if ('modules' === $current_tab) {
@@ -784,6 +791,182 @@ function modules_render_block_table($catalog, $enabled_keys, $source_label, $ove
     echo '</tbody></table>';
 }
 
+/** Return a declared argument value without inferring WordPress defaults. */
+function modules_get_content_type_argument_display($args, $key)
+{
+    if (!is_array($args) || !array_key_exists($key, $args)) {
+        return __('Not declared', 'lonestar-theme');
+    }
+    $value = $args[$key];
+    if (is_bool($value)) {
+        return $value ? __('Yes', 'lonestar-theme') : __('No', 'lonestar-theme');
+    }
+    if (is_array($value)) {
+        return empty($value) ? __('Declared empty', 'lonestar-theme') : wp_json_encode($value);
+    }
+    if (null === $value) {
+        return __('Declared null', 'lonestar-theme');
+    }
+    if ('' === $value) {
+        return __('Declared empty', 'lonestar-theme');
+    }
+    return is_scalar($value) ? (string) $value : __('Unsupported value', 'lonestar-theme');
+}
+
+/** Return the display label for a Content Types catalog source. */
+function modules_get_content_type_source_label($source)
+{
+    $source = sanitize_key((string) $source);
+
+    if ('filter' === $source) {
+        return __('Filter', 'lonestar-theme');
+    }
+
+    return modules_get_source_label($source);
+}
+
+/** Return a readable Content Types label from definition arguments. */
+function modules_get_content_type_label($slug, $args)
+{
+    if (isset($args['labels']) && is_array($args['labels']) && isset($args['labels']['name']) && is_scalar($args['labels']['name'])) {
+        return (string) $args['labels']['name'];
+    }
+
+    if (isset($args['label']) && is_scalar($args['label'])) {
+        return (string) $args['label'];
+    }
+
+    return ucwords(str_replace(array('-', '_'), ' ', (string) $slug));
+}
+
+/** Return useful, safely displayable context for a Content Types diagnostic. */
+function modules_get_content_type_diagnostic_context_display($context)
+{
+    if (!is_array($context)) {
+        return '';
+    }
+
+    $display = array();
+    foreach (array('file' => __('File', 'lonestar-theme'), 'origin' => __('Origin', 'lonestar-theme')) as $key => $label) {
+        if (isset($context[$key]) && is_scalar($context[$key]) && '' !== (string) $context[$key]) {
+            $display[] = $label . ': ' . modules_get_display_path((string) $context[$key]);
+        }
+    }
+    foreach (array('taxonomy' => __('Taxonomy', 'lonestar-theme'), 'slug' => __('Slug', 'lonestar-theme'), 'post_type' => __('Post type', 'lonestar-theme')) as $key => $label) {
+        if (isset($context[$key]) && is_scalar($context[$key]) && '' !== (string) $context[$key]) {
+            $display[] = $label . ': ' . (string) $context[$key];
+        }
+    }
+
+    return implode(' · ', $display);
+}
+
+/** Render a read-only Content Types table. */
+function modules_render_content_type_table($entries, $entity_type)
+{
+    $is_taxonomy = ('taxonomies' === $entity_type);
+    echo '<h2>' . esc_html($is_taxonomy ? __('Taxonomies', 'lonestar-theme') : __('Post Types', 'lonestar-theme')) . '</h2>';
+    if (!is_array($entries) || empty($entries)) {
+        echo '<p>' . esc_html($is_taxonomy ? __('No taxonomies were discovered.', 'lonestar-theme') : __('No post types were discovered.', 'lonestar-theme')) . '</p>';
+        return;
+    }
+    echo '<table class="widefat striped" style="max-width:1200px;"><thead><tr>';
+    echo '<th>' . esc_html($is_taxonomy ? __('Taxonomy', 'lonestar-theme') : __('Post Type', 'lonestar-theme')) . '</th><th>' . esc_html__('Status', 'lonestar-theme') . '</th><th>' . esc_html__('Source', 'lonestar-theme') . '</th><th>' . esc_html__('Configuration', 'lonestar-theme') . '</th>';
+    echo '</tr></thead><tbody>';
+    foreach ($entries as $entry) {
+        if (!is_array($entry)) {
+            continue;
+        }
+        $slug = isset($entry['slug']) ? sanitize_key((string) $entry['slug']) : '';
+        $declared_args = isset($entry['declared_args']) && is_array($entry['declared_args'])
+            ? $entry['declared_args']
+            : (isset($entry['args']) && is_array($entry['args']) ? $entry['args'] : array());
+        $effective_args = isset($entry['effective_args']) && is_array($entry['effective_args']) ? $entry['effective_args'] : $declared_args;
+        $args = !empty($entry['effective']) ? $effective_args : $declared_args;
+        $source = isset($entry['source']) ? sanitize_key((string) $entry['source']) : 'filter';
+        $label = modules_get_content_type_label($slug, $args);
+        $status = array();
+        $status[] = !empty($entry['effective']) ? __('Effective', 'lonestar-theme') : __('Not effective', 'lonestar-theme');
+        if (!empty($entry['overridden'])) $status[] = __('Overridden', 'lonestar-theme');
+        if (!empty($entry['filtered_out'])) $status[] = __('Filtered out', 'lonestar-theme'); elseif (!empty($entry['filtered'])) $status[] = __('Filter modified', 'lonestar-theme');
+        $status[] = !empty($entry['registered']) ? __('Slug exists in WordPress', 'lonestar-theme') : __('Slug does not exist in WordPress', 'lonestar-theme');
+        $summary = array();
+        if ($is_taxonomy) {
+            $declared_object_types = isset($entry['declared_object_types']) && is_array($entry['declared_object_types'])
+                ? $entry['declared_object_types']
+                : (isset($entry['object_types']) && is_array($entry['object_types']) ? $entry['object_types'] : array());
+            $effective_object_types = isset($entry['effective_object_types']) && is_array($entry['effective_object_types']) ? $entry['effective_object_types'] : $declared_object_types;
+            $entry_object_types = !empty($entry['effective']) ? $effective_object_types : $declared_object_types;
+            $object_types = implode(', ', $entry_object_types);
+            $summary[] = __('Object types', 'lonestar-theme') . ': ' . ('' !== $object_types ? $object_types : __('Not declared', 'lonestar-theme'));
+            foreach (array('public' => __('Public', 'lonestar-theme'), 'show_in_rest' => __('REST', 'lonestar-theme'), 'hierarchical' => __('Hierarchical', 'lonestar-theme'), 'rewrite' => __('Rewrite', 'lonestar-theme')) as $key => $name) {
+                $summary[] = $name . ': ' . modules_get_content_type_argument_display($args, $key);
+            }
+        } else {
+            foreach (array('public' => __('Public', 'lonestar-theme'), 'show_in_rest' => __('REST', 'lonestar-theme'), 'has_archive' => __('Archive', 'lonestar-theme'), 'rewrite' => __('Rewrite', 'lonestar-theme'), 'supports' => __('Supports', 'lonestar-theme')) as $key => $name) {
+                $summary[] = $name . ': ' . modules_get_content_type_argument_display($args, $key);
+            }
+        }
+        echo '<tr><td><strong>' . esc_html($label) . '</strong><br /><code>' . esc_html($slug) . '</code>';
+        if (!empty($entry['overridden']) && !empty($entry['overriding_source'])) echo '<br /><span class="description">' . esc_html(sprintf(__('Overridden by %s.', 'lonestar-theme'), modules_get_content_type_source_label($entry['overriding_source']))) . '</span>';
+        if (!empty($entry['effective']) && !empty($entry['registered'])) {
+            if (!$is_taxonomy && function_exists('get_post_type_object')) {
+                $object = get_post_type_object($slug);
+                $can_edit_posts = $object && !empty($object->show_ui) && isset($object->cap->edit_posts) && current_user_can($object->cap->edit_posts);
+                if ($can_edit_posts) echo '<br /><a href="' . esc_url(add_query_arg('post_type', $slug, admin_url('edit.php'))) . '">' . esc_html__('View posts', 'lonestar-theme') . '</a>';
+                if ($can_edit_posts && function_exists('get_post_type_archive_link')) { $url = get_post_type_archive_link($slug); if (is_string($url) && '' !== $url) echo ' | <a href="' . esc_url($url) . '">' . esc_html__('View archive', 'lonestar-theme') . '</a>'; }
+            }
+            if ($is_taxonomy && function_exists('get_taxonomy')) {
+                $object = get_taxonomy($slug);
+                $post_type = !empty($entry_object_types) && is_scalar($entry_object_types[0]) ? sanitize_key((string) $entry_object_types[0]) : '';
+                if ($object && !empty($object->show_ui) && isset($object->cap->manage_terms) && current_user_can($object->cap->manage_terms)) {
+                    $query = array('taxonomy' => $slug);
+                    if ('' !== $post_type) {
+                        $query['post_type'] = $post_type;
+                    }
+                    echo '<br /><a href="' . esc_url(add_query_arg($query, admin_url('edit-tags.php'))) . '">' . esc_html__('View terms', 'lonestar-theme') . '</a>';
+                }
+            }
+        }
+        echo '</td><td>' . esc_html(implode(' · ', $status)) . '</td><td>' . esc_html(modules_get_content_type_source_label($source));
+        $file = isset($entry['file']) ? (string) $entry['file'] : '';
+        if ('' !== $file) echo '<br /><code>' . esc_html(modules_get_display_path($file)) . '</code>';
+        echo '</td><td>' . esc_html(implode('; ', $summary));
+        if (!empty($entry['effective']) && !empty($entry['filtered']) && $declared_args !== $effective_args) {
+            echo '<br /><span class="description">' . esc_html__('Showing effective values after filters; declared values remain available in the catalog.', 'lonestar-theme') . '</span>';
+        }
+        echo '</td></tr>';
+    }
+    echo '</tbody></table>';
+}
+
+/** Render the informational, non-mutating Content Types settings tab. */
+function modules_render_content_types_tab()
+{
+    $catalog = function_exists('lonestar_get_content_type_catalog') ? lonestar_get_content_type_catalog() : array();
+    $post_types = isset($catalog['post_types']['entries']) ? $catalog['post_types']['entries'] : array();
+    $taxonomies = isset($catalog['taxonomies']['entries']) ? $catalog['taxonomies']['entries'] : array();
+    echo '<h2>' . esc_html__('Content Types', 'lonestar-theme') . '</h2><p>' . esc_html__('Read-only overview of content type definitions resolved for this request. This page does not save settings or change rewrites.', 'lonestar-theme') . '</p>';
+    modules_render_content_type_table($post_types, 'post_types');
+    modules_render_content_type_table($taxonomies, 'taxonomies');
+    $diagnostics = isset($catalog['diagnostics']) && is_array($catalog['diagnostics']) ? $catalog['diagnostics'] : array();
+    if (!empty($diagnostics)) {
+        echo '<div class="notice notice-warning inline"><p><strong>' . esc_html__('Definition diagnostics', 'lonestar-theme') . '</strong></p><ul>';
+        foreach ($diagnostics as $diagnostic) {
+            if (!is_array($diagnostic) || !isset($diagnostic['message'])) {
+                continue;
+            }
+            $context = modules_get_content_type_diagnostic_context_display(isset($diagnostic['context']) ? $diagnostic['context'] : array());
+            echo '<li>' . esc_html((string) $diagnostic['message']);
+            if ('' !== $context) {
+                echo '<br /><code>' . esc_html($context) . '</code>';
+            }
+            echo '</li>';
+        }
+        echo '</ul></div>';
+    }
+}
+
 /**
  * Render Theme Settings admin page.
  *
@@ -828,7 +1011,7 @@ function modules_render_modules_admin_page()
     ?>
     <div class="wrap">
         <h1><?php echo esc_html__('Theme Settings', 'lonestar-theme'); ?></h1>
-        <p><?php echo esc_html__('Enable or disable modules and blocks. Changes take effect immediately after save.', 'lonestar-theme'); ?></p>
+        <p><?php echo esc_html__('Manage module and block availability, and review informational theme runtime details.', 'lonestar-theme'); ?></p>
 
         <?php $is_updated = (isset($_GET['updated']) && '1' === sanitize_text_field((string) wp_unslash($_GET['updated']))); ?>
         <?php if ($is_updated) : ?>
@@ -851,6 +1034,8 @@ function modules_render_modules_admin_page()
 
         <?php if ('changelog' === $current_tab) : ?>
             <?php modules_render_changelog_tab(); ?>
+        <?php elseif ('content-types' === $current_tab) : ?>
+            <?php modules_render_content_types_tab(); ?>
         <?php elseif ('about' === $current_tab) : ?>
             <?php modules_render_about_tab(); ?>
         <?php else : ?>
