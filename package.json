@@ -33,10 +33,10 @@
   "devDependencies": {
     "@wordpress/browserslist-config": "^6.51.0",
     "autoprefixer": "^10.5.4",
-    "browserslist": "^4.28.5",
-    "postcss": "^8.5.19",
-    "postcss-nesting": "^14.0.0",
-    "prettier": "^3.9.5",
+    "browserslist": "^4.28.7",
+    "postcss": "^8.5.23",
+    "postcss-nesting": "^14.0.1",
+    "prettier": "^3.9.6",
     "vite": "^8.1.5"
   }
 }
