@@ -10,8 +10,8 @@ if (!defined('ABSPATH')) {
  * ACF v6.0 ready - searching for and loading block.json files.
  *
  * Constants required (defined in functions.php):
- * - TEMPLATE_PATH: Theme directory path with trailing slash
- * - ACF_BLOCKS_PATH: Relative path to ACF blocks directory
+ * - LONESTAR_TEMPLATE_PATH: Theme directory path with trailing slash
+ * - LONESTAR_ACF_BLOCKS_PATH: Relative path to ACF blocks directory
  */
 
 add_action('init', 'lonestar_register_acf_block_types');

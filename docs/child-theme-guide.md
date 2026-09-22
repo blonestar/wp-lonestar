@@ -79,9 +79,9 @@ The boilerplate intentionally uses `Update URI: false`; project forks must not r
 
 Common child extension paths:
 
-- `functions.php` for enqueue and project hooks.
-- `inc/helpers/helper.*.php` for child helper overrides (parent loader supports child overrides by basename).
-- `inc/shortcodes/shortcode.*.php` for child shortcode overrides (same basename override strategy).
+- `functions.php` for enqueue and project hooks. If you enqueue a script/style dependency on the parent's built entry, prefer the current `lonestar-main`/`lonestar-{filename}` handles over the deprecated unprefixed `main`/`{filename}` aliases — see "Deprecated compatibility aliases" in `docs/developer-guide.md`.
+- `inc/helpers/helper.*.php` for child helper overrides (parent loader supports child overrides by basename). The parent's `write_log()`/`printr()` are deprecated aliases for `lonestar_write_log()`/`lonestar_printr()`; prefer the prefixed names in new child code.
+- `inc/shortcodes/shortcode.*.php` for child shortcode overrides (same basename override strategy). `[R]`/`[Y]`/`[year]` tags are unchanged; the parent's callbacks are now `lonestar_shortcode_reserved()`/`lonestar_shortcode_year()`.
 - `templates/`, `parts/`, `patterns/` for project-level rendering overrides where needed.
 - `blocks/acf/`, `blocks/native/`, and `blocks/php-only/` for the three supported block families.
 - `inc/content-types/*.php` for declarative project post types and taxonomies; discovery is automatic, so no child `functions.php` bootstrap edit is needed. See `docs/content-types.md`.

@@ -75,7 +75,7 @@ if (!function_exists('lonestar_get_theme_cache_namespace')) {
         try {
             $theme = wp_get_theme();
             $theme_version = ($theme instanceof \WP_Theme) ? (string) $theme->get('Version') : '';
-            $manifest_path = trailingslashit(get_template_directory()) . DIST_REL_PATH . 'manifest.json';
+            $manifest_path = trailingslashit(get_template_directory()) . LONESTAR_DIST_REL_PATH . 'manifest.json';
             $manifest_mtime = file_exists($manifest_path) ? (string) filemtime($manifest_path) : 'manifest-missing';
             $bootstrap_file = trailingslashit(get_template_directory()) . 'functions.php';
             $bootstrap_mtime = file_exists($bootstrap_file) ? (string) filemtime($bootstrap_file) : '0';

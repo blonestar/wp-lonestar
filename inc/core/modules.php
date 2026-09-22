@@ -6,6 +6,17 @@ if (!defined('ABSPATH')) {
 
 /**
  * Theme module system entrypoint.
+ *
+ * Legacy namespace note: the `modules_*` function family across
+ * inc/core/modules*.php (~80 functions: modules_get_module_catalog(),
+ * modules_get_module_admin_links(), modules_handle_modules_admin_post(),
+ * etc.) predates the `lonestar_`/`LONESTAR_` naming convention adopted for
+ * new public symbols. It is intentionally left unprefixed in this phase —
+ * renaming ~80 functions at once is too large/risky a change for a single
+ * pass — and is scheduled to move to a `lonestar_module_*` namespace at the
+ * 1.0 release, with `modules_*` kept as compatibility aliases at that time.
+ * See docs/developer-guide.md "Deprecated compatibility aliases" for the
+ * full list of names affected by this phase's renames.
  */
 if (!defined('MODULES_TOGGLE_OPTION')) {
     if (defined('LONESTAR_MODULE_TOGGLE_OPTION')) {

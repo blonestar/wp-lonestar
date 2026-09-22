@@ -319,6 +319,10 @@ function modules_should_use_module_catalog_cache()
     }
 
     // Avoid recursive cache-namespace resolution by not calling lonestar_is_vite_dev_mode() here.
+    if (defined('LONESTAR_VITE_DEVELOPMENT') && true === LONESTAR_VITE_DEVELOPMENT) {
+        $use_cache = false;
+        return $use_cache;
+    }
     if (defined('IS_VITE_DEVELOPMENT') && true === IS_VITE_DEVELOPMENT) {
         $use_cache = false;
         return $use_cache;
@@ -1198,67 +1202,6 @@ function modules_get_module_admin_links($slug, $module_directory, $entry_file = 
                     'url'              => $resolved_url,
                 );
                 $seen_urls[$resolved_url] = true;
-            }
-        }
-    }
-
-    return $links;
-
-    // Deprecated unreachable compatibility code. It will be removed in the next major release.
-    if ('file' === $mode) {
-        $php_files = ('' !== $entry_file && file_exists($entry_file) && is_readable($entry_file))
-            ? array($entry_file)
-            : array();
-    } else {
-        $php_files = modules_get_module_php_files_for_scanning($module_directory);
-    }
-
-    foreach ($php_files as $php_file) {
-        $contents = file_get_contents($php_file);
-        if (false === $contents || '' === trim((string) $contents)) {
-            continue;
-        }
-
-        // ACF options page/subpage args parsing.
-        if (preg_match_all('/acf_add_options_(?:sub_)?page\s*\(\s*array\s*\((.*?)\)\s*\)\s*;?/is', (string) $contents, $calls)) {
-            $arg_blocks = isset($calls[1]) && is_array($calls[1]) ? $calls[1] : array();
-            foreach ($arg_blocks as $args) {
-                $menu_slug = '';
-                $menu_title = '';
-                $page_title = '';
-
-                if (preg_match('/[\'"]menu_slug[\'"]\s*=>\s*[\'"]([^\'"]+)[\'"]/i', (string) $args, $match)) {
-                    $menu_slug = sanitize_key((string) $match[1]);
-                }
-                if (preg_match('/[\'"]menu_title[\'"]\s*=>\s*[\'"]([^\'"]+)[\'"]/i', (string) $args, $match)) {
-                    $menu_title = sanitize_text_field((string) $match[1]);
-                }
-                if (preg_match('/[\'"]page_title[\'"]\s*=>\s*[\'"]([^\'"]+)[\'"]/i', (string) $args, $match)) {
-                    $page_title = sanitize_text_field((string) $match[1]);
-                }
-
-                if ('' === $menu_slug) {
-                    $title_for_slug = '' !== $menu_title ? $menu_title : $page_title;
-                    if ('' !== $title_for_slug) {
-                        $menu_slug = 'acf-options-' . sanitize_title($title_for_slug);
-                    }
-                }
-
-                if ('' !== $menu_slug) {
-                    $label = '' !== $menu_title ? $menu_title : ('' !== $page_title ? $page_title : __('Settings', 'lonestar'));
-                    modules_add_module_admin_page_link($links, $seen_pages, $menu_slug, $label);
-                }
-            }
-        }
-
-        // Fallback from explicit ACF options page value usage in field groups.
-        if (preg_match_all('/acf-options-[a-z0-9_-]+/i', (string) $contents, $matches)) {
-            $pages = isset($matches[0]) && is_array($matches[0]) ? $matches[0] : array();
-            foreach ($pages as $page_slug) {
-                $page_slug = sanitize_key((string) $page_slug);
-                if ('' !== $page_slug) {
-                    modules_add_module_admin_page_link($links, $seen_pages, $page_slug, __('Settings', 'lonestar'));
-                }
             }
         }
     }

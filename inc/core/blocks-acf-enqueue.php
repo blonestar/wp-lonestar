@@ -13,6 +13,9 @@ add_action('init', 'lonestar_register_block_files', 20);
  */
 function lonestar_is_vite_dev_mode()
 {
+	if (defined('LONESTAR_VITE_DEVELOPMENT')) {
+		return LONESTAR_VITE_DEVELOPMENT === true;
+	}
 	if (defined('IS_VITE_DEVELOPMENT')) {
 		return IS_VITE_DEVELOPMENT === true;
 	}
@@ -26,23 +29,24 @@ function lonestar_is_vite_dev_mode()
 		return false;
 	}
 
-	if (!defined('VITE_SERVER') || !function_exists('wp_remote_get')) {
+	if (!defined('LONESTAR_VITE_SERVER') || !function_exists('wp_remote_get')) {
 		return false;
 	}
 
 	// The automatic HTTP probe is only safe to run on environments where a
 	// local Vite dev server is plausibly running. Staging/other environment
-	// types must opt in explicitly via IS_VITE_DEVELOPMENT or
-	// LONESTAR_VITE_DEV rather than pay an HTTP round-trip per request.
+	// types must opt in explicitly via LONESTAR_VITE_DEVELOPMENT (or the
+	// legacy IS_VITE_DEVELOPMENT) or LONESTAR_VITE_DEV rather than pay an
+	// HTTP round-trip per request.
 	$probe_environment = function_exists('wp_get_environment_type') ? wp_get_environment_type() : 'production';
 	$probe_enabled = in_array($probe_environment, array('local', 'development'), true);
 
 	/**
 	 * Filter whether the automatic Vite dev-server HTTP probe may run.
 	 *
-	 * Explicit IS_VITE_DEVELOPMENT / LONESTAR_VITE_DEV opt-ins bypass this
-	 * filter entirely (handled above). This only gates the environment-type
-	 * based automatic probe.
+	 * Explicit LONESTAR_VITE_DEVELOPMENT / IS_VITE_DEVELOPMENT / LONESTAR_VITE_DEV
+	 * opt-ins bypass this filter entirely (handled above). This only gates
+	 * the environment-type based automatic probe.
 	 *
 	 * @param bool   $probe_enabled Whether the probe is allowed to run.
 	 * @param string $probe_environment Current wp_get_environment_type() value.
@@ -59,7 +63,7 @@ function lonestar_is_vite_dev_mode()
 		return (bool) $cached['is_running'];
 	}
 
-	$probe_url = rtrim(VITE_SERVER, '/') . '/@vite/client';
+	$probe_url = rtrim(LONESTAR_VITE_SERVER, '/') . '/@vite/client';
 	$response = wp_remote_get(
 		$probe_url,
 		array(
@@ -138,18 +142,18 @@ function lonestar_get_theme_block_root_paths($block_type = 'all')
 	$block_type = strtolower((string) $block_type);
 	$relative_paths = array();
 
-	if (('all' === $block_type || 'acf' === $block_type) && defined('ACF_BLOCKS_PATH')) {
-		$relative_paths[] = ACF_BLOCKS_PATH;
+	if (('all' === $block_type || 'acf' === $block_type) && defined('LONESTAR_ACF_BLOCKS_PATH')) {
+		$relative_paths[] = LONESTAR_ACF_BLOCKS_PATH;
 	}
-	if (('all' === $block_type || 'native' === $block_type) && defined('NATIVE_BLOCKS_PATH')) {
-		$relative_paths[] = NATIVE_BLOCKS_PATH;
+	if (('all' === $block_type || 'native' === $block_type) && defined('LONESTAR_NATIVE_BLOCKS_PATH')) {
+		$relative_paths[] = LONESTAR_NATIVE_BLOCKS_PATH;
 	}
-	if (('all' === $block_type || 'php-only' === $block_type) && defined('PHP_ONLY_BLOCKS_PATH')) {
-		$relative_paths[] = PHP_ONLY_BLOCKS_PATH;
+	if (('all' === $block_type || 'php-only' === $block_type) && defined('LONESTAR_PHP_ONLY_BLOCKS_PATH')) {
+		$relative_paths[] = LONESTAR_PHP_ONLY_BLOCKS_PATH;
 	}
 
 	$roots = array();
-	$theme_base_paths = array(wp_normalize_path(untrailingslashit(TEMPLATE_PATH)));
+	$theme_base_paths = array(wp_normalize_path(untrailingslashit(LONESTAR_TEMPLATE_PATH)));
 	$stylesheet_path = wp_normalize_path(untrailingslashit(get_stylesheet_directory()));
 	if ('' !== $stylesheet_path && !in_array($stylesheet_path, $theme_base_paths, true)) {
 		$theme_base_paths[] = $stylesheet_path;
@@ -182,7 +186,7 @@ function lonestar_get_theme_source_contexts()
 	}
 
 	$contexts = array();
-	$dist_def = trim(defined('DIST_REL_PATH') ? (string) DIST_REL_PATH : 'dist/', '/');
+	$dist_def = trim(defined('LONESTAR_DIST_REL_PATH') ? (string) LONESTAR_DIST_REL_PATH : 'dist/', '/');
 
 	$template_path = wp_normalize_path(untrailingslashit((string) get_template_directory()));
 	$template_uri = untrailingslashit((string) get_template_directory_uri());
@@ -475,7 +479,7 @@ function lonestar_get_theme_relative_asset_path($absolute_path, $source_context 
  */
 function lonestar_get_vite_dev_asset_url($absolute_file)
 {
-	if (!defined('VITE_SERVER')) {
+	if (!defined('LONESTAR_VITE_SERVER')) {
 		return '';
 	}
 
@@ -485,7 +489,7 @@ function lonestar_get_vite_dev_asset_url($absolute_file)
 		return '';
 	}
 
-	$vite_server = rtrim(VITE_SERVER, '/');
+	$vite_server = rtrim(LONESTAR_VITE_SERVER, '/');
 	return $vite_server . '/' . ltrim($relative_path, '/');
 }
 
@@ -506,7 +510,7 @@ function lonestar_get_theme_asset_url($absolute_file)
 	$contexts = lonestar_get_theme_source_contexts();
 	$theme_uri = isset($contexts[$source_context]['uri'])
 		? untrailingslashit((string) $contexts[$source_context]['uri'])
-		: (defined('TEMPLATE_URI') ? untrailingslashit(TEMPLATE_URI) : get_template_directory_uri());
+		: (defined('LONESTAR_TEMPLATE_URI') ? untrailingslashit(LONESTAR_TEMPLATE_URI) : get_template_directory_uri());
 	return $theme_uri . '/' . ltrim($relative_path, '/');
 }
 
@@ -533,8 +537,8 @@ function lonestar_get_block_assets_manifest($source_context = 'template')
 	$dist_path = '';
 	if (isset($contexts[$source_context]['dist_path'])) {
 		$dist_path = wp_normalize_path((string) $contexts[$source_context]['dist_path']);
-	} elseif (defined('DIST_PATH')) {
-		$dist_path = wp_normalize_path((string) DIST_PATH);
+	} elseif (defined('LONESTAR_DIST_PATH')) {
+		$dist_path = wp_normalize_path((string) LONESTAR_DIST_PATH);
 	}
 
 	if ('' === $dist_path) {
@@ -968,10 +972,10 @@ function lonestar_register_block_files()
 				if ('' !== $built_js_file) {
 					$js_dist_path = is_array($js_context) && isset($js_context['dist_path'])
 						? wp_normalize_path((string) $js_context['dist_path']) . '/' . $built_js_file
-						: (defined('DIST_PATH') ? DIST_PATH . '/' . $built_js_file : '');
+						: (defined('LONESTAR_DIST_PATH') ? LONESTAR_DIST_PATH . '/' . $built_js_file : '');
 					$js_file_path = is_array($js_context) && isset($js_context['dist_uri'])
 						? untrailingslashit((string) $js_context['dist_uri']) . '/' . $built_js_file
-						: (defined('DIST_URI') ? DIST_URI . '/' . $built_js_file : '');
+						: (defined('LONESTAR_DIST_URI') ? LONESTAR_DIST_URI . '/' . $built_js_file : '');
 					$js_file_version = file_exists($js_dist_path) ? filemtime($js_dist_path) : null;
 				}
 			}
@@ -1010,10 +1014,10 @@ function lonestar_register_block_files()
 				if ('' !== $built_css_file) {
 					$css_dist_path = is_array($css_context) && isset($css_context['dist_path'])
 						? wp_normalize_path((string) $css_context['dist_path']) . '/' . $built_css_file
-						: (defined('DIST_PATH') ? DIST_PATH . '/' . $built_css_file : '');
+						: (defined('LONESTAR_DIST_PATH') ? LONESTAR_DIST_PATH . '/' . $built_css_file : '');
 					$css_file_uri = is_array($css_context) && isset($css_context['dist_uri'])
 						? untrailingslashit((string) $css_context['dist_uri']) . '/' . $built_css_file
-						: (defined('DIST_URI') ? DIST_URI . '/' . $built_css_file : '');
+						: (defined('LONESTAR_DIST_URI') ? LONESTAR_DIST_URI . '/' . $built_css_file : '');
 					$css_file_version = file_exists($css_dist_path) ? filemtime($css_dist_path) : null;
 				}
 			}

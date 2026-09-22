@@ -446,7 +446,7 @@ function modules_handle_modules_admin_post()
         return;
     }
 
-    if ('POST' !== strtoupper((string) $_SERVER['REQUEST_METHOD'])) {
+    if (!isset($_SERVER['REQUEST_METHOD']) || 'POST' !== strtoupper((string) $_SERVER['REQUEST_METHOD'])) {
         return;
     }
 
