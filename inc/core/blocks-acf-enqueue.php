@@ -30,6 +30,28 @@ function lonestar_is_vite_dev_mode()
 		return false;
 	}
 
+	// The automatic HTTP probe is only safe to run on environments where a
+	// local Vite dev server is plausibly running. Staging/other environment
+	// types must opt in explicitly via IS_VITE_DEVELOPMENT or
+	// LONESTAR_VITE_DEV rather than pay an HTTP round-trip per request.
+	$probe_environment = function_exists('wp_get_environment_type') ? wp_get_environment_type() : 'production';
+	$probe_enabled = in_array($probe_environment, array('local', 'development'), true);
+
+	/**
+	 * Filter whether the automatic Vite dev-server HTTP probe may run.
+	 *
+	 * Explicit IS_VITE_DEVELOPMENT / LONESTAR_VITE_DEV opt-ins bypass this
+	 * filter entirely (handled above). This only gates the environment-type
+	 * based automatic probe.
+	 *
+	 * @param bool   $probe_enabled Whether the probe is allowed to run.
+	 * @param string $probe_environment Current wp_get_environment_type() value.
+	 */
+	$probe_enabled = (bool) apply_filters('lonestar_vite_dev_probe_enabled', $probe_enabled, $probe_environment);
+	if (!$probe_enabled) {
+		return false;
+	}
+
 	$namespace = function_exists('lonestar_get_theme_cache_namespace') ? lonestar_get_theme_cache_namespace() : 'default';
 	$cache_key = 'lonestar_vite_dev_probe_' . $namespace;
 	$cached = get_transient($cache_key);
@@ -69,6 +91,10 @@ function lonestar_get_block_cache_namespace()
 /**
  * Get block discovery cache key.
  *
+ * Superseded by the consolidated block runtime index
+ * (lonestar_get_block_runtime_index_transient_key()), kept for backward
+ * compatibility with any external code referencing this key format.
+ *
  * @return string
  */
 function lonestar_get_block_discovery_transient_key()
@@ -79,30 +105,26 @@ function lonestar_get_block_discovery_transient_key()
 /**
  * Return discovered block directories with runtime cache in non-dev mode.
  *
+ * Delegates to the consolidated block runtime index. Kept for backward
+ * compatibility; returns the flattened (all block types) directory list.
+ *
  * @return array
  */
 function lonestar_get_cached_block_directories()
 {
-	if (lonestar_is_vite_dev_mode()) {
-		return lonestar_find_block_directories();
+	$index = lonestar_get_block_runtime_index();
+	$by_type = isset($index['directories']) && is_array($index['directories']) ? $index['directories'] : array();
+
+	$all = array();
+	foreach ($by_type as $type_directories) {
+		if (is_array($type_directories)) {
+			$all = array_merge($all, $type_directories);
+		}
 	}
 
-	$transient_key = lonestar_get_block_discovery_transient_key();
-	$cached = get_transient($transient_key);
-	if (is_array($cached) && isset($cached['directories']) && is_array($cached['directories'])) {
-		return $cached['directories'];
-	}
-
-	$directories = lonestar_find_block_directories();
-	set_transient(
-		$transient_key,
-		array(
-			'directories' => $directories,
-		),
-		HOUR_IN_SECONDS
-	);
-
-	return $directories;
+	$all = array_values(array_unique($all));
+	sort($all, SORT_NATURAL);
+	return $all;
 }
 
 /**
@@ -720,26 +742,158 @@ function lonestar_build_block_asset_registration_map($block_directories)
 }
 
 /**
+ * Return the block runtime index transient key.
+ *
+ * A single fixed key is used; the cached payload carries its own
+ * cache_namespace and is discarded on mismatch, so a namespace change
+ * (deploy/build) never leaves an orphaned transient behind under an old key.
+ *
+ * @return string
+ */
+function lonestar_get_block_runtime_index_transient_key()
+{
+	return 'lonestar_block_runtime_v1';
+}
+
+/**
+ * Decode a block.json file once, for reuse by directory + metadata caching.
+ *
+ * @param string $metadata_path Absolute block.json (or *.block.json) path.
+ * @return array|null Decoded metadata, or null on read/parse failure.
+ */
+function lonestar_decode_block_metadata_file($metadata_path)
+{
+	if (!is_string($metadata_path) || '' === $metadata_path || !is_readable($metadata_path)) {
+		return null;
+	}
+
+	$raw = file_get_contents($metadata_path);
+	if (false === $raw) {
+		return null;
+	}
+
+	$decoded = json_decode($raw, true);
+	return (JSON_ERROR_NONE === json_last_error() && is_array($decoded)) ? $decoded : null;
+}
+
+/**
+ * Build the consolidated block runtime index from a fresh filesystem scan.
+ *
+ * Discovers block directories once, decodes each block.json once, and
+ * builds the JS/CSS asset registration map from the same directory list and
+ * decoded metadata pool — replacing four separate discovery passes (ACF,
+ * native, PHP-only registration, plus the asset map) that each previously
+ * re-scanned the filesystem and re-parsed block.json independently.
+ *
+ * @return array{
+ *   cache_namespace:string,
+ *   directories:array{acf:array<int,string>,native:array<int,string>,"php-only":array<int,string>},
+ *   metadata:array<string,array{path:string,data:array|null}>,
+ *   asset_map:array
+ * }
+ */
+function lonestar_build_block_runtime_index()
+{
+	$directories = lonestar_find_block_directories();
+
+	$by_type = array(
+		'acf'      => array(),
+		'native'   => array(),
+		'php-only' => array(),
+	);
+	$metadata = array();
+
+	foreach ($directories as $block_directory) {
+		$block_directory = untrailingslashit(wp_normalize_path((string) $block_directory));
+		if ('' === $block_directory) {
+			continue;
+		}
+
+		$type = function_exists('lonestar_get_block_type_from_directory')
+			? lonestar_get_block_type_from_directory($block_directory)
+			: 'unknown';
+		if (isset($by_type[$type])) {
+			$by_type[$type][] = $block_directory;
+		}
+
+		$metadata_path = lonestar_get_block_json_path($block_directory);
+		if ('' === $metadata_path || !is_readable($metadata_path)) {
+			continue;
+		}
+
+		$metadata[$block_directory] = array(
+			'path' => wp_normalize_path($metadata_path),
+			'data' => lonestar_decode_block_metadata_file($metadata_path),
+		);
+	}
+
+	$asset_map = lonestar_build_block_asset_registration_map($directories);
+
+	return array(
+		'cache_namespace' => lonestar_get_block_cache_namespace(),
+		'directories'     => $by_type,
+		'metadata'        => $metadata,
+		'asset_map'       => $asset_map,
+	);
+}
+
+/**
+ * Return the consolidated block runtime index (directories + decoded
+ * metadata + asset map), request-memoized and transient-backed.
+ *
+ * Replaces the separate lonestar_acf_blocks_to_load_v3,
+ * lonestar_native_blocks_to_load_v2, lonestar_php_only_blocks_to_load_v1,
+ * lonestar_blocks_to_scan_v3_{ns}, and lonestar_block_asset_map_v4_{ns}
+ * transients with a single cache entry. Dev mode always bypasses the
+ * transient (fresh discovery per request) but is still request-memoized so
+ * repeated calls within one request don't re-scan the filesystem.
+ *
+ * @return array
+ */
+function lonestar_get_block_runtime_index()
+{
+	static $index = null;
+	if (is_array($index)) {
+		return $index;
+	}
+
+	if (lonestar_is_vite_dev_mode()) {
+		$index = lonestar_build_block_runtime_index();
+		return $index;
+	}
+
+	$transient_key = lonestar_get_block_runtime_index_transient_key();
+	// ACF availability changes block availability but is not part of the theme
+	// cache namespace, so an index built without ACF must not survive activation.
+	$cache_namespace = lonestar_get_block_cache_namespace() . (lonestar_is_acf_block_runtime_available() ? '|acf' : '|no-acf');
+	$cached = get_transient($transient_key);
+	if (
+		is_array($cached) &&
+		isset($cached['cache_namespace'], $cached['directories'], $cached['metadata'], $cached['asset_map']) &&
+		$cache_namespace === $cached['cache_namespace']
+	) {
+		$index = $cached;
+		return $index;
+	}
+
+	$index = lonestar_build_block_runtime_index();
+	$index['cache_namespace'] = $cache_namespace;
+	set_transient($transient_key, $index, HOUR_IN_SECONDS);
+	return $index;
+}
+
+/**
  * Return block registration map with transient cache in non-dev mode.
+ *
+ * Delegates to the consolidated block runtime index. Kept for backward
+ * compatibility.
  *
  * @return array
  */
 function lonestar_get_cached_block_asset_registration_map()
 {
-	$block_directories = lonestar_get_cached_block_directories();
-	if (lonestar_is_vite_dev_mode()) {
-		return lonestar_build_block_asset_registration_map($block_directories);
-	}
-
-	$transient_key = 'lonestar_block_asset_map_v4_' . lonestar_get_block_cache_namespace();
-	$cached = get_transient($transient_key);
-	if (is_array($cached)) {
-		return $cached;
-	}
-
-	$map = lonestar_build_block_asset_registration_map($block_directories);
-	set_transient($transient_key, $map, HOUR_IN_SECONDS);
-	return $map;
+	$index = lonestar_get_block_runtime_index();
+	return isset($index['asset_map']) && is_array($index['asset_map']) ? $index['asset_map'] : array();
 }
 
 /**
@@ -884,6 +1038,11 @@ function lonestar_register_block_files()
 /**
  * Convert asset URL to local path.
  *
+ * Kept for backward compatibility; new code should prefer
+ * lonestar_theme_asset_url_to_path(), which maps against the template and
+ * stylesheet directory URIs instead of ABSPATH (correct even when
+ * WP_CONTENT_DIR lives outside ABSPATH, e.g. Bedrock-style installs).
+ *
  * @param string $url Asset URL.
  * @return string
  */
@@ -903,7 +1062,51 @@ function lonestar_asset_url_to_path($url)
 }
 
 /**
+ * Resolve a theme (template/stylesheet) asset URL to a local filesystem path.
+ *
+ * Maps the URL against the template and stylesheet directory URIs and
+ * resolves to get_template_directory()/get_stylesheet_directory(), which is
+ * correct even when WP_CONTENT_DIR is outside ABSPATH (e.g. Bedrock).
+ *
+ * @param string $url Asset URL (no query string expected).
+ * @return string Normalized absolute path, or '' if not a theme asset.
+ */
+function lonestar_theme_asset_url_to_path($url)
+{
+	if (!is_string($url) || '' === $url) {
+		return '';
+	}
+
+	$contexts = array(
+		untrailingslashit((string) get_template_directory_uri()) => untrailingslashit((string) get_template_directory()),
+	);
+	$stylesheet_uri = untrailingslashit((string) get_stylesheet_directory_uri());
+	if ('' !== $stylesheet_uri && !isset($contexts[$stylesheet_uri])) {
+		$contexts[$stylesheet_uri] = untrailingslashit((string) get_stylesheet_directory());
+	}
+
+	foreach ($contexts as $theme_uri => $theme_path) {
+		if ('' === $theme_uri || '' === $theme_path) {
+			continue;
+		}
+
+		if (0 === strpos($url, $theme_uri . '/')) {
+			$relative = ltrim(substr($url, strlen($theme_uri)), '/');
+			return wp_normalize_path($theme_path . '/' . $relative);
+		}
+	}
+
+	return '';
+}
+
+/**
  * Fallback cache-busting for block CSS and JS files assigned as handle.
+ *
+ * Only rewrites the version for assets enqueued with WordPress's default
+ * `ver` value (the core version string), which indicates the asset was
+ * registered/enqueued without an explicit version. Theme-registered block
+ * assets already pass explicit filemtime-based versions in
+ * lonestar_register_block_files() and are left untouched here.
  *
  * @param string $src Asset source URL.
  * @param string $handle Enqueued handle.
@@ -914,6 +1117,16 @@ function lonestar_remove_query_string_from_static_files($src, $handle)
 	unset($handle);
 
 	if (!is_string($src) || false === strpos($src, '?ver=')) {
+		return $src;
+	}
+
+	$ver = wp_parse_url($src, PHP_URL_QUERY);
+	$ver_args = array();
+	if (is_string($ver) && '' !== $ver) {
+		wp_parse_str($ver, $ver_args);
+	}
+	if (!isset($ver_args['ver']) || (string) $ver_args['ver'] !== (string) get_bloginfo('version')) {
+		// Asset already carries an explicit (non-core) version; leave it alone.
 		return $src;
 	}
 
@@ -936,14 +1149,26 @@ function lonestar_remove_query_string_from_static_files($src, $handle)
 		return $src;
 	}
 
+	static $mtime_memo = array();
+
 	$original_src = $src;
 	$src = remove_query_arg('ver', $src);
-	$file_path = lonestar_asset_url_to_path($src);
-	if ('' === $file_path || !file_exists($file_path)) {
+	$file_path = lonestar_theme_asset_url_to_path($src);
+	if ('' === $file_path) {
 		return $original_src;
 	}
 
-	$version = filemtime($file_path);
+	if (array_key_exists($file_path, $mtime_memo)) {
+		$version = $mtime_memo[$file_path];
+	} else {
+		$version = file_exists($file_path) ? filemtime($file_path) : false;
+		$mtime_memo[$file_path] = $version;
+	}
+
+	if (false === $version) {
+		return $original_src;
+	}
+
 	return add_query_arg('ver', $version, $src);
 }
 
