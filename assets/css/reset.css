@@ -5,9 +5,19 @@
     box-sizing: border-box;
 }
 
+/*
+ * Reset margin/padding broadly, but exempt ul/ol so their default padding
+ * (bullet/number indent) survives inside post content. Components that
+ * need a flush list can still set padding: 0 explicitly.
+ */
 * {
     margin: 0;
     padding: 0;
+}
+
+ul,
+ol {
+    padding: revert;
 }
 
 html {
@@ -25,8 +35,9 @@ picture,
 video,
 canvas,
 svg {
-    display: block;
     max-width: 100%;
+    height: auto;
+    vertical-align: middle;
 }
 
 input,

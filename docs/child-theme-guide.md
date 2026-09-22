@@ -56,6 +56,16 @@ Put code in parent when it is framework-worthy:
 3. Copy parent templates only when hook-based customization is insufficient.
 4. Keep copied templates minimal and documented.
 
+### Content width
+
+The parent `theme.json` declares `settings.layout.contentSize: "1200px"` and
+`wideSize: "1400px"`. 1200px is comfortable for multi-column layouts but wide
+for a single column of body text/prose. This is intentionally left unchanged
+in the parent (changing it is a breaking layout change for any child relying
+on the current measurements). Child themes that want a narrower reading
+measure for prose-heavy templates should override `settings.layout` in their
+own `theme.json` rather than expecting the parent value to change.
+
 ## 6) Versioning
 
 Suggested practice:
