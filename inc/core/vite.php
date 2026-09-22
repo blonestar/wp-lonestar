@@ -47,6 +47,35 @@ add_action('wp_enqueue_scripts', 'lonestar_enqueue_reset_css', 0);
 add_action('wp_enqueue_scripts', 'lonestar_enqueue_vite_assets', 20);
 add_action('enqueue_block_editor_assets', 'lonestar_enqueue_vite_editor_hmr_client', 1);
 add_action('admin_notices', 'lonestar_missing_vite_build_notice');
+add_filter('wp_script_attributes', 'lonestar_filter_module_script_attributes');
+
+/**
+ * Emit type="module" on <script> tags for handles registered with
+ * wp_script_add_data( $handle, 'type', 'module' ).
+ *
+ * Core's class-wp-scripts.php does not natively act on the 'type' script
+ * data key, so wp_script_add_data() alone is silently ignored. WP 6.3+
+ * provides the wp_script_attributes filter (used for both the frontend
+ * and the block editor) which we use here to add the attribute back in.
+ *
+ * @param array $attributes Script tag attributes, includes 'id' as "{handle}-js".
+ * @return array
+ */
+function lonestar_filter_module_script_attributes($attributes)
+{
+    if (empty($attributes['id']) || !is_string($attributes['id'])) {
+        return $attributes;
+    }
+
+    $handle = preg_replace('/-js$/', '', $attributes['id']);
+    if ('' === $handle || 'module' !== wp_scripts()->get_data($handle, 'type')) {
+        return $attributes;
+    }
+
+    $attributes['type'] = 'module';
+
+    return $attributes;
+}
 
 /**
  * Build-safe file version helper.

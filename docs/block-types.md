@@ -22,6 +22,12 @@ Lonestar discovers block metadata from the parent theme, active child theme, and
 
 Reference implementations ship as `example-acf`, `example-native`, `example-native-static`, and `example-php-only`.
 
+## Script asset registration
+
+- Block metadata `script`, `editorScript`, and `viewScript` handle references are registered as classic scripts through `wp_register_script()`. Their built output is not ES modules.
+- Block metadata `viewScriptModule` handle references are registered separately through the WordPress Script Modules API (`wp_register_script_module()`), matching core's native distinction between classic and module block scripts.
+- Vite's own dev/HMR client and entry scripts, and the production `main` entry, are the only scripts marked `type="module"`; this is applied through a `wp_script_attributes` filter in `inc/core/vite.php` (`lonestar_filter_module_script_attributes`), since WordPress core ignores `wp_script_add_data($handle, 'type', 'module')` on its own.
+
 ## Block CSS
 
 - All block families may ship direct CSS. JavaScript is not required merely to style a block.

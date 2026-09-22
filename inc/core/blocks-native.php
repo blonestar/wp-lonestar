@@ -128,5 +128,5 @@ function lonestar_flush_block_discovery_caches($upgrader_object = null, $options
     delete_transient('lonestar_blocks_to_scan_v3_' . $cache_namespace);
     delete_transient('lonestar_block_asset_map_' . $cache_namespace);
     delete_transient('lonestar_block_asset_map_v2_' . $cache_namespace);
-    delete_transient('lonestar_block_asset_map_v3_' . $cache_namespace);
+    delete_transient('lonestar_block_asset_map_v4_' . $cache_namespace);
 }
