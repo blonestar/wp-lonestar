@@ -41,6 +41,16 @@ npm run browsers
 Get-ChildItem -Recurse -File -Filter *.php | ForEach-Object { php -l $_.FullName }
 ```
 
+If you have Composer available, also run the PHP quality gates (dev-only tooling, not shipped in releases):
+
+```bash
+composer install
+composer run lint:phpcs
+composer run lint:phpstan
+```
+
+`phpstan` should pass clean (it uses `phpstan-baseline.neon` for pre-existing findings). `phpcs` currently reports real findings that predate this tooling and is report-only in CI; see the `TODO` in `.github/workflows/ci.yml`. Do not silence new findings by adding to the baseline/exclusions without a reason — fix the code or ask first.
+
 Also do a manual smoke test for affected admin and frontend paths.
 
 ## CSS Tooling Contract
@@ -75,5 +85,7 @@ Also do a manual smoke test for affected admin and frontend paths.
     - `Node 24`
     - `PHP 8.2 lint`
     - `PHP 8.4 lint`
+    - `PHP 8.5 lint`
+    - `PHP quality gates`
 - Prefer squash merge for a clean history.
 - Optional: require review from Code Owners.

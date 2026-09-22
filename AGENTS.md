@@ -30,7 +30,7 @@
 
 ## Build and validation
 
-- Requirements: WordPress 7.0+, PHP 8.2+, Node.js 22.12+, npm 10+.
+- Requirements: WordPress 7.0+, PHP 8.2+, Node.js 22.12+, npm 10+. PHP quality tooling additionally requires Composer 2.
 - Run from this directory:
 
     ```bash
@@ -43,7 +43,17 @@
     git diff --check
     ```
 
-- CI covers Node 22/24 contract/build/audit checks, the CSS pipeline contract, and PHP 8.2/8.4 lint. There is no PHPUnit or browser test suite.
+- PHP quality tooling (dev-only; not shipped in release ZIPs) lives in `composer.json`, `phpcs.xml.dist`, `phpstan.neon.dist`, and `phpstan-baseline.neon`. Install and run it with:
+
+    ```bash
+    composer install
+    composer run lint:phpcs
+    composer run lint:phpstan
+    ```
+
+    `phpcs.xml.dist` is a curated ruleset (not the full WordPress-Extra standard): it targets security (escaping/nonces/sanitization), i18n, discouraged/deprecated functions, PHP 8.2+ compatibility, and `lonestar_`/`LONESTAR_` symbol prefixing, and documents its own exclusions (formatting sniffs that conflict with this codebase's 4-space/`array()` style; the `PrefixAllGlobals` sniff for files that define documented legacy compatibility symbols). It currently reports real findings (see the `TODO` in `.github/workflows/ci.yml`), so the CI step is report-only until those are triaged. `phpstan.neon.dist` runs at level 5 with `phpstan-baseline.neon` capturing pre-existing findings; it passes clean and is a blocking CI step.
+
+- CI covers Node 22/24 contract/build/audit checks, the CSS pipeline contract, PHP 8.2/8.4/8.5 lint, the `quality` job (phpcs report-only, phpstan blocking), and a report-only `smoke` job (`@wordpress/env` frontend/admin/block-registration check; unvalidated locally, no Docker available in this environment). There is no PHPUnit or browser test suite.
 - Runtime changes require a local frontend/admin/editor smoke test.
 
 ## Change discipline

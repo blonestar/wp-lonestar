@@ -140,6 +140,12 @@ jobs:
             --exclude='.prettierignore' \
             --exclude='.gitignore' \
             --exclude='.DS_Store' \
+            --exclude='composer.json' \
+            --exclude='composer.lock' \
+            --exclude='phpcs.xml.dist' \
+            --exclude='phpstan.neon.dist' \
+            --exclude='phpstan-baseline.neon' \
+            --exclude='vendor' \
             ./ "$STAGE_THEME/"
 
           test -f "$STAGE_THEME/style.css"
@@ -151,7 +157,7 @@ jobs:
           ZIP_LIST="$RUNNER_TEMP/zip-list.txt"
           unzip -Z1 "$OUTPUT" > "$ZIP_LIST"
           awk 'index($0, "lonestar/") != 1 { bad=1 } END { exit bad }' "$ZIP_LIST"
-          if grep -E '(^|/)(\.git|\.github|node_modules|tests|scripts|docs)(/|$)|(^|/)\.env([./]|$)' "$ZIP_LIST"; then
+          if grep -E '(^|/)(\.git|\.github|node_modules|tests|scripts|docs|vendor)(/|$)|(^|/)\.env([./]|$)|(^|/)(composer\.(json|lock)|phpcs\.xml\.dist|phpstan(-baseline)?\.neon(\.dist)?)$' "$ZIP_LIST"; then
             echo "Forbidden path found in release ZIP"
             exit 1
           fi

@@ -1,0 +1,194 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Ternary operator condition is always false\.$#'
+			identifier: ternary.alwaysFalse
+			count: 2
+			path: inc/core/blocks-acf-enqueue.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: inc/core/blocks-acf.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: inc/core/blocks-native.php
+
+		-
+			message: '#^Call to function is_array\(\) with list will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: inc/core/blocks-state.php
+
+		-
+			message: '#^Instanceof between WP_Theme and WP_Theme will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 16
+			path: inc/core/modules_admin.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: inc/core/modules_bootstrap.php
+
+		-
+			message: '#^Offset 1 on array\{non\-falsy\-string, non\-falsy\-string, non\-empty\-string\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: inc/core/modules_catalog.php
+
+		-
+			message: '#^Offset 1 on array\{non\-falsy\-string, string\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 2
+			path: inc/core/modules_catalog.php
+
+		-
+			message: '#^Offset 2 on array\{non\-falsy\-string, non\-falsy\-string, non\-empty\-string\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: inc/core/modules_catalog.php
+
+		-
+			message: '#^Parameter \#2 \$callback of function array_filter expects \(callable\(lowercase\-string\)\: bool\)\|null, ''strlen'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: inc/core/modules_catalog.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: inc/core/modules_catalog.php
+
+		-
+			message: '#^Call to function is_array\(\) with list will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: inc/core/modules_state.php
+
+		-
+			message: '#^Parameter \#2 \$callback of function array_filter expects \(callable\(lowercase\-string\)\: bool\)\|null, ''strlen'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: inc/core/modules_state.php
+
+		-
+			message: '#^Parameter \#4 \$ver of function wp_enqueue_script expects bool\|string\|null, int\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: inc/core/vite.php
+
+		-
+			message: '#^Parameter \#4 \$ver of function wp_enqueue_style expects bool\|string\|null, int\|null given\.$#'
+			identifier: argument.type
+			count: 3
+			path: inc/core/vite.php
+
+		-
+			message: '#^Access to property \$category on an unknown class LONESTAR_ACF_Field_Gravity_Form_Selector\.$#'
+			identifier: class.notFound
+			count: 2
+			path: modules/module.acf-field-gravity-forms.php
+
+		-
+			message: '#^Access to property \$label on an unknown class LONESTAR_ACF_Field_Gravity_Form_Selector\.$#'
+			identifier: class.notFound
+			count: 2
+			path: modules/module.acf-field-gravity-forms.php
+
+		-
+			message: '#^Access to property \$name on an unknown class LONESTAR_ACF_Field_Gravity_Form_Selector\.$#'
+			identifier: class.notFound
+			count: 2
+			path: modules/module.acf-field-gravity-forms.php
+
+		-
+			message: '#^Call to static method get_forms\(\) on an unknown class RGFormsModel\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/module.acf-field-gravity-forms.php
+
+		-
+			message: '#^Instantiated class LONESTAR_ACF_Field_Gravity_Form_Selector not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/module.acf-field-gravity-forms.php
+
+		-
+			message: '#^Access to property \$category on an unknown class LONESTAR_ACF_Field_Menu_Selector\.$#'
+			identifier: class.notFound
+			count: 2
+			path: modules/module.acf-field-menu.php
+
+		-
+			message: '#^Access to property \$label on an unknown class LONESTAR_ACF_Field_Menu_Selector\.$#'
+			identifier: class.notFound
+			count: 2
+			path: modules/module.acf-field-menu.php
+
+		-
+			message: '#^Access to property \$name on an unknown class LONESTAR_ACF_Field_Menu_Selector\.$#'
+			identifier: class.notFound
+			count: 2
+			path: modules/module.acf-field-menu.php
+
+		-
+			message: '#^Instantiated class LONESTAR_ACF_Field_Menu_Selector not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/module.acf-field-menu.php
+
+		-
+			message: '#^Access to property \$category on an unknown class LONESTAR_ACF_Field_Number_With_Unit\.$#'
+			identifier: class.notFound
+			count: 2
+			path: modules/module.acf-number-with-unit.php
+
+		-
+			message: '#^Access to property \$defaults on an unknown class LONESTAR_ACF_Field_Number_With_Unit\.$#'
+			identifier: class.notFound
+			count: 2
+			path: modules/module.acf-number-with-unit.php
+
+		-
+			message: '#^Access to property \$label on an unknown class LONESTAR_ACF_Field_Number_With_Unit\.$#'
+			identifier: class.notFound
+			count: 2
+			path: modules/module.acf-number-with-unit.php
+
+		-
+			message: '#^Access to property \$name on an unknown class LONESTAR_ACF_Field_Number_With_Unit\.$#'
+			identifier: class.notFound
+			count: 2
+			path: modules/module.acf-number-with-unit.php
+
+		-
+			message: '#^Call to method normalize_value\(\) on an unknown class LONESTAR_ACF_Field_Number_With_Unit\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/module.acf-number-with-unit.php
+
+		-
+			message: '#^Call to method parse_units\(\) on an unknown class LONESTAR_ACF_Field_Number_With_Unit\.$#'
+			identifier: class.notFound
+			count: 4
+			path: modules/module.acf-number-with-unit.php
+
+		-
+			message: '#^Instantiated class LONESTAR_ACF_Field_Number_With_Unit not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/module.acf-number-with-unit.php
+
+		-
+			message: '#^Parameter \#2 \$callback of function array_filter expects \(callable\(string\|null\)\: bool\)\|null, ''strlen'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/module.acf-number-with-unit.php
+

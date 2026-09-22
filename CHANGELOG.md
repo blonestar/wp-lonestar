@@ -4,6 +4,13 @@ All notable changes to the Lonestar parent theme are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added dev-only PHP quality tooling (`composer.json`, `phpcs.xml.dist`, `phpstan.neon.dist`, `phpstan-baseline.neon`): a curated WordPress Coding Standards gate (security, i18n, discouraged/deprecated functions, PHP 8.2+ compatibility, `lonestar_`/`LONESTAR_` symbol prefixing) and PHPStan level 5 with a baseline for pre-existing findings. None of this ships in release ZIPs.
+- Added a CI `quality` job running `composer run lint:phpcs` (report-only for now; see TODO in `.github/workflows/ci.yml`) and `composer run lint:phpstan` (blocking).
+- Added PHP 8.5 to the CI PHP lint matrix (alongside 8.2 and 8.4).
+- Added a `.wp-env.json` and a CI `smoke` job (report-only, `continue-on-error: true`, unvalidated locally — no Docker in this environment) that starts `@wordpress/env`, activates the theme, and checks for PHP fatals/warnings and expected block registration on the homepage and a 404 page.
+
 ## [0.5.0] - 2026-07-13
 
 ### Added
