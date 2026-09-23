@@ -6,25 +6,16 @@ body {
 }
 
 /* Typography */
+/* Font family, weight and line-height for headings, plus link color/underline,
+ * are now declared once in theme.json (styles.elements.heading / .link) so
+ * they apply consistently across the editor and the front end. */
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    line-height: 1.2;
     color: var(--color-black);
-}
-
-a {
-    color: var(--color-brand);
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
 }
 
 p {

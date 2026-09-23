@@ -13,8 +13,8 @@ add_action('init', 'lonestar_register_block_files', 20);
  */
 function lonestar_is_vite_dev_mode()
 {
-	if (defined('IS_VITE_DEVELOPMENT')) {
-		return IS_VITE_DEVELOPMENT === true;
+	if (defined('LONESTAR_VITE_DEVELOPMENT')) {
+		return LONESTAR_VITE_DEVELOPMENT === true;
 	}
 
 	$env_flag = getenv('LONESTAR_VITE_DEV');
@@ -26,7 +26,29 @@ function lonestar_is_vite_dev_mode()
 		return false;
 	}
 
-	if (!defined('VITE_SERVER') || !function_exists('wp_remote_get')) {
+	if (!defined('LONESTAR_VITE_SERVER') || !function_exists('wp_remote_get')) {
+		return false;
+	}
+
+	// The automatic HTTP probe is only safe to run on environments where a
+	// local Vite dev server is plausibly running. Staging/other environment
+	// types must opt in explicitly via LONESTAR_VITE_DEVELOPMENT or
+	// LONESTAR_VITE_DEV rather than pay an HTTP round-trip per request.
+	$probe_environment = function_exists('wp_get_environment_type') ? wp_get_environment_type() : 'production';
+	$probe_enabled = in_array($probe_environment, array('local', 'development'), true);
+
+	/**
+	 * Filter whether the automatic Vite dev-server HTTP probe may run.
+	 *
+	 * Explicit LONESTAR_VITE_DEVELOPMENT / LONESTAR_VITE_DEV opt-ins bypass
+	 * this filter entirely (handled above). This only gates
+	 * the environment-type based automatic probe.
+	 *
+	 * @param bool   $probe_enabled Whether the probe is allowed to run.
+	 * @param string $probe_environment Current wp_get_environment_type() value.
+	 */
+	$probe_enabled = (bool) apply_filters('lonestar_vite_dev_probe_enabled', $probe_enabled, $probe_environment);
+	if (!$probe_enabled) {
 		return false;
 	}
 
@@ -37,7 +59,7 @@ function lonestar_is_vite_dev_mode()
 		return (bool) $cached['is_running'];
 	}
 
-	$probe_url = rtrim(VITE_SERVER, '/') . '/@vite/client';
+	$probe_url = rtrim(LONESTAR_VITE_SERVER, '/') . '/@vite/client';
 	$response = wp_remote_get(
 		$probe_url,
 		array(
@@ -67,45 +89,6 @@ function lonestar_get_block_cache_namespace()
 }
 
 /**
- * Get block discovery cache key.
- *
- * @return string
- */
-function lonestar_get_block_discovery_transient_key()
-{
-	return 'lonestar_blocks_to_scan_v3_' . lonestar_get_block_cache_namespace();
-}
-
-/**
- * Return discovered block directories with runtime cache in non-dev mode.
- *
- * @return array
- */
-function lonestar_get_cached_block_directories()
-{
-	if (lonestar_is_vite_dev_mode()) {
-		return lonestar_find_block_directories();
-	}
-
-	$transient_key = lonestar_get_block_discovery_transient_key();
-	$cached = get_transient($transient_key);
-	if (is_array($cached) && isset($cached['directories']) && is_array($cached['directories'])) {
-		return $cached['directories'];
-	}
-
-	$directories = lonestar_find_block_directories();
-	set_transient(
-		$transient_key,
-		array(
-			'directories' => $directories,
-		),
-		HOUR_IN_SECONDS
-	);
-
-	return $directories;
-}
-
-/**
  * Return theme-level block roots.
  *
  * @param string $block_type Block type: acf|native|php-only|all.
@@ -116,18 +99,18 @@ function lonestar_get_theme_block_root_paths($block_type = 'all')
 	$block_type = strtolower((string) $block_type);
 	$relative_paths = array();
 
-	if (('all' === $block_type || 'acf' === $block_type) && defined('ACF_BLOCKS_PATH')) {
-		$relative_paths[] = ACF_BLOCKS_PATH;
+	if (('all' === $block_type || 'acf' === $block_type) && defined('LONESTAR_ACF_BLOCKS_PATH')) {
+		$relative_paths[] = LONESTAR_ACF_BLOCKS_PATH;
 	}
-	if (('all' === $block_type || 'native' === $block_type) && defined('NATIVE_BLOCKS_PATH')) {
-		$relative_paths[] = NATIVE_BLOCKS_PATH;
+	if (('all' === $block_type || 'native' === $block_type) && defined('LONESTAR_NATIVE_BLOCKS_PATH')) {
+		$relative_paths[] = LONESTAR_NATIVE_BLOCKS_PATH;
 	}
-	if (('all' === $block_type || 'php-only' === $block_type) && defined('PHP_ONLY_BLOCKS_PATH')) {
-		$relative_paths[] = PHP_ONLY_BLOCKS_PATH;
+	if (('all' === $block_type || 'php-only' === $block_type) && defined('LONESTAR_PHP_ONLY_BLOCKS_PATH')) {
+		$relative_paths[] = LONESTAR_PHP_ONLY_BLOCKS_PATH;
 	}
 
 	$roots = array();
-	$theme_base_paths = array(wp_normalize_path(untrailingslashit(TEMPLATE_PATH)));
+	$theme_base_paths = array(wp_normalize_path(untrailingslashit(LONESTAR_TEMPLATE_PATH)));
 	$stylesheet_path = wp_normalize_path(untrailingslashit(get_stylesheet_directory()));
 	if ('' !== $stylesheet_path && !in_array($stylesheet_path, $theme_base_paths, true)) {
 		$theme_base_paths[] = $stylesheet_path;
@@ -160,7 +143,7 @@ function lonestar_get_theme_source_contexts()
 	}
 
 	$contexts = array();
-	$dist_def = trim(defined('DIST_REL_PATH') ? (string) DIST_REL_PATH : 'dist/', '/');
+	$dist_def = trim(defined('LONESTAR_DIST_REL_PATH') ? (string) LONESTAR_DIST_REL_PATH : 'dist/', '/');
 
 	$template_path = wp_normalize_path(untrailingslashit((string) get_template_directory()));
 	$template_uri = untrailingslashit((string) get_template_directory_uri());
@@ -225,8 +208,8 @@ function lonestar_get_block_root_paths($block_type = 'all')
 {
 	$roots = lonestar_get_theme_block_root_paths($block_type);
 
-	if (function_exists('modules_get_enabled_module_block_root_paths')) {
-		$roots = array_merge($roots, modules_get_enabled_module_block_root_paths($block_type));
+	if (function_exists('lonestar_get_enabled_module_block_root_paths')) {
+		$roots = array_merge($roots, lonestar_get_enabled_module_block_root_paths($block_type));
 	}
 
 	$roots = array_values(array_unique($roots));
@@ -453,7 +436,7 @@ function lonestar_get_theme_relative_asset_path($absolute_path, $source_context 
  */
 function lonestar_get_vite_dev_asset_url($absolute_file)
 {
-	if (!defined('VITE_SERVER')) {
+	if (!defined('LONESTAR_VITE_SERVER')) {
 		return '';
 	}
 
@@ -463,7 +446,7 @@ function lonestar_get_vite_dev_asset_url($absolute_file)
 		return '';
 	}
 
-	$vite_server = rtrim(VITE_SERVER, '/');
+	$vite_server = rtrim(LONESTAR_VITE_SERVER, '/');
 	return $vite_server . '/' . ltrim($relative_path, '/');
 }
 
@@ -484,7 +467,7 @@ function lonestar_get_theme_asset_url($absolute_file)
 	$contexts = lonestar_get_theme_source_contexts();
 	$theme_uri = isset($contexts[$source_context]['uri'])
 		? untrailingslashit((string) $contexts[$source_context]['uri'])
-		: (defined('TEMPLATE_URI') ? untrailingslashit(TEMPLATE_URI) : get_template_directory_uri());
+		: (defined('LONESTAR_TEMPLATE_URI') ? untrailingslashit(LONESTAR_TEMPLATE_URI) : get_template_directory_uri());
 	return $theme_uri . '/' . ltrim($relative_path, '/');
 }
 
@@ -511,8 +494,8 @@ function lonestar_get_block_assets_manifest($source_context = 'template')
 	$dist_path = '';
 	if (isset($contexts[$source_context]['dist_path'])) {
 		$dist_path = wp_normalize_path((string) $contexts[$source_context]['dist_path']);
-	} elseif (defined('DIST_PATH')) {
-		$dist_path = wp_normalize_path((string) DIST_PATH);
+	} elseif (defined('LONESTAR_DIST_PATH')) {
+		$dist_path = wp_normalize_path((string) LONESTAR_DIST_PATH);
 	}
 
 	if ('' === $dist_path) {
@@ -720,26 +703,155 @@ function lonestar_build_block_asset_registration_map($block_directories)
 }
 
 /**
- * Return block registration map with transient cache in non-dev mode.
+ * Return the block runtime index transient key.
+ *
+ * A single fixed key is used; the cached payload carries its own
+ * cache_namespace and is discarded on mismatch, so a namespace change
+ * (deploy/build) never leaves an orphaned transient behind under an old key.
+ *
+ * @return string
+ */
+function lonestar_get_block_runtime_index_transient_key()
+{
+	return 'lonestar_block_runtime_v1';
+}
+
+/**
+ * Decode a block.json file once, for reuse by directory + metadata caching.
+ *
+ * @param string $metadata_path Absolute block.json (or *.block.json) path.
+ * @return array|null Decoded metadata, or null on read/parse failure.
+ */
+function lonestar_decode_block_metadata_file($metadata_path)
+{
+	if (!is_string($metadata_path) || '' === $metadata_path || !is_readable($metadata_path)) {
+		return null;
+	}
+
+	$raw = file_get_contents($metadata_path);
+	if (false === $raw) {
+		return null;
+	}
+
+	$decoded = json_decode($raw, true);
+	return (JSON_ERROR_NONE === json_last_error() && is_array($decoded)) ? $decoded : null;
+}
+
+/**
+ * Build the consolidated block runtime index from a fresh filesystem scan.
+ *
+ * Discovers block directories once, decodes each block.json once, and
+ * builds the JS/CSS asset registration map from the same directory list and
+ * decoded metadata pool — replacing four separate discovery passes (ACF,
+ * native, PHP-only registration, plus the asset map) that each previously
+ * re-scanned the filesystem and re-parsed block.json independently.
+ *
+ * @return array{
+ *   cache_namespace:string,
+ *   directories:array{acf:array<int,string>,native:array<int,string>,"php-only":array<int,string>},
+ *   metadata:array<string,array{path:string,data:array|null}>,
+ *   asset_map:array
+ * }
+ */
+function lonestar_build_block_runtime_index()
+{
+	$directories = lonestar_find_block_directories();
+
+	$by_type = array(
+		'acf'      => array(),
+		'native'   => array(),
+		'php-only' => array(),
+	);
+	$metadata = array();
+
+	foreach ($directories as $block_directory) {
+		$block_directory = untrailingslashit(wp_normalize_path((string) $block_directory));
+		if ('' === $block_directory) {
+			continue;
+		}
+
+		$type = function_exists('lonestar_get_block_type_from_directory')
+			? lonestar_get_block_type_from_directory($block_directory)
+			: 'unknown';
+		if (isset($by_type[$type])) {
+			$by_type[$type][] = $block_directory;
+		}
+
+		$metadata_path = lonestar_get_block_json_path($block_directory);
+		if ('' === $metadata_path || !is_readable($metadata_path)) {
+			continue;
+		}
+
+		$metadata[$block_directory] = array(
+			'path' => wp_normalize_path($metadata_path),
+			'data' => lonestar_decode_block_metadata_file($metadata_path),
+		);
+	}
+
+	$asset_map = lonestar_build_block_asset_registration_map($directories);
+
+	return array(
+		'cache_namespace' => lonestar_get_block_cache_namespace(),
+		'directories'     => $by_type,
+		'metadata'        => $metadata,
+		'asset_map'       => $asset_map,
+	);
+}
+
+/**
+ * Return the consolidated block runtime index (directories + decoded
+ * metadata + asset map), request-memoized and transient-backed.
+ *
+ * Replaces the separate lonestar_acf_blocks_to_load_v3,
+ * lonestar_native_blocks_to_load_v2, lonestar_php_only_blocks_to_load_v1,
+ * lonestar_blocks_to_scan_v3_{ns}, and lonestar_block_asset_map_v4_{ns}
+ * transients with a single cache entry. Dev mode always bypasses the
+ * transient (fresh discovery per request) but is still request-memoized so
+ * repeated calls within one request don't re-scan the filesystem.
  *
  * @return array
  */
-function lonestar_get_cached_block_asset_registration_map()
+function lonestar_get_block_runtime_index()
 {
-	$block_directories = lonestar_get_cached_block_directories();
+	static $index = null;
+	if (is_array($index)) {
+		return $index;
+	}
+
 	if (lonestar_is_vite_dev_mode()) {
-		return lonestar_build_block_asset_registration_map($block_directories);
+		$index = lonestar_build_block_runtime_index();
+		return $index;
 	}
 
-	$transient_key = 'lonestar_block_asset_map_v4_' . lonestar_get_block_cache_namespace();
+	$transient_key = lonestar_get_block_runtime_index_transient_key();
+	// ACF availability changes block availability but is not part of the theme
+	// cache namespace, so an index built without ACF must not survive activation.
+	$cache_namespace = lonestar_get_block_cache_namespace() . (lonestar_is_acf_block_runtime_available() ? '|acf' : '|no-acf');
 	$cached = get_transient($transient_key);
-	if (is_array($cached)) {
-		return $cached;
+	if (
+		is_array($cached) &&
+		isset($cached['cache_namespace'], $cached['directories'], $cached['metadata'], $cached['asset_map']) &&
+		$cache_namespace === $cached['cache_namespace']
+	) {
+		$index = $cached;
+		return $index;
 	}
 
-	$map = lonestar_build_block_asset_registration_map($block_directories);
-	set_transient($transient_key, $map, HOUR_IN_SECONDS);
-	return $map;
+	$index = lonestar_build_block_runtime_index();
+	$index['cache_namespace'] = $cache_namespace;
+	set_transient($transient_key, $index, HOUR_IN_SECONDS);
+	return $index;
+}
+
+/**
+ * Return the block asset registration map from the runtime index.
+ *
+ * @return array
+ */
+function lonestar_get_block_asset_registration_map()
+{
+	$index = lonestar_get_block_runtime_index();
+	return isset($index['asset_map']) && is_array($index['asset_map']) ? $index['asset_map'] : array();
 }
 
 /**
@@ -749,7 +861,7 @@ function lonestar_get_cached_block_asset_registration_map()
  */
 function lonestar_register_block_files()
 {
-	$block_assets_map = lonestar_get_cached_block_asset_registration_map();
+	$block_assets_map = lonestar_get_block_asset_registration_map();
 	if (empty($block_assets_map) || !is_array($block_assets_map)) {
 		return;
 	}
@@ -814,10 +926,10 @@ function lonestar_register_block_files()
 				if ('' !== $built_js_file) {
 					$js_dist_path = is_array($js_context) && isset($js_context['dist_path'])
 						? wp_normalize_path((string) $js_context['dist_path']) . '/' . $built_js_file
-						: (defined('DIST_PATH') ? DIST_PATH . '/' . $built_js_file : '');
+						: (defined('LONESTAR_DIST_PATH') ? LONESTAR_DIST_PATH . '/' . $built_js_file : '');
 					$js_file_path = is_array($js_context) && isset($js_context['dist_uri'])
 						? untrailingslashit((string) $js_context['dist_uri']) . '/' . $built_js_file
-						: (defined('DIST_URI') ? DIST_URI . '/' . $built_js_file : '');
+						: (defined('LONESTAR_DIST_URI') ? LONESTAR_DIST_URI . '/' . $built_js_file : '');
 					$js_file_version = file_exists($js_dist_path) ? filemtime($js_dist_path) : null;
 				}
 			}
@@ -856,10 +968,10 @@ function lonestar_register_block_files()
 				if ('' !== $built_css_file) {
 					$css_dist_path = is_array($css_context) && isset($css_context['dist_path'])
 						? wp_normalize_path((string) $css_context['dist_path']) . '/' . $built_css_file
-						: (defined('DIST_PATH') ? DIST_PATH . '/' . $built_css_file : '');
+						: (defined('LONESTAR_DIST_PATH') ? LONESTAR_DIST_PATH . '/' . $built_css_file : '');
 					$css_file_uri = is_array($css_context) && isset($css_context['dist_uri'])
 						? untrailingslashit((string) $css_context['dist_uri']) . '/' . $built_css_file
-						: (defined('DIST_URI') ? DIST_URI . '/' . $built_css_file : '');
+						: (defined('LONESTAR_DIST_URI') ? LONESTAR_DIST_URI . '/' . $built_css_file : '');
 					$css_file_version = file_exists($css_dist_path) ? filemtime($css_dist_path) : null;
 				}
 			}
@@ -882,28 +994,51 @@ function lonestar_register_block_files()
 }
 
 /**
- * Convert asset URL to local path.
+ * Resolve a theme (template/stylesheet) asset URL to a local filesystem path.
  *
- * @param string $url Asset URL.
- * @return string
+ * Maps the URL against the template and stylesheet directory URIs and
+ * resolves to get_template_directory()/get_stylesheet_directory(), which is
+ * correct even when WP_CONTENT_DIR is outside ABSPATH (e.g. Bedrock).
+ *
+ * @param string $url Asset URL (no query string expected).
+ * @return string Normalized absolute path, or '' if not a theme asset.
  */
-function lonestar_asset_url_to_path($url)
+function lonestar_theme_asset_url_to_path($url)
 {
-	$asset_path = wp_parse_url($url, PHP_URL_PATH);
-	if (!is_string($asset_path) || '' === $asset_path) {
+	if (!is_string($url) || '' === $url) {
 		return '';
 	}
 
-	$home_path = wp_parse_url(home_url('/'), PHP_URL_PATH);
-	if (is_string($home_path) && '' !== $home_path && 0 === strpos($asset_path, $home_path)) {
-		$asset_path = substr($asset_path, strlen($home_path));
+	$contexts = array(
+		untrailingslashit((string) get_template_directory_uri()) => untrailingslashit((string) get_template_directory()),
+	);
+	$stylesheet_uri = untrailingslashit((string) get_stylesheet_directory_uri());
+	if ('' !== $stylesheet_uri && !isset($contexts[$stylesheet_uri])) {
+		$contexts[$stylesheet_uri] = untrailingslashit((string) get_stylesheet_directory());
 	}
 
-	return wp_normalize_path(ABSPATH . ltrim($asset_path, '/'));
+	foreach ($contexts as $theme_uri => $theme_path) {
+		if ('' === $theme_uri || '' === $theme_path) {
+			continue;
+		}
+
+		if (0 === strpos($url, $theme_uri . '/')) {
+			$relative = ltrim(substr($url, strlen($theme_uri)), '/');
+			return wp_normalize_path($theme_path . '/' . $relative);
+		}
+	}
+
+	return '';
 }
 
 /**
  * Fallback cache-busting for block CSS and JS files assigned as handle.
+ *
+ * Only rewrites the version for assets enqueued with WordPress's default
+ * `ver` value (the core version string), which indicates the asset was
+ * registered/enqueued without an explicit version. Theme-registered block
+ * assets already pass explicit filemtime-based versions in
+ * lonestar_register_block_files() and are left untouched here.
  *
  * @param string $src Asset source URL.
  * @param string $handle Enqueued handle.
@@ -914,6 +1049,16 @@ function lonestar_remove_query_string_from_static_files($src, $handle)
 	unset($handle);
 
 	if (!is_string($src) || false === strpos($src, '?ver=')) {
+		return $src;
+	}
+
+	$ver = wp_parse_url($src, PHP_URL_QUERY);
+	$ver_args = array();
+	if (is_string($ver) && '' !== $ver) {
+		wp_parse_str($ver, $ver_args);
+	}
+	if (!isset($ver_args['ver']) || (string) $ver_args['ver'] !== (string) get_bloginfo('version')) {
+		// Asset already carries an explicit (non-core) version; leave it alone.
 		return $src;
 	}
 
@@ -936,17 +1081,28 @@ function lonestar_remove_query_string_from_static_files($src, $handle)
 		return $src;
 	}
 
+	static $mtime_memo = array();
+
 	$original_src = $src;
 	$src = remove_query_arg('ver', $src);
-	$file_path = lonestar_asset_url_to_path($src);
-	if ('' === $file_path || !file_exists($file_path)) {
+	$file_path = lonestar_theme_asset_url_to_path($src);
+	if ('' === $file_path) {
 		return $original_src;
 	}
 
-	$version = filemtime($file_path);
+	if (array_key_exists($file_path, $mtime_memo)) {
+		$version = $mtime_memo[$file_path];
+	} else {
+		$version = file_exists($file_path) ? filemtime($file_path) : false;
+		$mtime_memo[$file_path] = $version;
+	}
+
+	if (false === $version) {
+		return $original_src;
+	}
+
 	return add_query_arg('ver', $version, $src);
 }
 
 add_filter('style_loader_src', 'lonestar_remove_query_string_from_static_files', 10, 2);
 add_filter('script_loader_src', 'lonestar_remove_query_string_from_static_files', 10, 2);
-

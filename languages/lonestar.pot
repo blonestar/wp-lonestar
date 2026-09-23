@@ -580,12 +580,12 @@ msgstr ""
 msgid "No cached check yet."
 msgstr ""
 
-#: inc/core/vite.php:257
+#: inc/core/vite.php:286
 msgid "Lonestar Theme: Vite build artifacts are missing. Run \"npm run build\" before deployment."
 msgstr ""
 
 #: inc/inc.filters.php:56
-msgid "Reusable Blocks"
+msgid "Patterns"
 msgstr ""
 
 #: modules/gtm/inc/inc.settings.php:220
@@ -987,6 +987,41 @@ msgstr ""
 
 #: inc/core/modules_admin.php:959
 msgid "Definition diagnostics"
+msgstr ""
+
+#: patterns/404-content.php:14
+msgid "404 - Page Not Found"
+msgstr ""
+
+#: patterns/404-content.php:18
+msgid "The page you are looking for could not be found."
+msgstr ""
+
+#: patterns/404-content.php:12
+msgid "Go Home"
+msgstr ""
+
+#: patterns/404-content.php
+msgctxt "Pattern title"
+msgid "404 content"
+msgstr ""
+
+#: patterns/no-results.php:14
+msgid "No posts were found."
+msgstr ""
+
+#: patterns/no-results.php
+msgctxt "Pattern title"
+msgid "No results"
+msgstr ""
+
+#: patterns/no-search-results.php:14
+msgid "Sorry, but nothing matched your search terms. Please try again with some different keywords."
+msgstr ""
+
+#: patterns/no-search-results.php
+msgctxt "Pattern title"
+msgid "No search results"
 msgstr ""
 
 #: theme.json

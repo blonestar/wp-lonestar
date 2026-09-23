@@ -14,7 +14,7 @@ Lonestar discovers block metadata from the parent theme, active child theme, and
 ## Contracts
 
 - Every block has valid `block.json` metadata and a unique `namespace/slug` name.
-- ACF blocks declare `acf.renderTemplate`; an optional `fields.php` returns a local field-group array. They remain visible as unavailable when ACF Pro is absent.
+- ACF blocks declare `acf.renderTemplate`; an optional `fields.php` returns a local field-group array. They remain visible as unavailable when ACF Pro is absent. The `example-acf` reference block sets `acf.blockVersion: 3` to opt into ACF 6.3+'s iframed block editor (block API v3); add the same key to other ACF blocks unless a specific block has a documented reason to stay on the legacy (non-iframed) editor.
 - Native blocks declare `editorScript`. A native block with `render`/`render.php` is dynamic; without it, it must provide a real `save` implementation and deprecations when saved markup changes.
 - PHP-only blocks declare `supports.autoRegister: true` and `render: file:./render.php`, and must not declare `editorScript`.
 - PHP-only controls support simple unsourced scalar attributes. They do not support `InnerBlocks`; use a native block for nested content.

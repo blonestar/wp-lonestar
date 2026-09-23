@@ -257,8 +257,8 @@ function lonestar_get_block_source_priority($source)
 {
     $source = sanitize_key((string) $source);
 
-    if (function_exists('modules_get_source_priority')) {
-        return (int) modules_get_source_priority($source);
+    if (function_exists('lonestar_get_source_priority')) {
+        return (int) lonestar_get_source_priority($source);
     }
 
     if ('stylesheet' === $source) {
@@ -518,7 +518,7 @@ function lonestar_get_block_catalog()
             'status'        => $status_message,
             'errors'        => $validation_errors,
             'source'        => $source,
-            'source_label'  => function_exists('modules_get_source_label') ? modules_get_source_label($source) : ucfirst($source),
+            'source_label'  => function_exists('lonestar_get_source_label') ? lonestar_get_source_label($source) : ucfirst($source),
             'relative_path' => $relative_path,
             'directory'     => $block_directory,
             'metadata_path' => wp_normalize_path($metadata_path),

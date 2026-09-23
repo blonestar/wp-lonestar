@@ -13,19 +13,9 @@ if (!defined('ABSPATH')) {
  *
  * @return string
  */
-function modules_get_settings_page_slug()
+function lonestar_get_settings_page_slug()
 {
     return 'lonestar-theme-modules';
-}
-
-/**
- * Return legacy admin page slug for backward compatibility.
- *
- * @return string
- */
-function modules_get_legacy_settings_page_slug()
-{
-    return 'lonestar-theme-settings';
 }
 
 /**
@@ -33,14 +23,14 @@ function modules_get_legacy_settings_page_slug()
  *
  * @return void
  */
-function modules_register_modules_admin_page()
+function lonestar_register_modules_admin_page()
 {
     add_theme_page(
         __('Theme Settings', 'lonestar'),
         __('Theme Settings', 'lonestar'),
         'manage_options',
-        modules_get_settings_page_slug(),
-        'modules_render_modules_admin_page'
+        lonestar_get_settings_page_slug(),
+        'lonestar_render_modules_admin_page'
     );
 }
 
@@ -50,7 +40,7 @@ function modules_register_modules_admin_page()
  * @param string $page_slug Query page slug.
  * @return bool
  */
-function modules_is_settings_page_slug($page_slug)
+function lonestar_is_settings_page_slug($page_slug)
 {
     $page_slug = sanitize_key((string) $page_slug);
     if ('' === $page_slug) {
@@ -59,7 +49,7 @@ function modules_is_settings_page_slug($page_slug)
 
     return in_array(
         $page_slug,
-        array(modules_get_settings_page_slug(), modules_get_legacy_settings_page_slug()),
+        array(lonestar_get_settings_page_slug()),
         true
     );
 }
@@ -69,7 +59,7 @@ function modules_is_settings_page_slug($page_slug)
  *
  * @return array<string,string> Tab key => tab label.
  */
-function modules_get_settings_tabs()
+function lonestar_get_settings_tabs()
 {
     $tabs = array(
         'modules' => __('Modules', 'lonestar'),
@@ -125,9 +115,9 @@ function modules_get_settings_tabs()
  * @param string|null $requested_tab Optional tab key from request payload.
  * @return string
  */
-function modules_get_current_settings_tab($requested_tab = null)
+function lonestar_get_current_settings_tab($requested_tab = null)
 {
-    $tabs = modules_get_settings_tabs();
+    $tabs = lonestar_get_settings_tabs();
     $tab_keys = array_keys($tabs);
     $default_tab = !empty($tab_keys) ? sanitize_key((string) $tab_keys[0]) : 'modules';
 
@@ -150,11 +140,11 @@ function modules_get_current_settings_tab($requested_tab = null)
  * @param array<string,string|int> $query_args Additional query args.
  * @return string
  */
-function modules_get_settings_tab_url($tab, $query_args = array())
+function lonestar_get_settings_tab_url($tab, $query_args = array())
 {
-    $tab = modules_get_current_settings_tab((string) $tab);
+    $tab = lonestar_get_current_settings_tab((string) $tab);
     $args = array(
-        'page' => modules_get_settings_page_slug(),
+        'page' => lonestar_get_settings_page_slug(),
         'tab'  => $tab,
     );
 
@@ -181,20 +171,20 @@ function modules_get_settings_tab_url($tab, $query_args = array())
  *
  * @return array<string,array{label:string,path:string}>
  */
-function modules_get_changelog_file_map()
+function lonestar_get_changelog_file_map()
 {
     $map = array();
 
     $template_path = wp_normalize_path(trailingslashit((string) get_template_directory()) . 'CHANGELOG.md');
     $map['template'] = array(
-        'label' => modules_get_source_label('template'),
+        'label' => lonestar_get_source_label('template'),
         'path'  => $template_path,
     );
 
     if (get_stylesheet_directory() !== get_template_directory()) {
         $stylesheet_path = wp_normalize_path(trailingslashit((string) get_stylesheet_directory()) . 'CHANGELOG.md');
         $map['stylesheet'] = array(
-            'label' => modules_get_source_label('stylesheet'),
+            'label' => lonestar_get_source_label('stylesheet'),
             'path'  => $stylesheet_path,
         );
     }
@@ -208,7 +198,7 @@ function modules_get_changelog_file_map()
  * @param string $absolute_path Absolute filesystem path.
  * @return string
  */
-function modules_get_display_path($absolute_path)
+function lonestar_get_display_path($absolute_path)
 {
     $absolute_path = wp_normalize_path((string) $absolute_path);
     $root = wp_normalize_path(untrailingslashit((string) ABSPATH));
@@ -226,7 +216,7 @@ function modules_get_display_path($absolute_path)
  * @param string $file_path Absolute file path.
  * @return string
  */
-function modules_read_changelog_contents($file_path)
+function lonestar_read_changelog_contents($file_path)
 {
     $file_path = wp_normalize_path((string) $file_path);
     if ('' === $file_path || !file_exists($file_path) || !is_readable($file_path)) {
@@ -247,21 +237,21 @@ function modules_read_changelog_contents($file_path)
  *
  * @return void
  */
-function modules_render_changelog_tab()
+function lonestar_render_changelog_tab()
 {
-    $file_map = modules_get_changelog_file_map();
+    $file_map = lonestar_get_changelog_file_map();
 
     echo '<h2>' . esc_html__('Changelog', 'lonestar') . '</h2>';
     echo '<p>' . esc_html__('This tab shows CHANGELOG files for active parent and child themes.', 'lonestar') . '</p>';
 
     foreach ($file_map as $source => $entry) {
         $source = sanitize_key((string) $source);
-        $label = isset($entry['label']) ? sanitize_text_field((string) $entry['label']) : modules_get_source_label($source);
+        $label = isset($entry['label']) ? sanitize_text_field((string) $entry['label']) : lonestar_get_source_label($source);
         $file_path = isset($entry['path']) ? wp_normalize_path((string) $entry['path']) : '';
-        $display_path = modules_get_display_path($file_path);
+        $display_path = lonestar_get_display_path($file_path);
         $file_exists = ('' !== $file_path && file_exists($file_path));
         $file_readable = ('' !== $file_path && is_readable($file_path));
-        $file_contents = ($file_exists && $file_readable) ? modules_read_changelog_contents($file_path) : '';
+        $file_contents = ($file_exists && $file_readable) ? lonestar_read_changelog_contents($file_path) : '';
         $mtime = ($file_exists && $file_readable) ? filemtime($file_path) : false;
 
         echo '<h3>' . esc_html($label) . '</h3>';
@@ -295,7 +285,7 @@ function modules_render_changelog_tab()
  *
  * @return string
  */
-function modules_get_parent_repository_url()
+function lonestar_get_parent_repository_url()
 {
     $default_url = 'https://github.com/blonestar/wp-lonestar';
 
@@ -322,7 +312,7 @@ function modules_get_parent_repository_url()
  *
  * @return void
  */
-function modules_render_about_tab()
+function lonestar_render_about_tab()
 {
     $template_slug = (string) get_template();
     $stylesheet_slug = (string) get_stylesheet();
@@ -340,7 +330,7 @@ function modules_render_about_tab()
     $template_requires_wp = ($template_theme instanceof \WP_Theme) ? (string) $template_theme->get('RequiresWP') : '';
     $template_requires_php = ($template_theme instanceof \WP_Theme) ? (string) $template_theme->get('RequiresPHP') : '';
     $template_path = wp_normalize_path((string) get_template_directory());
-    $repository_url = modules_get_parent_repository_url();
+    $repository_url = lonestar_get_parent_repository_url();
 
     $active_name = ($stylesheet_theme instanceof \WP_Theme) ? (string) $stylesheet_theme->get('Name') : $stylesheet_slug;
     $active_version = ($stylesheet_theme instanceof \WP_Theme) ? (string) $stylesheet_theme->get('Version') : '';
@@ -388,7 +378,7 @@ function modules_render_about_tab()
         }
         echo '</td></tr>';
         echo '<tr><th>' . esc_html__('Slug', 'lonestar') . '</th><td><code>' . esc_html($stylesheet_slug) . '</code></td></tr>';
-        echo '<tr><th>' . esc_html__('Path', 'lonestar') . '</th><td><code>' . esc_html(modules_get_display_path($active_path)) . '</code></td></tr>';
+        echo '<tr><th>' . esc_html__('Path', 'lonestar') . '</th><td><code>' . esc_html(lonestar_get_display_path($active_path)) . '</code></td></tr>';
     } else {
         echo '<tr><th style="width:260px;">' . esc_html__('Status', 'lonestar') . '</th><td>' . esc_html__('No child theme is active.', 'lonestar') . '</td></tr>';
     }
@@ -421,7 +411,7 @@ function modules_render_about_tab()
     }
     echo '</td></tr>';
     echo '<tr><th>' . esc_html__('Slug', 'lonestar') . '</th><td><code>' . esc_html($template_slug) . '</code></td></tr>';
-    echo '<tr><th>' . esc_html__('Path', 'lonestar') . '</th><td><code>' . esc_html(modules_get_display_path($template_path)) . '</code></td></tr>';
+    echo '<tr><th>' . esc_html__('Path', 'lonestar') . '</th><td><code>' . esc_html(lonestar_get_display_path($template_path)) . '</code></td></tr>';
     echo '<tr><th>' . esc_html__('Repository', 'lonestar') . '</th><td>';
     if ('' !== $repository_url) {
         echo '<a href="' . esc_url($repository_url) . '" target="_blank" rel="noopener noreferrer">' . esc_html($repository_url) . '</a>';
@@ -440,18 +430,18 @@ function modules_render_about_tab()
  *
  * @return void
  */
-function modules_handle_modules_admin_post()
+function lonestar_handle_modules_admin_post()
 {
     if (!is_admin()) {
         return;
     }
 
-    if ('POST' !== strtoupper((string) $_SERVER['REQUEST_METHOD'])) {
+    if (!isset($_SERVER['REQUEST_METHOD']) || 'POST' !== strtoupper((string) $_SERVER['REQUEST_METHOD'])) {
         return;
     }
 
     $page = isset($_GET['page']) ? sanitize_key((string) wp_unslash($_GET['page'])) : '';
-    if (!modules_is_settings_page_slug($page)) {
+    if (!lonestar_is_settings_page_slug($page)) {
         return;
     }
 
@@ -460,7 +450,7 @@ function modules_handle_modules_admin_post()
     }
 
     $submitted_tab = isset($_POST['lonestar_settings_tab']) ? (string) wp_unslash($_POST['lonestar_settings_tab']) : null;
-    $current_tab = modules_get_current_settings_tab($submitted_tab);
+    $current_tab = lonestar_get_current_settings_tab($submitted_tab);
     if ('content-types' === $current_tab) {
         return;
     }
@@ -470,14 +460,14 @@ function modules_handle_modules_admin_post()
     $is_updated = false;
 
     if ('modules' === $current_tab) {
-        $module_catalog = modules_get_module_catalog();
+        $module_catalog = lonestar_get_module_catalog();
         $selected_modules = isset($_POST['lonestar_modules']) && is_array($_POST['lonestar_modules']) ? wp_unslash($_POST['lonestar_modules']) : array();
         $selected_modules = array_values(array_unique(array_map('sanitize_key', $selected_modules)));
-        $override_state = function_exists('modules_get_module_override_state') ? modules_get_module_override_state($module_catalog) : array();
+        $override_state = function_exists('lonestar_get_module_override_state') ? lonestar_get_module_override_state($module_catalog) : array();
         $overridden_lookup = (is_array($override_state) && isset($override_state['overridden_by_key']) && is_array($override_state['overridden_by_key']))
             ? $override_state['overridden_by_key']
             : array();
-        $existing_module_toggles = modules_get_module_toggle_map();
+        $existing_module_toggles = lonestar_get_module_toggle_map();
 
         $module_toggle_map = array();
         foreach (array_keys($module_catalog) as $module_key) {
@@ -533,7 +523,7 @@ function modules_handle_modules_admin_post()
     do_action('lonestar_theme_settings_handle_tab_post', $current_tab);
 
     $redirect_args = array(
-        'page' => modules_get_settings_page_slug(),
+        'page' => lonestar_get_settings_page_slug(),
         'tab'  => $current_tab,
     );
     if ($is_updated) {
@@ -554,7 +544,7 @@ function modules_handle_modules_admin_post()
  * @param array<string,array> $catalog Catalog keyed by item key.
  * @return array<string,array<string,array>>
  */
-function modules_group_catalog_by_source($catalog)
+function lonestar_group_catalog_by_source($catalog)
 {
     $groups = array(
         'template'   => array(),
@@ -595,7 +585,7 @@ function modules_group_catalog_by_source($catalog)
  * } $override_state Module override state.
  * @return void
  */
-function modules_render_module_table($catalog, $enabled_keys, $source_label, $override_state = array())
+function lonestar_render_module_table($catalog, $enabled_keys, $source_label, $override_state = array())
 {
     if (!is_array($catalog) || empty($catalog)) {
         echo '<p>' . esc_html__('No modules found for this source.', 'lonestar') . '</p>';
@@ -605,7 +595,7 @@ function modules_render_module_table($catalog, $enabled_keys, $source_label, $ov
     $overridden_lookup = (is_array($override_state) && isset($override_state['overridden_by_key']) && is_array($override_state['overridden_by_key']))
         ? $override_state['overridden_by_key']
         : array();
-    $full_catalog = modules_get_module_catalog();
+    $full_catalog = lonestar_get_module_catalog();
 
     echo '<h3>' . esc_html($source_label) . '</h3>';
     echo '<table class="widefat striped" style="max-width: 1200px;">';
@@ -624,9 +614,9 @@ function modules_render_module_table($catalog, $enabled_keys, $source_label, $ov
             continue;
         }
 
-        $module_slug = isset($module['slug']) ? sanitize_key((string) $module['slug']) : modules_get_module_slug_from_key($module_key);
+        $module_slug = isset($module['slug']) ? sanitize_key((string) $module['slug']) : lonestar_get_module_slug_from_key($module_key);
         $mode = isset($module['mode']) ? (string) $module['mode'] : 'file';
-        $label = isset($module['label']) ? sanitize_text_field((string) $module['label']) : modules_module_label_from_slug($module_slug);
+        $label = isset($module['label']) ? sanitize_text_field((string) $module['label']) : lonestar_module_label_from_slug($module_slug);
         $description = isset($module['description']) ? sanitize_text_field((string) $module['description']) : '';
         $version = isset($module['version']) ? sanitize_text_field((string) $module['version']) : '';
         $author = isset($module['author']) ? sanitize_text_field((string) $module['author']) : '';
@@ -641,7 +631,7 @@ function modules_render_module_table($catalog, $enabled_keys, $source_label, $ov
         if ('' !== $overriding_module_key && isset($full_catalog[$overriding_module_key]) && is_array($full_catalog[$overriding_module_key])) {
             $overriding_source = isset($full_catalog[$overriding_module_key]['source'])
                 ? sanitize_key((string) $full_catalog[$overriding_module_key]['source'])
-                : modules_get_module_source_from_key($overriding_module_key);
+                : lonestar_get_module_source_from_key($overriding_module_key);
         }
 
         if ('' === $description) {
@@ -659,7 +649,7 @@ function modules_render_module_table($catalog, $enabled_keys, $source_label, $ov
         echo '<strong>' . esc_html($label) . '</strong><br />';
         echo '<code>' . esc_html($module_slug) . '</code>';
         if ($is_overridden) {
-            $source_label_text = ('' !== $overriding_source) ? modules_get_source_label($overriding_source) : __('Child Theme', 'lonestar');
+            $source_label_text = ('' !== $overriding_source) ? lonestar_get_source_label($overriding_source) : __('Child Theme', 'lonestar');
             /* translators: %s: Theme source overriding the parent module. */
             echo '<br /><span class="description">' . esc_html(sprintf(__('Overridden by %s.', 'lonestar'), $source_label_text)) . '</span>';
         }
@@ -723,7 +713,7 @@ function modules_render_module_table($catalog, $enabled_keys, $source_label, $ov
  * } $override_state Block override state.
  * @return void
  */
-function modules_render_block_table($catalog, $enabled_keys, $source_label, $override_state = array())
+function lonestar_render_block_table($catalog, $enabled_keys, $source_label, $override_state = array())
 {
     if (!is_array($catalog) || empty($catalog)) {
         echo '<p>' . esc_html__('No blocks found for this source.', 'lonestar') . '</p>';
@@ -779,7 +769,7 @@ function modules_render_block_table($catalog, $enabled_keys, $source_label, $ove
             echo '<br /><code>' . esc_html($name) . '</code>';
         }
         if ($is_overridden) {
-            $source_label_text = ('' !== $overriding_source) ? modules_get_source_label($overriding_source) : __('Child Theme', 'lonestar');
+            $source_label_text = ('' !== $overriding_source) ? lonestar_get_source_label($overriding_source) : __('Child Theme', 'lonestar');
             echo '<br /><span class="description">' . esc_html(sprintf(__('Overridden by %s.', 'lonestar'), $source_label_text)) . '</span>';
         }
         if (!$is_available && '' !== $status_message) {
@@ -797,7 +787,7 @@ function modules_render_block_table($catalog, $enabled_keys, $source_label, $ove
 }
 
 /** Return a declared argument value without inferring WordPress defaults. */
-function modules_get_content_type_argument_display($args, $key)
+function lonestar_get_content_type_argument_display($args, $key)
 {
     if (!is_array($args) || !array_key_exists($key, $args)) {
         return __('Not declared', 'lonestar');
@@ -819,7 +809,7 @@ function modules_get_content_type_argument_display($args, $key)
 }
 
 /** Return the display label for a Content Types catalog source. */
-function modules_get_content_type_source_label($source)
+function lonestar_get_content_type_source_label($source)
 {
     $source = sanitize_key((string) $source);
 
@@ -827,11 +817,11 @@ function modules_get_content_type_source_label($source)
         return __('Filter', 'lonestar');
     }
 
-    return modules_get_source_label($source);
+    return lonestar_get_source_label($source);
 }
 
 /** Return a readable Content Types label from definition arguments. */
-function modules_get_content_type_label($slug, $args)
+function lonestar_get_content_type_label($slug, $args)
 {
     if (isset($args['labels']) && is_array($args['labels']) && isset($args['labels']['name']) && is_scalar($args['labels']['name'])) {
         return (string) $args['labels']['name'];
@@ -845,7 +835,7 @@ function modules_get_content_type_label($slug, $args)
 }
 
 /** Return useful, safely displayable context for a Content Types diagnostic. */
-function modules_get_content_type_diagnostic_context_display($context)
+function lonestar_get_content_type_diagnostic_context_display($context)
 {
     if (!is_array($context)) {
         return '';
@@ -854,7 +844,7 @@ function modules_get_content_type_diagnostic_context_display($context)
     $display = array();
     foreach (array('file' => __('File', 'lonestar'), 'origin' => __('Origin', 'lonestar')) as $key => $label) {
         if (isset($context[$key]) && is_scalar($context[$key]) && '' !== (string) $context[$key]) {
-            $display[] = $label . ': ' . modules_get_display_path((string) $context[$key]);
+            $display[] = $label . ': ' . lonestar_get_display_path((string) $context[$key]);
         }
     }
     foreach (array('taxonomy' => __('Taxonomy', 'lonestar'), 'slug' => __('Slug', 'lonestar'), 'post_type' => __('Post type', 'lonestar')) as $key => $label) {
@@ -867,7 +857,7 @@ function modules_get_content_type_diagnostic_context_display($context)
 }
 
 /** Render a read-only Content Types table. */
-function modules_render_content_type_table($entries, $entity_type)
+function lonestar_render_content_type_table($entries, $entity_type)
 {
     $is_taxonomy = ('taxonomies' === $entity_type);
     echo '<h2>' . esc_html($is_taxonomy ? __('Taxonomies', 'lonestar') : __('Post Types', 'lonestar')) . '</h2>';
@@ -889,7 +879,7 @@ function modules_render_content_type_table($entries, $entity_type)
         $effective_args = isset($entry['effective_args']) && is_array($entry['effective_args']) ? $entry['effective_args'] : $declared_args;
         $args = !empty($entry['effective']) ? $effective_args : $declared_args;
         $source = isset($entry['source']) ? sanitize_key((string) $entry['source']) : 'filter';
-        $label = modules_get_content_type_label($slug, $args);
+        $label = lonestar_get_content_type_label($slug, $args);
         $status = array();
         $status[] = !empty($entry['effective']) ? __('Effective', 'lonestar') : __('Not effective', 'lonestar');
         if (!empty($entry['overridden'])) $status[] = __('Overridden', 'lonestar');
@@ -905,15 +895,15 @@ function modules_render_content_type_table($entries, $entity_type)
             $object_types = implode(', ', $entry_object_types);
             $summary[] = __('Object types', 'lonestar') . ': ' . ('' !== $object_types ? $object_types : __('Not declared', 'lonestar'));
             foreach (array('public' => __('Public', 'lonestar'), 'show_in_rest' => __('REST', 'lonestar'), 'hierarchical' => __('Hierarchical', 'lonestar'), 'rewrite' => __('Rewrite', 'lonestar')) as $key => $name) {
-                $summary[] = $name . ': ' . modules_get_content_type_argument_display($args, $key);
+                $summary[] = $name . ': ' . lonestar_get_content_type_argument_display($args, $key);
             }
         } else {
             foreach (array('public' => __('Public', 'lonestar'), 'show_in_rest' => __('REST', 'lonestar'), 'has_archive' => __('Archive', 'lonestar'), 'rewrite' => __('Rewrite', 'lonestar'), 'supports' => __('Supports', 'lonestar')) as $key => $name) {
-                $summary[] = $name . ': ' . modules_get_content_type_argument_display($args, $key);
+                $summary[] = $name . ': ' . lonestar_get_content_type_argument_display($args, $key);
             }
         }
         echo '<tr><td><strong>' . esc_html($label) . '</strong><br /><code>' . esc_html($slug) . '</code>';
-        if (!empty($entry['overridden']) && !empty($entry['overriding_source'])) echo '<br /><span class="description">' . esc_html(sprintf(__('Overridden by %s.', 'lonestar'), modules_get_content_type_source_label($entry['overriding_source']))) . '</span>';
+        if (!empty($entry['overridden']) && !empty($entry['overriding_source'])) echo '<br /><span class="description">' . esc_html(sprintf(__('Overridden by %s.', 'lonestar'), lonestar_get_content_type_source_label($entry['overriding_source']))) . '</span>';
         if (!empty($entry['effective']) && !empty($entry['registered'])) {
             if (!$is_taxonomy && function_exists('get_post_type_object')) {
                 $object = get_post_type_object($slug);
@@ -933,9 +923,9 @@ function modules_render_content_type_table($entries, $entity_type)
                 }
             }
         }
-        echo '</td><td>' . esc_html(implode(' · ', $status)) . '</td><td>' . esc_html(modules_get_content_type_source_label($source));
+        echo '</td><td>' . esc_html(implode(' · ', $status)) . '</td><td>' . esc_html(lonestar_get_content_type_source_label($source));
         $file = isset($entry['file']) ? (string) $entry['file'] : '';
-        if ('' !== $file) echo '<br /><code>' . esc_html(modules_get_display_path($file)) . '</code>';
+        if ('' !== $file) echo '<br /><code>' . esc_html(lonestar_get_display_path($file)) . '</code>';
         echo '</td><td>' . esc_html(implode('; ', $summary));
         if (!empty($entry['effective']) && !empty($entry['filtered']) && $declared_args !== $effective_args) {
             echo '<br /><span class="description">' . esc_html__('Showing effective values after filters; declared values remain available in the catalog.', 'lonestar') . '</span>';
@@ -946,14 +936,14 @@ function modules_render_content_type_table($entries, $entity_type)
 }
 
 /** Render the informational, non-mutating Content Types settings tab. */
-function modules_render_content_types_tab()
+function lonestar_render_content_types_tab()
 {
     $catalog = function_exists('lonestar_get_content_type_catalog') ? lonestar_get_content_type_catalog() : array();
     $post_types = isset($catalog['post_types']['entries']) ? $catalog['post_types']['entries'] : array();
     $taxonomies = isset($catalog['taxonomies']['entries']) ? $catalog['taxonomies']['entries'] : array();
     echo '<h2>' . esc_html__('Content Types', 'lonestar') . '</h2><p>' . esc_html__('Read-only overview of content type definitions resolved for this request. This page does not save settings or change rewrites.', 'lonestar') . '</p>';
-    modules_render_content_type_table($post_types, 'post_types');
-    modules_render_content_type_table($taxonomies, 'taxonomies');
+    lonestar_render_content_type_table($post_types, 'post_types');
+    lonestar_render_content_type_table($taxonomies, 'taxonomies');
     $diagnostics = isset($catalog['diagnostics']) && is_array($catalog['diagnostics']) ? $catalog['diagnostics'] : array();
     if (!empty($diagnostics)) {
         echo '<div class="notice notice-warning inline"><p><strong>' . esc_html__('Definition diagnostics', 'lonestar') . '</strong></p><ul>';
@@ -961,7 +951,7 @@ function modules_render_content_types_tab()
             if (!is_array($diagnostic) || !isset($diagnostic['message'])) {
                 continue;
             }
-            $context = modules_get_content_type_diagnostic_context_display(isset($diagnostic['context']) ? $diagnostic['context'] : array());
+            $context = lonestar_get_content_type_diagnostic_context_display(isset($diagnostic['context']) ? $diagnostic['context'] : array());
             echo '<li>' . esc_html((string) $diagnostic['message']);
             if ('' !== $context) {
                 echo '<br /><code>' . esc_html($context) . '</code>';
@@ -977,14 +967,14 @@ function modules_render_content_types_tab()
  *
  * @return void
  */
-function modules_render_modules_admin_page()
+function lonestar_render_modules_admin_page()
 {
     if (!current_user_can('manage_options')) {
         return;
     }
 
-    $tabs = modules_get_settings_tabs();
-    $current_tab = modules_get_current_settings_tab();
+    $tabs = lonestar_get_settings_tabs();
+    $current_tab = lonestar_get_current_settings_tab();
 
     $module_groups = array(
         'template'   => array(),
@@ -994,10 +984,10 @@ function modules_render_modules_admin_page()
     $module_override_state = array();
 
     if ('modules' === $current_tab) {
-        $module_catalog = modules_get_module_catalog();
-        $enabled_module_keys = modules_get_enabled_module_keys(array_keys($module_catalog));
-        $module_groups = modules_group_catalog_by_source($module_catalog);
-        $module_override_state = function_exists('modules_get_module_override_state') ? modules_get_module_override_state($module_catalog) : array();
+        $module_catalog = lonestar_get_module_catalog();
+        $enabled_module_keys = lonestar_get_enabled_module_keys(array_keys($module_catalog));
+        $module_groups = lonestar_group_catalog_by_source($module_catalog);
+        $module_override_state = function_exists('lonestar_get_module_override_state') ? lonestar_get_module_override_state($module_catalog) : array();
     }
 
     $block_groups = array(
@@ -1010,7 +1000,7 @@ function modules_render_modules_admin_page()
     if ('blocks' === $current_tab) {
         $block_catalog = function_exists('lonestar_get_block_catalog') ? lonestar_get_block_catalog() : array();
         $enabled_block_keys = function_exists('lonestar_get_enabled_block_keys') ? lonestar_get_enabled_block_keys(array_keys($block_catalog)) : array();
-        $block_groups = modules_group_catalog_by_source($block_catalog);
+        $block_groups = lonestar_group_catalog_by_source($block_catalog);
         $block_override_state = function_exists('lonestar_get_block_override_state') ? lonestar_get_block_override_state($block_catalog) : array();
     }
     ?>
@@ -1031,18 +1021,18 @@ function modules_render_modules_admin_page()
                     $tab_class .= ' nav-tab-active';
                 }
                 ?>
-                <a href="<?php echo esc_url(modules_get_settings_tab_url($tab_key)); ?>" class="<?php echo esc_attr($tab_class); ?>">
+                <a href="<?php echo esc_url(lonestar_get_settings_tab_url($tab_key)); ?>" class="<?php echo esc_attr($tab_class); ?>">
                     <?php echo esc_html($tab_label); ?>
                 </a>
             <?php endforeach; ?>
         </h2>
 
         <?php if ('changelog' === $current_tab) : ?>
-            <?php modules_render_changelog_tab(); ?>
+            <?php lonestar_render_changelog_tab(); ?>
         <?php elseif ('content-types' === $current_tab) : ?>
-            <?php modules_render_content_types_tab(); ?>
+            <?php lonestar_render_content_types_tab(); ?>
         <?php elseif ('about' === $current_tab) : ?>
-            <?php modules_render_about_tab(); ?>
+            <?php lonestar_render_about_tab(); ?>
         <?php else : ?>
             <form method="post" action="">
                 <?php wp_nonce_field('lonestar_save_theme_settings', 'lonestar_theme_settings_nonce'); ?>
@@ -1050,12 +1040,12 @@ function modules_render_modules_admin_page()
 
                 <?php if ('modules' === $current_tab) : ?>
                     <h2><?php echo esc_html__('Modules', 'lonestar'); ?></h2>
-                    <?php modules_render_module_table($module_groups['template'], $enabled_module_keys, modules_get_source_label('template'), $module_override_state); ?>
-                    <?php modules_render_module_table($module_groups['stylesheet'], $enabled_module_keys, modules_get_source_label('stylesheet'), $module_override_state); ?>
+                    <?php lonestar_render_module_table($module_groups['template'], $enabled_module_keys, lonestar_get_source_label('template'), $module_override_state); ?>
+                    <?php lonestar_render_module_table($module_groups['stylesheet'], $enabled_module_keys, lonestar_get_source_label('stylesheet'), $module_override_state); ?>
                 <?php elseif ('blocks' === $current_tab) : ?>
                     <h2><?php echo esc_html__('Blocks', 'lonestar'); ?></h2>
-                    <?php modules_render_block_table($block_groups['template'], $enabled_block_keys, modules_get_source_label('template'), $block_override_state); ?>
-                    <?php modules_render_block_table($block_groups['stylesheet'], $enabled_block_keys, modules_get_source_label('stylesheet'), $block_override_state); ?>
+                    <?php lonestar_render_block_table($block_groups['template'], $enabled_block_keys, lonestar_get_source_label('template'), $block_override_state); ?>
+                    <?php lonestar_render_block_table($block_groups['stylesheet'], $enabled_block_keys, lonestar_get_source_label('stylesheet'), $block_override_state); ?>
                 <?php else : ?>
                     <?php do_action('lonestar_render_theme_settings_tab', $current_tab); ?>
                 <?php endif; ?>
@@ -1086,11 +1076,11 @@ function modules_render_modules_admin_page()
  * @param mixed $context_b Optional hook context value.
  * @return void
  */
-function modules_flush_module_related_caches($context_a = null, $context_b = null)
+function lonestar_flush_module_related_caches($context_a = null, $context_b = null)
 {
     unset($context_a, $context_b);
 
-    delete_transient(modules_get_module_catalog_transient_key());
+    delete_transient(lonestar_get_module_catalog_transient_key());
 
     if (function_exists('lonestar_flush_block_discovery_caches')) {
         lonestar_flush_block_discovery_caches();
@@ -1108,8 +1098,8 @@ function modules_flush_module_related_caches($context_a = null, $context_b = nul
  * @param string $option Option name.
  * @return void
  */
-function modules_handle_module_toggle_option_update($old_value, $value, $option)
+function lonestar_handle_module_toggle_option_update($old_value, $value, $option)
 {
     unset($old_value, $value, $option);
-    modules_flush_module_related_caches();
+    lonestar_flush_module_related_caches();
 }

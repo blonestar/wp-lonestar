@@ -11,7 +11,9 @@ wp package install wp-cli/i18n-command
 npm run i18n:pot
 ```
 
-The command writes `languages/lonestar.pot` and excludes generated output and tests. Regenerate it whenever PHP, JavaScript, `block.json`, or parent module metadata strings change. A second run must produce no diff.
+The command writes `languages/lonestar.pot` and excludes generated output and tests. Regenerate it whenever PHP, JavaScript, `block.json`, parent module metadata, or `patterns/*.php` header/body strings change. A second run must produce no diff.
+
+Block templates (`templates/*.html`, `parts/*.html`) are static HTML and are not scanned for translatable strings. Any user-facing English text that would otherwise live directly in a template belongs in a PHP pattern under `patterns/` (using `esc_html_e()`/`esc_attr__()` etc. with the `lonestar` domain) referenced from the template via `<!-- wp:pattern {"slug":"lonestar/..."} /-->`, so it is picked up by `wp i18n make-pot`.
 
 For example, a bundled Serbian theme translation uses a working PO catalog and compiles the runtime theme catalog as `languages/sr_RS.mo`; WordPress theme files in the custom theme directory use locale-only MO filenames. Generate JavaScript catalogs from the domain/locale PO catalog without removing its entries:
 

@@ -5,10 +5,10 @@
  * Writes debug information to error log when WP_DEBUG is enabled
  */
 
-if (!function_exists('write_log')) {
+if (!function_exists('lonestar_write_log')) {
 
-    function write_log($log) {
-        if (true === WP_DEBUG) {
+    function lonestar_write_log($log) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
             if (is_array($log) || is_object($log)) {
                 error_log(print_r($log, true));
             } else {

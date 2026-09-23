@@ -11,6 +11,10 @@ const blocksAcfEnqueueSource = read("inc/core/blocks-acf-enqueue.php");
 const blocksNativeSource = read("inc/core/blocks-native.php");
 const modulesAdminSource = read("inc/core/modules_admin.php");
 const phpOnlyRenderSource = read("blocks/php-only/example-php-only/render.php");
+const emojiModuleSource = read("modules/module.disable-emoji.php");
+const themeJson = JSON.parse(read("theme.json"));
+const notFoundTemplate = read("templates/404.html");
+const resetCss = read("assets/css/reset.css");
 
 test("registers a wp_script_attributes filter so type=module actually renders", () => {
     assert.match(viteSource, /add_filter\('wp_script_attributes', 'lonestar_filter_module_script_attributes'\)/);
@@ -42,10 +46,10 @@ test("registers viewScriptModule handles with the Script Modules API, not wp_reg
     assert.match(blocksAcfEnqueueSource, /wp_register_script_module\(/);
 });
 
-test("bumps the block asset map transient cache key and flushes it on discovery reset", () => {
-    assert.match(blocksAcfEnqueueSource, /lonestar_block_asset_map_v4_/);
-    assert.doesNotMatch(blocksAcfEnqueueSource, /lonestar_block_asset_map_v3_/);
-    assert.match(blocksNativeSource, /delete_transient\('lonestar_block_asset_map_v4_' \. \$cache_namespace\)/);
+test("consolidates block discovery into a single runtime index transient", () => {
+    assert.match(blocksAcfEnqueueSource, /function lonestar_get_block_runtime_index_transient_key\(\)\s*\{\s*return 'lonestar_block_runtime_v1';/);
+    assert.match(blocksNativeSource, /delete_transient\(lonestar_get_block_runtime_index_transient_key\(\)\)/);
+    assert.doesNotMatch(blocksNativeSource, /lonestar_(acf|native|php_only)_blocks_to_load|lonestar_blocks_to_scan|lonestar_block_asset_map/);
 });
 
 test("php-only example block closes its wrapper <section> tag", () => {
@@ -74,6 +78,59 @@ function findPhpFiles(directory) {
     }
     return results;
 }
+
+test("emoji module removes all modern core emoji hooks, including wp_enqueue_emoji_styles", () => {
+    assert.match(emojiModuleSource, /remove_action\('wp_head', 'print_emoji_detection_script', 7\)/);
+    assert.match(emojiModuleSource, /remove_action\('wp_print_styles', 'print_emoji_styles'\)/);
+    assert.match(emojiModuleSource, /remove_action\('wp_enqueue_scripts', 'wp_enqueue_emoji_styles'\)/);
+    assert.match(emojiModuleSource, /remove_action\('admin_print_scripts', 'print_emoji_detection_script'\)/);
+    assert.match(emojiModuleSource, /remove_action\('admin_print_styles', 'print_emoji_styles'\)/);
+    assert.match(emojiModuleSource, /remove_action\('admin_enqueue_scripts', 'wp_enqueue_emoji_styles'\)/);
+    assert.match(emojiModuleSource, /remove_action\('embed_head', 'print_emoji_detection_script'\)/);
+    assert.match(emojiModuleSource, /remove_action\('enqueue_embed_scripts', 'wp_enqueue_emoji_styles'\)/);
+});
+
+test("emoji module also runs on admin_init so admin-only hooks (registered after init) are actually removed", () => {
+    assert.match(emojiModuleSource, /add_action\('init', 'lonestar_module_disable_emojis'\)/);
+    assert.match(emojiModuleSource, /add_action\('admin_init', 'lonestar_module_disable_emojis'\)/);
+});
+
+test("registers editor styles matching the frontend reset + Vite CSS", () => {
+    assert.match(viteSource, /function lonestar_register_editor_styles\(/);
+    assert.match(viteSource, /add_action\('after_setup_theme', 'lonestar_register_editor_styles', 20\)/);
+    assert.match(viteSource, /add_editor_style\('assets\/css\/reset\.css'\)/);
+    assert.match(viteSource, /if \(lonestar_is_vite_dev_mode\(\)\) \{\s*return;/);
+});
+
+test("theme.json uses a versioned schema and declares fluid typography", () => {
+    assert.equal(themeJson.$schema, "https://schemas.wp.org/wp/7.1/theme.json");
+    assert.equal(themeJson.settings.typography.fluid, true);
+    for (const fontSize of themeJson.settings.typography.fontSizes) {
+        if (fontSize.slug === "medium") {
+            // Body text stays at a fixed readable size on small viewports.
+            assert.equal(fontSize.fluid, false);
+            continue;
+        }
+        assert.ok(fontSize.fluid, `expected fluid min/max on font size "${fontSize.slug}"`);
+        assert.equal(fontSize.fluid.max, fontSize.size);
+    }
+});
+
+test("theme.json declares link/heading element styles instead of relying solely on base CSS", () => {
+    assert.ok(themeJson.styles.elements?.link, "expected styles.elements.link");
+    assert.ok(themeJson.styles.elements?.heading, "expected styles.elements.heading");
+    assert.equal(themeJson.styles.elements.link.typography.textDecoration, "underline");
+});
+
+test("404 template renders its content through a translatable pattern", () => {
+    assert.match(notFoundTemplate, /<!-- wp:pattern \{"slug":"lonestar\/404-content"\} \/-->/);
+    assert.doesNotMatch(notFoundTemplate, /404 - Page Not Found/);
+});
+
+test("reset.css no longer forces display:block on images (breaks inline/aligned images)", () => {
+    assert.doesNotMatch(resetCss, /img,[\s\S]*?\{\s*display:\s*block/);
+    assert.match(resetCss, /img,[\s\S]*?\{[\s\S]*?max-width:\s*100%/);
+});
 
 test("no PHP source uses the retired lonestar-theme text domain in translation calls", () => {
     const translationCallPattern = /\b(?:_e|__|_x|_ex|_n|_nx|esc_html__|esc_html_e|esc_attr__|esc_attr_e)\(\s*[^)]*['"]lonestar-theme['"]/;

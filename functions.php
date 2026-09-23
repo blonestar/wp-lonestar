@@ -32,26 +32,6 @@ if (!defined('LONESTAR_DIST_REL_PATH')) {
     define('LONESTAR_DIST_REL_PATH', 'dist/');
 }
 
-// Backward-compatible aliases. New integrations should use LONESTAR_* constants.
-if (!defined('TEMPLATE_PATH')) {
-    define('TEMPLATE_PATH', LONESTAR_TEMPLATE_PATH);
-}
-if (!defined('TEMPLATE_URI')) {
-    define('TEMPLATE_URI', LONESTAR_TEMPLATE_URI);
-}
-if (!defined('ACF_BLOCKS_PATH')) {
-    define('ACF_BLOCKS_PATH', LONESTAR_ACF_BLOCKS_PATH);
-}
-if (!defined('NATIVE_BLOCKS_PATH')) {
-    define('NATIVE_BLOCKS_PATH', LONESTAR_NATIVE_BLOCKS_PATH);
-}
-if (!defined('PHP_ONLY_BLOCKS_PATH')) {
-    define('PHP_ONLY_BLOCKS_PATH', LONESTAR_PHP_ONLY_BLOCKS_PATH);
-}
-if (!defined('DIST_REL_PATH')) {
-    define('DIST_REL_PATH', LONESTAR_DIST_REL_PATH);
-}
-
 if (!function_exists('lonestar_get_theme_cache_namespace')) {
     /**
      * Build cache namespace that changes after deploy/build.
@@ -75,13 +55,13 @@ if (!function_exists('lonestar_get_theme_cache_namespace')) {
         try {
             $theme = wp_get_theme();
             $theme_version = ($theme instanceof \WP_Theme) ? (string) $theme->get('Version') : '';
-            $manifest_path = trailingslashit(get_template_directory()) . DIST_REL_PATH . 'manifest.json';
+            $manifest_path = trailingslashit(get_template_directory()) . LONESTAR_DIST_REL_PATH . 'manifest.json';
             $manifest_mtime = file_exists($manifest_path) ? (string) filemtime($manifest_path) : 'manifest-missing';
             $bootstrap_file = trailingslashit(get_template_directory()) . 'functions.php';
             $bootstrap_mtime = file_exists($bootstrap_file) ? (string) filemtime($bootstrap_file) : '0';
             $environment = function_exists('wp_get_environment_type') ? (string) wp_get_environment_type() : 'production';
-            $module_signature = function_exists('modules_get_module_runtime_signature')
-                ? (string) modules_get_module_runtime_signature()
+            $module_signature = function_exists('lonestar_get_module_runtime_signature')
+                ? (string) lonestar_get_module_runtime_signature()
                 : 'modules-unavailable';
 
             $namespace = substr(md5(implode('|', array($theme_version, $manifest_mtime, $bootstrap_mtime, $environment, $module_signature))), 0, 12);
@@ -114,7 +94,6 @@ $lonestar_core_files = array(
 );
 
 $lonestar_module_system_disabled = (
-    (defined('MODULES_DISABLE_SYSTEM') && true === MODULES_DISABLE_SYSTEM) ||
     (defined('LONESTAR_DISABLE_MODULE_SYSTEM') && true === LONESTAR_DISABLE_MODULE_SYSTEM)
 );
 
@@ -188,4 +167,3 @@ if (!function_exists('lonestar_setup')) {
     }
 }
 add_action('after_setup_theme', 'lonestar_setup');
-
