@@ -208,8 +208,8 @@ function lonestar_get_block_root_paths($block_type = 'all')
 {
 	$roots = lonestar_get_theme_block_root_paths($block_type);
 
-	if (function_exists('modules_get_enabled_module_block_root_paths')) {
-		$roots = array_merge($roots, modules_get_enabled_module_block_root_paths($block_type));
+	if (function_exists('lonestar_get_enabled_module_block_root_paths')) {
+		$roots = array_merge($roots, lonestar_get_enabled_module_block_root_paths($block_type));
 	}
 
 	$roots = array_values(array_unique($roots));

@@ -99,41 +99,41 @@ test("module catalog bumps its schema to v5 and defers translation to read time"
 
     // Source values + textdomain are cached; translation happens in a
     // dedicated localize step applied after both cache hit and cache miss.
-    assert.match(modulesCatalogSource, /function modules_localize_module_catalog\(\$catalog\)/);
+    assert.match(modulesCatalogSource, /function lonestar_localize_module_catalog\(\$catalog\)/);
     assert.match(modulesCatalogSource, /'label_textdomain'\s*=>/);
     assert.match(modulesCatalogSource, /'description_textdomain'\s*=>/);
 
     const catalogFn = modulesCatalogSource.slice(
-        modulesCatalogSource.indexOf("function modules_get_module_catalog()"),
-        modulesCatalogSource.indexOf("function modules_module_slug_from_entry_file"),
+        modulesCatalogSource.indexOf("function lonestar_get_module_catalog()"),
+        modulesCatalogSource.indexOf("function lonestar_module_slug_from_entry_file"),
     );
 
     // Cache hit path: refresh availability, then localize, before returning.
     assert.match(
         catalogFn,
-        /modules_refresh_module_catalog_availability\(\$cached_catalog\);\s*\$catalog = modules_localize_module_catalog\(\$catalog\);\s*return \$catalog;/,
+        /lonestar_refresh_module_catalog_availability\(\$cached_catalog\);\s*\$catalog = lonestar_localize_module_catalog\(\$catalog\);\s*return \$catalog;/,
     );
 
     // Cache miss / fresh-build path: cache the raw catalog, then localize before returning.
-    assert.match(catalogFn, /set_transient\(\$cache_key, \$catalog, LONESTAR_MODULE_CATALOG_CACHE_TTL\);\s*\}\s*\$catalog = modules_localize_module_catalog\(\$catalog\);/);
+    assert.match(catalogFn, /set_transient\(\$cache_key, \$catalog, LONESTAR_MODULE_CATALOG_CACHE_TTL\);\s*\}\s*\$catalog = lonestar_localize_module_catalog\(\$catalog\);/);
 });
 
 test("module admin link labels also defer translation to read time", () => {
-    assert.match(modulesCatalogSource, /function modules_add_module_admin_page_link\(&\$links, &\$seen_pages, \$page_slug, \$label, \$textdomain = ''\)/);
+    assert.match(modulesCatalogSource, /function lonestar_add_module_admin_page_link\(&\$links, &\$seen_pages, \$page_slug, \$label, \$textdomain = ''\)/);
     assert.doesNotMatch(
         modulesCatalogSource.slice(
-            modulesCatalogSource.indexOf("function modules_get_module_admin_links"),
-            modulesCatalogSource.indexOf("function modules_add_module_admin_page_link"),
+            modulesCatalogSource.indexOf("function lonestar_get_module_admin_links"),
+            modulesCatalogSource.indexOf("function lonestar_add_module_admin_page_link"),
         ),
-        /modules_translate_module_metadata_value/,
+        /lonestar_translate_module_metadata_value/,
     );
 });
 
 test("module source fingerprint supports a fast mode gated by a filter", () => {
-    assert.match(modulesCatalogSource, /function modules_get_module_fingerprint_mode\(\)/);
+    assert.match(modulesCatalogSource, /function lonestar_get_module_fingerprint_mode\(\)/);
     assert.match(modulesCatalogSource, /apply_filters\('lonestar_module_fingerprint_mode', \$default_mode\)/);
     assert.match(modulesCatalogSource, /\$default_mode = \('production' === \$environment\) \? 'fast' : 'full';/);
-    assert.match(modulesCatalogSource, /if \('fast' === modules_get_module_fingerprint_mode\(\)\) \{/);
+    assert.match(modulesCatalogSource, /if \('fast' === lonestar_get_module_fingerprint_mode\(\)\) \{/);
 });
 
 test("block runtime index cache is invalidated when ACF availability changes", () => {

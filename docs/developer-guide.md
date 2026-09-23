@@ -83,7 +83,7 @@ Get-ChildItem -Recurse -File -Filter *.php | ForEach-Object { php -l $_.FullName
 
 Filter `lonestar_vite_dev_probe_enabled( bool $probe_enabled, string $probe_environment )` can override step 4's environment gate (e.g. to allow the probe on a custom environment type). It only affects the automatic probe; it does not run when an explicit constant/env var already decided the result.
 
-Block discovery (ACF/native/PHP-only registration + the Vite asset map) is cached behind a single consolidated "block runtime index" (`lonestar_get_block_runtime_index()`, transient key `lonestar_block_runtime_v1`), request-memoized and namespace-checked so a deploy/build automatically invalidates it without leaving orphaned transients under old keys. Dev mode always bypasses the transient (fresh discovery per request) but is still request-memoized. Call `lonestar_flush_block_discovery_caches()` to force a rebuild (also runs automatically on theme switch / plugin-upgrader completion).
+Block discovery (ACF/native/PHP-only registration + the Vite asset map) is cached behind a single consolidated "block runtime index" (`lonestar_get_block_runtime_index()`, transient key `lonestar_block_runtime_v1`), request-memoized and namespace-checked so a deploy/build automatically invalidates the payload under the fixed key. Dev mode always bypasses the transient (fresh discovery per request) but is still request-memoized. Call `lonestar_flush_block_discovery_caches()` to force a rebuild (also runs automatically on theme switch / plugin-upgrader completion).
 
 ## 6) Versioning Practice
 

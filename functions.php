@@ -60,8 +60,8 @@ if (!function_exists('lonestar_get_theme_cache_namespace')) {
             $bootstrap_file = trailingslashit(get_template_directory()) . 'functions.php';
             $bootstrap_mtime = file_exists($bootstrap_file) ? (string) filemtime($bootstrap_file) : '0';
             $environment = function_exists('wp_get_environment_type') ? (string) wp_get_environment_type() : 'production';
-            $module_signature = function_exists('modules_get_module_runtime_signature')
-                ? (string) modules_get_module_runtime_signature()
+            $module_signature = function_exists('lonestar_get_module_runtime_signature')
+                ? (string) lonestar_get_module_runtime_signature()
                 : 'modules-unavailable';
 
             $namespace = substr(md5(implode('|', array($theme_version, $manifest_mtime, $bootstrap_mtime, $environment, $module_signature))), 0, 12);

@@ -14,6 +14,7 @@ const modulesCatalogSource = read("inc/core/modules_catalog.php");
 const modulesAdminSource = read("inc/core/modules_admin.php");
 const modulesSource = read("inc/core/modules.php");
 const modulesStateSource = read("inc/core/modules_state.php");
+const modulesBootstrapSource = read("inc/core/modules_bootstrap.php");
 const debugHelperSource = read("inc/helpers/helper.debug.php");
 const printrHelperSource = read("inc/helpers/helper.printr.php");
 const shortcodeYearSource = read("inc/shortcodes/shortcode.year.php");
@@ -108,11 +109,14 @@ test("module compatibility aliases and legacy behavior are absent", () => {
     assert.doesNotMatch(modulesStateSource, /function\s+modules_get_enabled_module_slugs\b/);
     assert.doesNotMatch(modulesCatalogSource, /function\s+modules_get_module_php_files_for_scanning\b/);
     assert.doesNotMatch(modulesAdminSource, /function\s+modules_get_legacy_settings_page_slug\b|lonestar-theme-settings/);
+    for (const source of [modulesCatalogSource, modulesStateSource, modulesAdminSource, modulesBootstrapSource]) {
+        assert.doesNotMatch(source, /^\s*function\s+modules_/m);
+    }
 });
 
-test("modules_get_module_admin_links() has no unreachable code after its final return", () => {
-    const start = modulesCatalogSource.indexOf("function modules_get_module_admin_links(");
-    assert.notEqual(start, -1, "expected to find modules_get_module_admin_links()");
+test("lonestar_get_module_admin_links() has no unreachable code after its final return", () => {
+    const start = modulesCatalogSource.indexOf("function lonestar_get_module_admin_links(");
+    assert.notEqual(start, -1, "expected to find lonestar_get_module_admin_links()");
 
     // Slice out the function body between its opening and closing braces by
     // tracking brace depth from the first '{' after the signature.
@@ -129,7 +133,7 @@ test("modules_get_module_admin_links() has no unreachable code after its final r
             }
         }
     }
-    assert.notEqual(end, -1, "expected to find the closing brace of modules_get_module_admin_links()");
+    assert.notEqual(end, -1, "expected to find the closing brace of lonestar_get_module_admin_links()");
 
     const body = modulesCatalogSource.slice(braceStart, end);
     assert.doesNotMatch(body, /Deprecated unreachable compatibility code/);
@@ -142,7 +146,7 @@ test("modules_get_module_admin_links() has no unreachable code after its final r
     assert.equal(afterReturn, "", "expected no statements after the final return $links;");
 });
 
-test("modules_handle_modules_admin_post() guards $_SERVER['REQUEST_METHOD'] with isset()", () => {
+test("lonestar_handle_modules_admin_post() guards $_SERVER['REQUEST_METHOD'] with isset()", () => {
     assert.match(modulesAdminSource, /if \(!isset\(\$_SERVER\['REQUEST_METHOD'\]\) \|\| 'POST' !== strtoupper/);
 });
 
