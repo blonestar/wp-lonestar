@@ -13,26 +13,25 @@ if (!defined('ABSPATH')) {
  * Child theme shortcode files override parent files with the same filename.
  */
 
-$shortcode_files = array();
-$parent_shortcodes = glob(get_template_directory() . '/inc/shortcodes/shortcode.*.php');
-if (is_array($parent_shortcodes)) {
-    foreach ($parent_shortcodes as $file) {
-        $shortcode_files[basename($file)] = $file;
+$lonestar_shortcode_files = array();
+$lonestar_parent_shortcodes = glob(get_template_directory() . '/inc/shortcodes/shortcode.*.php');
+if (is_array($lonestar_parent_shortcodes)) {
+    foreach ($lonestar_parent_shortcodes as $lonestar_file) {
+        $lonestar_shortcode_files[basename($lonestar_file)] = $lonestar_file;
     }
 }
 
-$is_child_theme = get_stylesheet_directory() !== get_template_directory();
-if ($is_child_theme) {
-    $child_shortcodes = glob(get_stylesheet_directory() . '/inc/shortcodes/shortcode.*.php');
-    if (is_array($child_shortcodes)) {
-        foreach ($child_shortcodes as $file) {
-            $shortcode_files[basename($file)] = $file;
+$lonestar_is_child_theme = get_stylesheet_directory() !== get_template_directory();
+if ($lonestar_is_child_theme) {
+    $lonestar_child_shortcodes = glob(get_stylesheet_directory() . '/inc/shortcodes/shortcode.*.php');
+    if (is_array($lonestar_child_shortcodes)) {
+        foreach ($lonestar_child_shortcodes as $lonestar_file) {
+            $lonestar_shortcode_files[basename($lonestar_file)] = $lonestar_file;
         }
     }
 }
 
-ksort($shortcode_files, SORT_NATURAL);
-foreach ($shortcode_files as $file) {
-    include_once $file;
+ksort($lonestar_shortcode_files, SORT_NATURAL);
+foreach ($lonestar_shortcode_files as $lonestar_file) {
+    include_once $lonestar_file;
 }
-

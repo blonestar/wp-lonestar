@@ -76,6 +76,7 @@ function lonestar_module_disable_emojis_dns_prefetch($urls, $relation_type)
         return $urls;
     }
 
+    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core defines this fixed filter name.
     $emoji_svg_url = apply_filters('emoji_svg_url', 'https://s.w.org/images/core/emoji/2/svg/');
     return array_values(array_diff($urls, array($emoji_svg_url)));
 }

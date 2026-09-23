@@ -49,7 +49,7 @@ composer run lint:phpcs
 composer run lint:phpstan
 ```
 
-`phpstan` should pass clean (it uses `phpstan-baseline.neon` for pre-existing findings). `phpcs` currently reports real findings that predate this tooling and is report-only in CI; see the `TODO` in `.github/workflows/ci.yml`. Do not silence new findings by adding to the baseline/exclusions without a reason — fix the code or ask first.
+Both `phpcs` and `phpstan` are blocking CI gates. PHPStan uses `phpstan-baseline.neon` for existing findings. Fix new PHPCS findings; for a justified exception, add a line-specific `phpcs:ignore` with a reason. Do not add findings to the PHPStan baseline or broad PHPCS exclusions without a reason.
 
 Also do a manual smoke test for affected admin and frontend paths.
 

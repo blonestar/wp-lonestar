@@ -63,8 +63,8 @@ composer run lint:phpcs
 composer run lint:phpstan
 ```
 
-- `phpcs` uses `phpcs.xml.dist`, a curated WordPress Coding Standards ruleset scoped to security (escaping/nonces/sanitization), i18n, discouraged/deprecated functions, and PHP 8.2+ compatibility (`PHPCompatibilityWP`, `testVersion 8.2-`). It deliberately excludes formatting/whitespace sniffs that conflict with this codebase's 4-space indentation and `array()` long syntax, and excludes `PrefixAllGlobals` for files that define documented legacy compatibility symbols (`TEMPLATE_PATH`, `modules_*()`, etc. — see the root `AGENTS.md`).
-- `phpstan` runs at level 5 over `functions.php`, `inc/`, `modules/`, and `blocks/`, using `szepeviktor/phpstan-wordpress` for WordPress core stubs and `php-stubs/acf-pro-stubs` for ACF. `phpstan-baseline.neon` captures pre-existing findings so the gate passes clean; do not add new findings to the baseline without a reason.
+- `phpcs` uses `phpcs.xml.dist`, a curated WordPress Coding Standards ruleset scoped to security (escaping/nonces/sanitization), i18n, discouraged/deprecated functions, PHP 8.2+ compatibility (`PHPCompatibilityWP`, `testVersion 8.2-`), and `PrefixAllGlobals` across theme code. It excludes formatting/whitespace sniffs that conflict with this codebase's 4-space indentation and `array()` long syntax. PHPCS blocks CI; use a line-specific `phpcs:ignore` with a reason only for justified exceptions.
+- `phpstan` runs at level 5 over `functions.php`, `inc/`, `modules/`, and `blocks/`, using `szepeviktor/phpstan-wordpress` for WordPress core stubs and `php-stubs/acf-pro-stubs` for ACF. `phpstan-baseline.neon` captures pre-existing findings so the blocking gate passes clean; do not add new findings to the baseline without a reason.
 - None of this tooling (`composer.json`, `composer.lock`, `phpcs.xml.dist`, `phpstan*.neon*`, `vendor/`) ships in release ZIPs.
 
 ## 5.1) CSS Pipeline

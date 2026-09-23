@@ -31,7 +31,7 @@ function lonestar_register_native_block_types()
 
         if ('' === $metadata_path || !is_array($metadata) || empty($metadata['name'])) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('[lonestar-theme] Invalid native block metadata: ' . ('' !== $metadata_path ? $metadata_path : $block_directory));
+                error_log('[lonestar-theme] Invalid native block metadata: ' . ('' !== $metadata_path ? $metadata_path : $block_directory)); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-only diagnostic for invalid block metadata.
             }
             continue;
         }
@@ -45,7 +45,7 @@ function lonestar_register_native_block_types()
 
         if (!empty($errors)) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('[lonestar-theme] Invalid native block contract: ' . implode(' ', $errors));
+                error_log('[lonestar-theme] Invalid native block contract: ' . implode(' ', $errors)); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-only diagnostic for an invalid block contract.
             }
             continue;
         }

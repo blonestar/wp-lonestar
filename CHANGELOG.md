@@ -7,7 +7,7 @@ All notable changes to the Lonestar parent theme are documented in this file.
 ### Added
 
 - Added dev-only PHP quality tooling (`composer.json`, `phpcs.xml.dist`, `phpstan.neon.dist`, `phpstan-baseline.neon`): a curated WordPress Coding Standards gate (security, i18n, discouraged/deprecated functions, PHP 8.2+ compatibility, `lonestar_`/`LONESTAR_` symbol prefixing) and PHPStan level 5 with a baseline for pre-existing findings. None of this ships in release ZIPs.
-- Added a CI `quality` job running `composer run lint:phpcs` and `composer run lint:phpstan`.
+- Added blocking CI PHP quality gates running `composer run lint:phpcs` and `composer run lint:phpstan`.
 - Added PHP 8.5 to the CI PHP lint matrix (alongside 8.2 and 8.4).
 - Added a `.wp-env.json` and a CI `smoke` job (report-only, `continue-on-error: true`, unvalidated locally — no Docker in this environment) that starts `@wordpress/env`, activates the theme, and checks for PHP fatals/warnings and expected block registration on the homepage and a 404 page.
 
@@ -84,7 +84,7 @@ All notable changes to the Lonestar parent theme are documented in this file.
 - Replaced redundant `postcss-import` and Sass-like `postcss-nested` processing with Vite import handling and standards-based `postcss-nesting`; Tailwind is explicitly outside the framework stack.
 - Upgraded both parent and child tooling to Vite 8/Rolldown, raised the Node minimum to 22.12, and removed redundant `cross-env` usage.
 - Raised the minimum WordPress version to 7.0 and Node.js development baseline to 22.12.
-- Replaced glob-based core bootstrap with an explicit load order and introduced prefixed path constants with compatibility aliases.
+- Replaced glob-based core bootstrap with an explicit load order and introduced prefixed path constants.
 - Hardened release packaging so tracked `dist/`, exact changelog/version metadata, ZIP layout, checksum, and GitHub asset digest must agree before publication.
 - Module settings links and dependencies are now explicit `module.json` metadata; unavailable modules cannot boot.
 - Module toggle reconciliation moved from frontend reads to the admin lifecycle.

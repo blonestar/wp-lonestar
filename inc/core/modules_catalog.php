@@ -669,12 +669,14 @@ function lonestar_localize_module_catalog($catalog)
         $description_textdomain = isset($module['description_textdomain']) ? (string) $module['description_textdomain'] : '';
 
         if ($description_is_default || '' === $raw_description) {
+            // translators: %s: module label.
             $description = sprintf(__('Module: %s', 'lonestar'), $label);
         } else {
             $description = ('' !== $description_textdomain)
                 ? lonestar_translate_module_metadata_value($raw_description, $description_textdomain)
                 : sanitize_text_field($raw_description);
             if ('' === $description) {
+                // translators: %s: module label.
                 $description = sprintf(__('Module: %s', 'lonestar'), $label);
             }
         }
@@ -743,6 +745,7 @@ function lonestar_translate_module_metadata_value($value, $textdomain)
         return $value;
     }
 
+    // phpcs:ignore WordPress.WP.I18n.LowLevelTranslationFunction, WordPress.WP.I18n.NonSingularStringLiteralText, WordPress.WP.I18n.NonSingularStringLiteralDomain -- Module metadata supplies the runtime string and its text domain.
     return translate($value, $textdomain);
 }
 
@@ -1018,6 +1021,7 @@ function lonestar_get_module_description($slug, $module_directory, $entry_file =
     $description = is_string($description) ? trim($description) : '';
 
     if ('' === $description) {
+        // translators: %s: module label.
         return sprintf(__('Module: %s', 'lonestar'), lonestar_module_label_from_slug($slug));
     }
 

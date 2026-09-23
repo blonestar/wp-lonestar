@@ -102,17 +102,7 @@ jobs:
         run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: PHPCS (WordPress security/i18n/compatibility gate)
-        # TODO(quality-gates): phpcs.xml.dist is a curated ruleset (security,
-        # i18n, discouraged/deprecated functions, PHP compatibility, symbol
-        # prefixing). It currently reports ~105 real findings across the
-        # codebase (mostly WordPress.WP.I18n.TextDomainMismatch in
-        # inc/core/modules_admin.php using 'lonestar-theme' instead of
-        # 'lonestar', plus a handful of escaping/nonce/sanitization findings).
-        # This phase adds the tooling without changing runtime PHP behavior,
-        # so the step is report-only until those findings are triaged and
-        # fixed in a follow-up change; then remove continue-on-error.
         run: composer run lint:phpcs
-        continue-on-error: true
 
       - name: PHPStan (level 5, with baseline)
         run: composer run lint:phpstan
