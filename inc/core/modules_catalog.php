@@ -113,10 +113,9 @@ function modules_split_module_key($module_key)
         );
     }
 
-    // Legacy key compatibility (slug-only keys from older versions).
     return array(
-        'source' => 'template',
-        'slug'   => $module_key,
+        'source' => '',
+        'slug'   => '',
     );
 }
 
@@ -323,11 +322,6 @@ function modules_should_use_module_catalog_cache()
         $use_cache = false;
         return $use_cache;
     }
-    if (defined('IS_VITE_DEVELOPMENT') && true === IS_VITE_DEVELOPMENT) {
-        $use_cache = false;
-        return $use_cache;
-    }
-
     $env_flag = getenv('LONESTAR_VITE_DEV');
     if (false !== $env_flag) {
         $is_vite_dev = in_array(strtolower((string) $env_flag), array('1', 'true', 'yes', 'on'), true);
@@ -1249,57 +1243,6 @@ function modules_add_module_admin_page_link(&$links, &$seen_pages, $page_slug, $
         'url'              => $url,
     );
     $seen_pages[$page_slug] = true;
-}
-
-/**
- * Collect module PHP files for metadata scanning.
- *
- * @param string $module_directory Module directory.
- * @return array<int,string>
- */
-function modules_get_module_php_files_for_scanning($module_directory)
-{
-    $module_directory = untrailingslashit(wp_normalize_path((string) $module_directory));
-    if ('' === $module_directory || !is_dir($module_directory) || !is_readable($module_directory)) {
-        return array();
-    }
-
-    $files = array();
-
-    try {
-        $directory = new \RecursiveDirectoryIterator($module_directory, \FilesystemIterator::SKIP_DOTS);
-        $filter = new \RecursiveCallbackFilterIterator(
-            $directory,
-            function ($current) {
-                $name = $current->getFilename();
-                if ('' === $name || '.' === $name[0]) {
-                    return false;
-                }
-
-                if ($current->isDir()) {
-                    $skip_dirs = array('node_modules', 'dist', 'build', 'vendor', '.git');
-                    return !in_array($name, $skip_dirs, true);
-                }
-
-                return ('php' === strtolower((string) pathinfo($name, PATHINFO_EXTENSION)));
-            }
-        );
-
-        $iterator = new \RecursiveIteratorIterator($filter);
-        foreach ($iterator as $file) {
-            if ($file->isFile()) {
-                $files[] = wp_normalize_path((string) $file);
-            }
-        }
-    } catch (\Exception $e) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[lonestar-theme] Module scan error: ' . $e->getMessage());
-        }
-    }
-
-    $files = array_values(array_unique($files));
-    sort($files, SORT_NATURAL);
-    return $files;
 }
 
 /**

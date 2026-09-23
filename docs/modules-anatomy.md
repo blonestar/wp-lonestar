@@ -87,8 +87,6 @@ flowchart TD
 Parent module state also supports:
 
 - forced disable constants:
-    - `MODULES_DISABLE_ALL`
-    - `MODULES_DISABLED`
     - `LONESTAR_DISABLE_ALL_MODULES`
     - `LONESTAR_DISABLED_MODULES`
 - sentinel file: `.disable-modules`

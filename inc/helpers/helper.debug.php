@@ -18,18 +18,3 @@ if (!function_exists('lonestar_write_log')) {
     }
 
 }
-
-/**
- * Deprecated: use lonestar_write_log() instead.
- *
- * Kept as a thin compatibility alias for existing child-theme/template code.
- * No _deprecated_function() notice is emitted here to avoid log noise from
- * this frequently-called debug helper.
- */
-if (!function_exists('write_log')) {
-
-    function write_log($log) {
-        lonestar_write_log($log);
-    }
-
-}

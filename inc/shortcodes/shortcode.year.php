@@ -16,16 +16,5 @@ if (!function_exists('lonestar_shortcode_year')) {
     }
 }
 
-/**
- * Deprecated: use lonestar_shortcode_year() instead. Compatibility alias
- * kept for existing child-theme/template code.
- */
-if (!function_exists('theme_shortcode_year')) {
-    function theme_shortcode_year()
-    {
-        return lonestar_shortcode_year();
-    }
-}
-
 add_shortcode('year', 'lonestar_shortcode_year');
 add_shortcode('Y', 'lonestar_shortcode_year');

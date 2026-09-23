@@ -53,7 +53,7 @@ Theme auto-detects Vite in non-production environments by probing `http://localh
 
 Optional explicit dev-mode switches:
 
-- `define('IS_VITE_DEVELOPMENT', true);` in `wp-config.php`
+- `define('LONESTAR_VITE_DEVELOPMENT', true);` in `wp-config.php`
 - Environment variable: `LONESTAR_VITE_DEV=1`
 
 ## 4) Production build
@@ -107,8 +107,6 @@ Important:
     - theme switch
     - upgrader completion
 - Emergency disable controls (without opening admin):
-    - set `MODULES_DISABLE_ALL` to `true` in `wp-config.php`
-    - set `MODULES_DISABLED` as array or comma-separated string in `wp-config.php`
     - set `LONESTAR_DISABLE_ALL_MODULES` to `true` in `wp-config.php`
     - set `LONESTAR_DISABLED_MODULES` as array or comma-separated string in `wp-config.php`
     - create `.disable-modules` file in theme root

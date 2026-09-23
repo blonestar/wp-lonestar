@@ -16,9 +16,6 @@ function lonestar_is_vite_dev_mode()
 	if (defined('LONESTAR_VITE_DEVELOPMENT')) {
 		return LONESTAR_VITE_DEVELOPMENT === true;
 	}
-	if (defined('IS_VITE_DEVELOPMENT')) {
-		return IS_VITE_DEVELOPMENT === true;
-	}
 
 	$env_flag = getenv('LONESTAR_VITE_DEV');
 	if (false !== $env_flag) {
@@ -35,17 +32,16 @@ function lonestar_is_vite_dev_mode()
 
 	// The automatic HTTP probe is only safe to run on environments where a
 	// local Vite dev server is plausibly running. Staging/other environment
-	// types must opt in explicitly via LONESTAR_VITE_DEVELOPMENT (or the
-	// legacy IS_VITE_DEVELOPMENT) or LONESTAR_VITE_DEV rather than pay an
-	// HTTP round-trip per request.
+	// types must opt in explicitly via LONESTAR_VITE_DEVELOPMENT or
+	// LONESTAR_VITE_DEV rather than pay an HTTP round-trip per request.
 	$probe_environment = function_exists('wp_get_environment_type') ? wp_get_environment_type() : 'production';
 	$probe_enabled = in_array($probe_environment, array('local', 'development'), true);
 
 	/**
 	 * Filter whether the automatic Vite dev-server HTTP probe may run.
 	 *
-	 * Explicit LONESTAR_VITE_DEVELOPMENT / IS_VITE_DEVELOPMENT / LONESTAR_VITE_DEV
-	 * opt-ins bypass this filter entirely (handled above). This only gates
+	 * Explicit LONESTAR_VITE_DEVELOPMENT / LONESTAR_VITE_DEV opt-ins bypass
+	 * this filter entirely (handled above). This only gates
 	 * the environment-type based automatic probe.
 	 *
 	 * @param bool   $probe_enabled Whether the probe is allowed to run.
@@ -90,45 +86,6 @@ function lonestar_get_block_cache_namespace()
 	}
 
 	return 'default';
-}
-
-/**
- * Get block discovery cache key.
- *
- * Superseded by the consolidated block runtime index
- * (lonestar_get_block_runtime_index_transient_key()), kept for backward
- * compatibility with any external code referencing this key format.
- *
- * @return string
- */
-function lonestar_get_block_discovery_transient_key()
-{
-	return 'lonestar_blocks_to_scan_v3_' . lonestar_get_block_cache_namespace();
-}
-
-/**
- * Return discovered block directories with runtime cache in non-dev mode.
- *
- * Delegates to the consolidated block runtime index. Kept for backward
- * compatibility; returns the flattened (all block types) directory list.
- *
- * @return array
- */
-function lonestar_get_cached_block_directories()
-{
-	$index = lonestar_get_block_runtime_index();
-	$by_type = isset($index['directories']) && is_array($index['directories']) ? $index['directories'] : array();
-
-	$all = array();
-	foreach ($by_type as $type_directories) {
-		if (is_array($type_directories)) {
-			$all = array_merge($all, $type_directories);
-		}
-	}
-
-	$all = array_values(array_unique($all));
-	sort($all, SORT_NATURAL);
-	return $all;
 }
 
 /**
@@ -887,14 +844,11 @@ function lonestar_get_block_runtime_index()
 }
 
 /**
- * Return block registration map with transient cache in non-dev mode.
- *
- * Delegates to the consolidated block runtime index. Kept for backward
- * compatibility.
+ * Return the block asset registration map from the runtime index.
  *
  * @return array
  */
-function lonestar_get_cached_block_asset_registration_map()
+function lonestar_get_block_asset_registration_map()
 {
 	$index = lonestar_get_block_runtime_index();
 	return isset($index['asset_map']) && is_array($index['asset_map']) ? $index['asset_map'] : array();
@@ -907,7 +861,7 @@ function lonestar_get_cached_block_asset_registration_map()
  */
 function lonestar_register_block_files()
 {
-	$block_assets_map = lonestar_get_cached_block_asset_registration_map();
+	$block_assets_map = lonestar_get_block_asset_registration_map();
 	if (empty($block_assets_map) || !is_array($block_assets_map)) {
 		return;
 	}
@@ -1040,32 +994,6 @@ function lonestar_register_block_files()
 }
 
 /**
- * Convert asset URL to local path.
- *
- * Kept for backward compatibility; new code should prefer
- * lonestar_theme_asset_url_to_path(), which maps against the template and
- * stylesheet directory URIs instead of ABSPATH (correct even when
- * WP_CONTENT_DIR lives outside ABSPATH, e.g. Bedrock-style installs).
- *
- * @param string $url Asset URL.
- * @return string
- */
-function lonestar_asset_url_to_path($url)
-{
-	$asset_path = wp_parse_url($url, PHP_URL_PATH);
-	if (!is_string($asset_path) || '' === $asset_path) {
-		return '';
-	}
-
-	$home_path = wp_parse_url(home_url('/'), PHP_URL_PATH);
-	if (is_string($home_path) && '' !== $home_path && 0 === strpos($asset_path, $home_path)) {
-		$asset_path = substr($asset_path, strlen($home_path));
-	}
-
-	return wp_normalize_path(ABSPATH . ltrim($asset_path, '/'));
-}
-
-/**
  * Resolve a theme (template/stylesheet) asset URL to a local filesystem path.
  *
  * Maps the URL against the template and stylesheet directory URIs and
@@ -1178,4 +1106,3 @@ function lonestar_remove_query_string_from_static_files($src, $handle)
 
 add_filter('style_loader_src', 'lonestar_remove_query_string_from_static_files', 10, 2);
 add_filter('script_loader_src', 'lonestar_remove_query_string_from_static_files', 10, 2);
-

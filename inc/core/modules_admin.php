@@ -19,16 +19,6 @@ function modules_get_settings_page_slug()
 }
 
 /**
- * Return legacy admin page slug for backward compatibility.
- *
- * @return string
- */
-function modules_get_legacy_settings_page_slug()
-{
-    return 'lonestar-theme-settings';
-}
-
-/**
  * Register Theme Settings page.
  *
  * @return void
@@ -59,7 +49,7 @@ function modules_is_settings_page_slug($page_slug)
 
     return in_array(
         $page_slug,
-        array(modules_get_settings_page_slug(), modules_get_legacy_settings_page_slug()),
+        array(modules_get_settings_page_slug()),
         true
     );
 }

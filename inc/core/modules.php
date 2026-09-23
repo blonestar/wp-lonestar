@@ -4,51 +4,16 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * Theme module system entrypoint.
- *
- * Legacy namespace note: the `modules_*` function family across
- * inc/core/modules*.php (~80 functions: modules_get_module_catalog(),
- * modules_get_module_admin_links(), modules_handle_modules_admin_post(),
- * etc.) predates the `lonestar_`/`LONESTAR_` naming convention adopted for
- * new public symbols. It is intentionally left unprefixed in this phase —
- * renaming ~80 functions at once is too large/risky a change for a single
- * pass — and is scheduled to move to a `lonestar_module_*` namespace at the
- * 1.0 release, with `modules_*` kept as compatibility aliases at that time.
- * See docs/developer-guide.md "Deprecated compatibility aliases" for the
- * full list of names affected by this phase's renames.
- */
-if (!defined('MODULES_TOGGLE_OPTION')) {
-    if (defined('LONESTAR_MODULE_TOGGLE_OPTION')) {
-        define('MODULES_TOGGLE_OPTION', LONESTAR_MODULE_TOGGLE_OPTION);
-    } else {
-        define('MODULES_TOGGLE_OPTION', 'lonestar_module_toggles');
-    }
-}
 if (!defined('LONESTAR_MODULE_TOGGLE_OPTION')) {
-    define('LONESTAR_MODULE_TOGGLE_OPTION', MODULES_TOGGLE_OPTION);
+    define('LONESTAR_MODULE_TOGGLE_OPTION', 'lonestar_module_toggles');
 }
 
-if (!defined('BLOCKS_TOGGLE_OPTION')) {
-    if (defined('LONESTAR_BLOCK_TOGGLE_OPTION')) {
-        define('BLOCKS_TOGGLE_OPTION', LONESTAR_BLOCK_TOGGLE_OPTION);
-    } else {
-        define('BLOCKS_TOGGLE_OPTION', 'lonestar_block_toggles');
-    }
-}
 if (!defined('LONESTAR_BLOCK_TOGGLE_OPTION')) {
-    define('LONESTAR_BLOCK_TOGGLE_OPTION', BLOCKS_TOGGLE_OPTION);
+    define('LONESTAR_BLOCK_TOGGLE_OPTION', 'lonestar_block_toggles');
 }
 
-if (!defined('MODULES_CATALOG_CACHE_TTL')) {
-    if (defined('LONESTAR_MODULE_CATALOG_CACHE_TTL')) {
-        define('MODULES_CATALOG_CACHE_TTL', LONESTAR_MODULE_CATALOG_CACHE_TTL);
-    } else {
-        define('MODULES_CATALOG_CACHE_TTL', HOUR_IN_SECONDS);
-    }
-}
 if (!defined('LONESTAR_MODULE_CATALOG_CACHE_TTL')) {
-    define('LONESTAR_MODULE_CATALOG_CACHE_TTL', MODULES_CATALOG_CACHE_TTL);
+    define('LONESTAR_MODULE_CATALOG_CACHE_TTL', HOUR_IN_SECONDS);
 }
 
 require_once __DIR__ . '/modules_bootstrap.php';

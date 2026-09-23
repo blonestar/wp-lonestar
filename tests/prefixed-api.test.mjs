@@ -13,50 +13,54 @@ const blocksAcfSource = read("inc/core/blocks-acf.php");
 const modulesCatalogSource = read("inc/core/modules_catalog.php");
 const modulesAdminSource = read("inc/core/modules_admin.php");
 const modulesSource = read("inc/core/modules.php");
+const modulesStateSource = read("inc/core/modules_state.php");
 const debugHelperSource = read("inc/helpers/helper.debug.php");
 const printrHelperSource = read("inc/helpers/helper.printr.php");
 const shortcodeYearSource = read("inc/shortcodes/shortcode.year.php");
 const shortcodeReservedSource = read("inc/shortcodes/shortcode.reserved.php");
 
-test("vite.php still defines legacy Vite/build constants alongside the LONESTAR_ primary names", () => {
-    for (const legacy of ["DIST_DEF", "DIST_URI", "DIST_PATH", "JS_DEPENDENCY", "JS_LOAD_IN_FOOTER", "VITE_SERVER", "VITE_ENTRY_POINT"]) {
-        assert.match(viteSource, new RegExp(`if \\(!defined\\('LONESTAR_${legacy}'\\)\\)`), `expected LONESTAR_${legacy} resolution block`);
-        assert.match(viteSource, new RegExp(`if \\(!defined\\('${legacy}'\\)\\) \\{\\s*define\\('${legacy}', LONESTAR_${legacy}\\);`), `expected legacy ${legacy} to be (re)defined from LONESTAR_${legacy}`);
-    }
-});
+function assertNoBareIdentifier(source, identifier, label = identifier) {
+    assert.doesNotMatch(source, new RegExp(`(?<!LONESTAR_)\\b${identifier}\\b`), `${label} must not appear without the LONESTAR_ prefix`);
+}
 
-test("functions.php still defines legacy TEMPLATE_PATH/TEMPLATE_URI/*_BLOCKS_PATH/DIST_REL_PATH aliases", () => {
-    for (const [legacy, current] of [
-        ["TEMPLATE_PATH", "LONESTAR_TEMPLATE_PATH"],
-        ["TEMPLATE_URI", "LONESTAR_TEMPLATE_URI"],
-        ["ACF_BLOCKS_PATH", "LONESTAR_ACF_BLOCKS_PATH"],
-        ["NATIVE_BLOCKS_PATH", "LONESTAR_NATIVE_BLOCKS_PATH"],
-        ["PHP_ONLY_BLOCKS_PATH", "LONESTAR_PHP_ONLY_BLOCKS_PATH"],
-        ["DIST_REL_PATH", "LONESTAR_DIST_REL_PATH"],
+test("only LONESTAR_ constants are defined and consumed", () => {
+    for (const constant of [
+        "TEMPLATE_PATH",
+        "TEMPLATE_URI",
+        "ACF_BLOCKS_PATH",
+        "NATIVE_BLOCKS_PATH",
+        "PHP_ONLY_BLOCKS_PATH",
+        "DIST_REL_PATH",
+        "DIST_DEF",
+        "DIST_URI",
+        "DIST_PATH",
+        "JS_DEPENDENCY",
+        "JS_LOAD_IN_FOOTER",
+        "VITE_SERVER",
+        "VITE_ENTRY_POINT",
     ]) {
-        assert.match(functionsSource, new RegExp(`define\\('${legacy}', ${current}\\)`), `expected ${legacy} alias defined from ${current}`);
-    }
-});
-
-test("internal theme code uses LONESTAR_ vite/build constants, not the legacy bare names, outside the alias-definition blocks", () => {
-    // vite.php: strip the constant-definition header (up to the first add_action call)
-    // before scanning for legacy-name usage, since that block intentionally
-    // references the legacy names to resolve/backfill them.
-    const viteBody = viteSource.slice(viteSource.indexOf("add_action("));
-    for (const legacy of ["VITE_SERVER", "VITE_ENTRY_POINT", "DIST_PATH", "DIST_URI", "DIST_DEF", "JS_DEPENDENCY", "JS_LOAD_IN_FOOTER", "TEMPLATE_PATH", "TEMPLATE_URI"]) {
-        const bareUsage = new RegExp(`(?<!LONESTAR_)\\b${legacy}\\b`, "g");
-        assert.doesNotMatch(viteBody, bareUsage, `vite.php body should not reference bare ${legacy}`);
+        for (const source of [functionsSource, viteSource, blocksAcfEnqueueSource]) {
+            assertNoBareIdentifier(source, constant);
+        }
     }
 
-    for (const legacy of ["VITE_SERVER", "TEMPLATE_PATH", "TEMPLATE_URI", "ACF_BLOCKS_PATH", "NATIVE_BLOCKS_PATH", "PHP_ONLY_BLOCKS_PATH", "DIST_REL_PATH", "DIST_PATH", "DIST_URI"]) {
-        const bareUsage = new RegExp(`(?<!LONESTAR_)\\b${legacy}\\b`, "g");
-        assert.doesNotMatch(blocksAcfEnqueueSource, bareUsage, `blocks-acf-enqueue.php should not reference bare ${legacy}`);
+    for (const constant of [
+        "MODULES_TOGGLE_OPTION",
+        "BLOCKS_TOGGLE_OPTION",
+        "MODULES_CATALOG_CACHE_TTL",
+        "MODULES_DISABLE_SYSTEM",
+        "MODULES_DISABLE_ALL",
+        "MODULES_DISABLED",
+        "IS_VITE_DEVELOPMENT",
+    ]) {
+        for (const source of [functionsSource, viteSource, blocksAcfEnqueueSource, modulesSource, modulesStateSource]) {
+            assert.doesNotMatch(source, new RegExp(`\\b${constant}\\b`), `${constant} must not be supported`);
+        }
     }
-});
 
-test("lonestar_is_vite_dev_mode() honors LONESTAR_VITE_DEVELOPMENT ahead of the legacy IS_VITE_DEVELOPMENT constant", () => {
-    assert.match(blocksAcfEnqueueSource, /if \(defined\('LONESTAR_VITE_DEVELOPMENT'\)\)\s*\{\s*return LONESTAR_VITE_DEVELOPMENT === true;/);
-    assert.match(blocksAcfEnqueueSource, /if \(defined\('IS_VITE_DEVELOPMENT'\)\)\s*\{\s*return IS_VITE_DEVELOPMENT === true;/);
+    for (const constant of ["LONESTAR_MODULE_TOGGLE_OPTION", "LONESTAR_BLOCK_TOGGLE_OPTION", "LONESTAR_MODULE_CATALOG_CACHE_TTL"]) {
+        assert.match(modulesSource, new RegExp(`if \\(!defined\\('${constant}'\\)\\)`));
+    }
 });
 
 test("vite.php no longer mentions Tailwind", () => {
@@ -69,38 +73,41 @@ test("blocks-acf.php docblock references the LONESTAR_ constant names", () => {
     assert.match(blocksAcfSource, /LONESTAR_ACF_BLOCKS_PATH/);
 });
 
-test("production Vite script/style handles are prefixed with backward-compatible unprefixed aliases", () => {
+test("production Vite script/style handles are prefixed without unprefixed aliases", () => {
     assert.match(viteSource, /wp_enqueue_script\('lonestar-main',/);
     assert.match(viteSource, /wp_script_add_data\('lonestar-main', 'type', 'module'\)/);
-    assert.match(viteSource, /if \(!wp_script_is\('main', 'registered'\)\)\s*\{\s*wp_register_script\('main', false, array\('lonestar-main'\)\);/);
+    assert.doesNotMatch(viteSource, /wp_register_script\('main'/);
 
     assert.match(viteSource, /\$handle = '' !== \$filename \? 'lonestar-' \. \$filename : 'lonestar-main';/);
-    assert.match(viteSource, /if \('' !== \$filename && !wp_style_is\(\$filename, 'registered'\)\)\s*\{\s*wp_register_style\(\$filename, false, array\(\$handle\)\);/);
+    assert.doesNotMatch(viteSource, /wp_register_style\(\$filename/);
 });
 
-test("lonestar_write_log()/lonestar_printr() are the primary names, with write_log()/printr() kept as guarded aliases", () => {
+test("debug helpers expose only prefixed names", () => {
     assert.match(debugHelperSource, /function lonestar_write_log\(\$log\)/);
     assert.match(debugHelperSource, /if \(defined\('WP_DEBUG'\) && WP_DEBUG\)/);
     assert.doesNotMatch(debugHelperSource, /true === WP_DEBUG/);
-    assert.match(debugHelperSource, /if \(!function_exists\('write_log'\)\)/);
-    assert.match(debugHelperSource, /function write_log\(\$log\)\s*\{\s*lonestar_write_log\(\$log\);/);
+    assert.doesNotMatch(debugHelperSource, /function_exists\('write_log'\)|function\s+write_log\b/);
 
     assert.match(printrHelperSource, /function lonestar_printr\(\$arr, \$die = false\)/);
-    assert.match(printrHelperSource, /if \(!function_exists\('printr'\) && function_exists\('lonestar_printr'\)\)/);
-    assert.match(printrHelperSource, /function printr\(\$arr, \$die = false\)\s*\{\s*lonestar_printr\(\$arr, \$die\);/);
+    assert.doesNotMatch(printrHelperSource, /function_exists\('printr'\)|function\s+printr\b/);
 });
 
-test("shortcodes register the prefixed callbacks but keep the [R]/[Y]/[year] tags and legacy theme_shortcode_* aliases", () => {
+test("shortcodes keep their tags and expose only prefixed callbacks", () => {
     assert.match(shortcodeYearSource, /function lonestar_shortcode_year\(\)/);
     assert.match(shortcodeYearSource, /add_shortcode\('year', 'lonestar_shortcode_year'\)/);
     assert.match(shortcodeYearSource, /add_shortcode\('Y', 'lonestar_shortcode_year'\)/);
-    assert.match(shortcodeYearSource, /if \(!function_exists\('theme_shortcode_year'\)\)/);
-    assert.match(shortcodeYearSource, /function theme_shortcode_year\(\)\s*\{\s*return lonestar_shortcode_year\(\);/);
+    assert.doesNotMatch(shortcodeYearSource, /function_exists\('theme_shortcode_year'\)|function\s+theme_shortcode_year\b/);
 
     assert.match(shortcodeReservedSource, /function lonestar_shortcode_reserved\(\)/);
     assert.match(shortcodeReservedSource, /add_shortcode\('R', 'lonestar_shortcode_reserved'\)/);
-    assert.match(shortcodeReservedSource, /if \(!function_exists\('theme_shortcode_reserved'\)\)/);
-    assert.match(shortcodeReservedSource, /function theme_shortcode_reserved\(\)\s*\{\s*return lonestar_shortcode_reserved\(\);/);
+    assert.doesNotMatch(shortcodeReservedSource, /function_exists\('theme_shortcode_reserved'\)|function\s+theme_shortcode_reserved\b/);
+});
+
+test("module compatibility aliases and legacy behavior are absent", () => {
+    assert.doesNotMatch(modulesStateSource, /lonestar_enabled_modules/);
+    assert.doesNotMatch(modulesStateSource, /function\s+modules_get_enabled_module_slugs\b/);
+    assert.doesNotMatch(modulesCatalogSource, /function\s+modules_get_module_php_files_for_scanning\b/);
+    assert.doesNotMatch(modulesAdminSource, /function\s+modules_get_legacy_settings_page_slug\b|lonestar-theme-settings/);
 });
 
 test("modules_get_module_admin_links() has no unreachable code after its final return", () => {
@@ -139,7 +146,9 @@ test("modules_handle_modules_admin_post() guards $_SERVER['REQUEST_METHOD'] with
     assert.match(modulesAdminSource, /if \(!isset\(\$_SERVER\['REQUEST_METHOD'\]\) \|\| 'POST' !== strtoupper/);
 });
 
-test("modules.php documents the legacy modules_* namespace as scheduled for lonestar_module_* at 1.0", () => {
-    assert.match(modulesSource, /Legacy namespace note/);
-    assert.match(modulesSource, /lonestar_module_\*/);
+test("modules.php defines only prefixed module options", () => {
+    assert.match(modulesSource, /LONESTAR_MODULE_TOGGLE_OPTION/);
+    assert.match(modulesSource, /LONESTAR_BLOCK_TOGGLE_OPTION/);
+    assert.match(modulesSource, /LONESTAR_MODULE_CATALOG_CACHE_TTL/);
+    assert.doesNotMatch(modulesSource, /Legacy namespace note|MODULES_TOGGLE_OPTION|BLOCKS_TOGGLE_OPTION|MODULES_CATALOG_CACHE_TTL/);
 });

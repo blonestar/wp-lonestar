@@ -32,26 +32,6 @@ if (!defined('LONESTAR_DIST_REL_PATH')) {
     define('LONESTAR_DIST_REL_PATH', 'dist/');
 }
 
-// Backward-compatible aliases. New integrations should use LONESTAR_* constants.
-if (!defined('TEMPLATE_PATH')) {
-    define('TEMPLATE_PATH', LONESTAR_TEMPLATE_PATH);
-}
-if (!defined('TEMPLATE_URI')) {
-    define('TEMPLATE_URI', LONESTAR_TEMPLATE_URI);
-}
-if (!defined('ACF_BLOCKS_PATH')) {
-    define('ACF_BLOCKS_PATH', LONESTAR_ACF_BLOCKS_PATH);
-}
-if (!defined('NATIVE_BLOCKS_PATH')) {
-    define('NATIVE_BLOCKS_PATH', LONESTAR_NATIVE_BLOCKS_PATH);
-}
-if (!defined('PHP_ONLY_BLOCKS_PATH')) {
-    define('PHP_ONLY_BLOCKS_PATH', LONESTAR_PHP_ONLY_BLOCKS_PATH);
-}
-if (!defined('DIST_REL_PATH')) {
-    define('DIST_REL_PATH', LONESTAR_DIST_REL_PATH);
-}
-
 if (!function_exists('lonestar_get_theme_cache_namespace')) {
     /**
      * Build cache namespace that changes after deploy/build.
@@ -114,7 +94,6 @@ $lonestar_core_files = array(
 );
 
 $lonestar_module_system_disabled = (
-    (defined('MODULES_DISABLE_SYSTEM') && true === MODULES_DISABLE_SYSTEM) ||
     (defined('LONESTAR_DISABLE_MODULE_SYSTEM') && true === LONESTAR_DISABLE_MODULE_SYSTEM)
 );
 
@@ -188,4 +167,3 @@ if (!function_exists('lonestar_setup')) {
     }
 }
 add_action('after_setup_theme', 'lonestar_setup');
-

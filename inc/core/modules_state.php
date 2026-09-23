@@ -28,25 +28,12 @@ function modules_get_enabled_module_catalog()
 }
 
 /**
- * Backward-compatible alias for enabled module keys.
- *
- * @param array<int,string>|null $available_keys Optional discovered module keys.
- * @return array<int,string>
- */
-function modules_get_enabled_module_slugs($available_keys = null)
-{
-    return modules_get_enabled_module_keys($available_keys);
-}
-
-/**
  * Return enabled module keys.
  *
  * Defaults to all discovered modules enabled unless explicitly disabled
  * in option map `lonestar_module_toggles`.
  *
  * Emergency controls:
- * - Set `MODULES_DISABLE_ALL` to true in wp-config.php to force-disable all modules.
- * - Set `MODULES_DISABLED` (array or comma-separated string) to force-disable specific modules.
  * - Set `LONESTAR_DISABLE_ALL_MODULES` to true in wp-config.php to force-disable all modules.
  * - Set `LONESTAR_DISABLED_MODULES` (array or comma-separated string) to force-disable specific modules.
  * - Create `{theme}/.disable-modules` file to force-disable all modules via filesystem.
@@ -88,7 +75,7 @@ function modules_get_enabled_module_keys($available_keys = null)
             continue;
         }
 
-        if (!modules_get_module_toggle_value($toggle_map, $module_key, $slug)) {
+        if (!modules_get_module_toggle_value($toggle_map, $module_key)) {
             continue;
         }
 
@@ -106,14 +93,6 @@ function modules_get_enabled_module_keys($available_keys = null)
      */
     $enabled_keys = apply_filters('lonestar_enabled_module_keys', $enabled_keys, $available_keys, $toggle_map);
 
-    /**
-     * Backward-compatible filter name.
-     *
-     * @param array<int,string> $enabled_keys Enabled module keys.
-     * @param array<int,string> $available_keys All discovered module keys.
-     * @param array<string,bool> $toggle_map Option-driven toggle map.
-     */
-    $enabled_keys = apply_filters('lonestar_enabled_modules', $enabled_keys, $available_keys, $toggle_map);
     if (!is_array($enabled_keys)) {
         return array();
     }
@@ -145,10 +124,6 @@ function modules_reconcile_missing_enabled_modules()
  */
 function modules_are_all_modules_forced_disabled()
 {
-    if (defined('MODULES_DISABLE_ALL') && true === MODULES_DISABLE_ALL) {
-        return true;
-    }
-
     if (defined('LONESTAR_DISABLE_ALL_MODULES') && true === LONESTAR_DISABLE_ALL_MODULES) {
         return true;
     }
@@ -169,9 +144,7 @@ function modules_are_all_modules_forced_disabled()
 function modules_get_forced_disabled_module_slugs()
 {
     $configured_value = array();
-    if (defined('MODULES_DISABLED')) {
-        $configured_value = MODULES_DISABLED;
-    } elseif (defined('LONESTAR_DISABLED_MODULES')) {
+    if (defined('LONESTAR_DISABLED_MODULES')) {
         $configured_value = LONESTAR_DISABLED_MODULES;
     }
 
@@ -282,14 +255,11 @@ function modules_is_module_forced_disabled($module_key, $module_slug, $force_dis
 /**
  * Resolve module toggle state.
  *
- * Supports legacy slug-only toggle keys for backward compatibility.
- *
  * @param array<string,bool> $toggle_map Module toggle map.
  * @param string $module_key Module key.
- * @param string $module_slug Module slug.
  * @return bool
  */
-function modules_get_module_toggle_value($toggle_map, $module_key, $module_slug)
+function modules_get_module_toggle_value($toggle_map, $module_key)
 {
     if (!is_array($toggle_map)) {
         return true;
@@ -297,10 +267,6 @@ function modules_get_module_toggle_value($toggle_map, $module_key, $module_slug)
 
     if (array_key_exists($module_key, $toggle_map)) {
         return (bool) $toggle_map[$module_key];
-    }
-
-    if ('' !== $module_slug && array_key_exists($module_slug, $toggle_map)) {
-        return (bool) $toggle_map[$module_slug];
     }
 
     return true;
@@ -442,9 +408,6 @@ function modules_resolve_enabled_module_key_conflicts($enabled_keys, $catalog)
 /**
  * Normalize enabled module key list.
  *
- * Supports legacy filter returns that may still provide slug-only values.
- * Ambiguous slug values (present in multiple sources) are ignored.
- *
  * @param array<int,string> $candidate_keys Candidate key list.
  * @param array<int,string> $available_keys Available module keys.
  * @return array<int,string>
@@ -457,19 +420,6 @@ function modules_normalize_enabled_module_keys($candidate_keys, $available_keys)
 
     $available_keys = array_values(array_unique(array_map('sanitize_key', $available_keys)));
     $available_lookup = array_fill_keys($available_keys, true);
-    $slug_map = array();
-
-    foreach ($available_keys as $available_key) {
-        $slug = modules_get_module_slug_from_key($available_key);
-        if ('' === $slug) {
-            continue;
-        }
-        if (!isset($slug_map[$slug])) {
-            $slug_map[$slug] = array();
-        }
-        $slug_map[$slug][] = $available_key;
-    }
-
     $normalized = array();
     foreach ($candidate_keys as $candidate_key) {
         $candidate_key = sanitize_key((string) $candidate_key);
@@ -482,10 +432,6 @@ function modules_normalize_enabled_module_keys($candidate_keys, $available_keys)
             continue;
         }
 
-        // Legacy slug-only value support, only when unambiguous.
-        if (isset($slug_map[$candidate_key]) && 1 === count($slug_map[$candidate_key])) {
-            $normalized[] = $slug_map[$candidate_key][0];
-        }
     }
 
     $normalized = array_values(array_unique($normalized));

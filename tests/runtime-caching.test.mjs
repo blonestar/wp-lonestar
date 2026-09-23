@@ -13,9 +13,10 @@ const blocksPhpOnlySource = read("inc/core/blocks-php-only.php");
 const modulesCatalogSource = read("inc/core/modules_catalog.php");
 
 test("Vite dev auto-probe is restricted to local/development environment types and gated by a filter", () => {
-    // Explicit opt-ins (IS_VITE_DEVELOPMENT / LONESTAR_VITE_DEV) still take
+    // Explicit opt-ins (LONESTAR_VITE_DEVELOPMENT / LONESTAR_VITE_DEV) still take
     // precedence and are handled before this gate.
-    assert.match(blocksAcfEnqueueSource, /defined\('IS_VITE_DEVELOPMENT'\)/);
+    assert.match(blocksAcfEnqueueSource, /defined\('LONESTAR_VITE_DEVELOPMENT'\)/);
+    assert.doesNotMatch(blocksAcfEnqueueSource, /IS_VITE_DEVELOPMENT/);
     assert.match(blocksAcfEnqueueSource, /getenv\('LONESTAR_VITE_DEV'\)/);
 
     // The automatic HTTP probe only runs for local/development environment types.

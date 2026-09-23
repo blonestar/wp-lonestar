@@ -65,8 +65,6 @@ function lonestar_flush_block_discovery_caches($upgrader_object = null, $options
 {
     unset($upgrader_object, $options);
 
-    $cache_namespace = function_exists('lonestar_get_theme_cache_namespace') ? lonestar_get_theme_cache_namespace() : 'default';
-
     // Current consolidated block runtime index (single fixed key).
     if (function_exists('lonestar_get_block_runtime_index_transient_key')) {
         delete_transient(lonestar_get_block_runtime_index_transient_key());
@@ -74,17 +72,4 @@ function lonestar_flush_block_discovery_caches($upgrader_object = null, $options
         delete_transient('lonestar_block_runtime_v1');
     }
 
-    // Legacy per-family discovery/asset-map transients (cleanup only).
-    delete_transient('lonestar_acf_blocks_to_load');
-    delete_transient('lonestar_native_blocks_to_load');
-    delete_transient('lonestar_acf_blocks_to_load_v2');
-    delete_transient('lonestar_acf_blocks_to_load_v3');
-    delete_transient('lonestar_native_blocks_to_load_v2');
-    delete_transient('lonestar_php_only_blocks_to_load_v1');
-    delete_transient('lonestar_blocks_to_scan_' . $cache_namespace);
-    delete_transient('lonestar_blocks_to_scan_v2_' . $cache_namespace);
-    delete_transient('lonestar_blocks_to_scan_v3_' . $cache_namespace);
-    delete_transient('lonestar_block_asset_map_' . $cache_namespace);
-    delete_transient('lonestar_block_asset_map_v2_' . $cache_namespace);
-    delete_transient('lonestar_block_asset_map_v4_' . $cache_namespace);
 }

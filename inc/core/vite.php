@@ -10,64 +10,39 @@ if (!defined('ABSPATH')) {
  * Inspired by https://github.com/andrefelipe/vite-php-setup
  *
  */
-// define('LONESTAR_VITE_DEVELOPMENT', true); // or legacy define('IS_VITE_DEVELOPMENT', true);
+// define('LONESTAR_VITE_DEVELOPMENT', true);
 
 // dist subfolder - defined in vite.config.mjs
-// Resolution: new LONESTAR_* constant wins if defined; else the legacy
-// unprefixed constant's value (e.g. set in wp-config.php or a child theme)
-// is honored; else the built-in default. The legacy constant is then
-// (re)defined from the resolved value so both names are always available.
 if (!defined('LONESTAR_DIST_DEF')) {
-    define('LONESTAR_DIST_DEF', trim(defined('DIST_DEF') ? (string) DIST_DEF : (defined('LONESTAR_DIST_REL_PATH') ? LONESTAR_DIST_REL_PATH : 'dist/'), '/'));
-}
-if (!defined('DIST_DEF')) {
-    define('DIST_DEF', LONESTAR_DIST_DEF);
+    define('LONESTAR_DIST_DEF', trim(defined('LONESTAR_DIST_REL_PATH') ? LONESTAR_DIST_REL_PATH : 'dist/', '/'));
 }
 
 // defining some base urls and paths
 if (!defined('LONESTAR_DIST_URI')) {
     $lonestar_theme_uri = defined('LONESTAR_TEMPLATE_URI') ? untrailingslashit(LONESTAR_TEMPLATE_URI) : get_template_directory_uri();
-    define('LONESTAR_DIST_URI', defined('DIST_URI') ? DIST_URI : ($lonestar_theme_uri . '/' . LONESTAR_DIST_DEF));
+    define('LONESTAR_DIST_URI', $lonestar_theme_uri . '/' . LONESTAR_DIST_DEF);
     unset($lonestar_theme_uri);
-}
-if (!defined('DIST_URI')) {
-    define('DIST_URI', LONESTAR_DIST_URI);
 }
 if (!defined('LONESTAR_DIST_PATH')) {
     $lonestar_theme_path = defined('LONESTAR_TEMPLATE_PATH') ? untrailingslashit(LONESTAR_TEMPLATE_PATH) : get_template_directory();
-    define('LONESTAR_DIST_PATH', defined('DIST_PATH') ? DIST_PATH : ($lonestar_theme_path . '/' . LONESTAR_DIST_DEF));
+    define('LONESTAR_DIST_PATH', $lonestar_theme_path . '/' . LONESTAR_DIST_DEF);
     unset($lonestar_theme_path);
-}
-if (!defined('DIST_PATH')) {
-    define('DIST_PATH', LONESTAR_DIST_PATH);
 }
 
 // js enqueue settings
 if (!defined('LONESTAR_JS_DEPENDENCY')) {
-    define('LONESTAR_JS_DEPENDENCY', defined('JS_DEPENDENCY') ? JS_DEPENDENCY : array()); // array('jquery') as example
-}
-if (!defined('JS_DEPENDENCY')) {
-    define('JS_DEPENDENCY', LONESTAR_JS_DEPENDENCY);
+    define('LONESTAR_JS_DEPENDENCY', array()); // array('jquery') as example
 }
 if (!defined('LONESTAR_JS_LOAD_IN_FOOTER')) {
-    define('LONESTAR_JS_LOAD_IN_FOOTER', defined('JS_LOAD_IN_FOOTER') ? JS_LOAD_IN_FOOTER : true); // load scripts in footer?
-}
-if (!defined('JS_LOAD_IN_FOOTER')) {
-    define('JS_LOAD_IN_FOOTER', LONESTAR_JS_LOAD_IN_FOOTER);
+    define('LONESTAR_JS_LOAD_IN_FOOTER', true); // load scripts in footer?
 }
 
 // default server address, port and entry point can be customized in vite.config.mjs
 if (!defined('LONESTAR_VITE_SERVER')) {
-    define('LONESTAR_VITE_SERVER', defined('VITE_SERVER') ? VITE_SERVER : 'http://localhost:3000');
-}
-if (!defined('VITE_SERVER')) {
-    define('VITE_SERVER', LONESTAR_VITE_SERVER);
+    define('LONESTAR_VITE_SERVER', 'http://localhost:3000');
 }
 if (!defined('LONESTAR_VITE_ENTRY_POINT')) {
-    define('LONESTAR_VITE_ENTRY_POINT', defined('VITE_ENTRY_POINT') ? VITE_ENTRY_POINT : '/main.js');
-}
-if (!defined('VITE_ENTRY_POINT')) {
-    define('VITE_ENTRY_POINT', LONESTAR_VITE_ENTRY_POINT);
+    define('LONESTAR_VITE_ENTRY_POINT', '/main.js');
 }
 
 add_action('wp_enqueue_scripts', 'lonestar_enqueue_reset_css', 0);
@@ -346,13 +321,6 @@ function lonestar_enqueue_vite_assets()
             $handle = '' !== $filename ? 'lonestar-' . $filename : 'lonestar-main';
             wp_enqueue_style($handle, LONESTAR_DIST_URI . '/' . $css_file, array(), lonestar_asset_version($css_path));
 
-            // Backward-compatible unprefixed alias for child themes/plugins
-            // that still depend on the historical bare filename handle
-            // (e.g. 'main'). Only register it if nothing else already owns
-            // that handle, and never overwrite a foreign registration.
-            if ('' !== $filename && !wp_style_is($filename, 'registered')) {
-                wp_register_style($filename, false, array($handle));
-            }
         }
     }
 
@@ -361,11 +329,6 @@ function lonestar_enqueue_vite_assets()
     wp_enqueue_script('lonestar-main', LONESTAR_DIST_URI . '/' . $main_file, LONESTAR_JS_DEPENDENCY, lonestar_asset_version($main_path), LONESTAR_JS_LOAD_IN_FOOTER);
     wp_script_add_data('lonestar-main', 'type', 'module');
 
-    // Backward-compatible unprefixed alias handle 'main' for child themes
-    // that list it as a wp_enqueue_script()/wp_register_script() dependency.
-    if (!wp_script_is('main', 'registered')) {
-        wp_register_script('main', false, array('lonestar-main'));
-    }
 }
 
 /**
