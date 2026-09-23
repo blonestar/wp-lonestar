@@ -56,6 +56,16 @@ Put code in parent when it is framework-worthy:
 3. Copy parent templates only when hook-based customization is insufficient.
 4. Keep copied templates minimal and documented.
 
+### Content width
+
+The parent `theme.json` declares `settings.layout.contentSize: "1200px"` and
+`wideSize: "1400px"`. 1200px is comfortable for multi-column layouts but wide
+for a single column of body text/prose. This is intentionally left unchanged
+in the parent (changing it is a breaking layout change for any child relying
+on the current measurements). Child themes that want a narrower reading
+measure for prose-heavy templates should override `settings.layout` in their
+own `theme.json` rather than expecting the parent value to change.
+
 ## 6) Versioning
 
 Suggested practice:
@@ -69,9 +79,9 @@ The boilerplate intentionally uses `Update URI: false`; project forks must not r
 
 Common child extension paths:
 
-- `functions.php` for enqueue and project hooks.
-- `inc/helpers/helper.*.php` for child helper overrides (parent loader supports child overrides by basename).
-- `inc/shortcodes/shortcode.*.php` for child shortcode overrides (same basename override strategy).
+- `functions.php` for enqueue and project hooks. If you enqueue a script/style dependency on the parent's built entry, use the `lonestar-main`/`lonestar-{filename}` handles.
+- `inc/helpers/helper.*.php` for child helper overrides (parent loader supports child overrides by basename). Use the parent's `lonestar_write_log()`/`lonestar_printr()` helpers.
+- `inc/shortcodes/shortcode.*.php` for child shortcode overrides (same basename override strategy). `[R]`/`[Y]`/`[year]` tags are unchanged; the parent's callbacks are now `lonestar_shortcode_reserved()`/`lonestar_shortcode_year()`.
 - `templates/`, `parts/`, `patterns/` for project-level rendering overrides where needed.
 - `blocks/acf/`, `blocks/native/`, and `blocks/php-only/` for the three supported block families.
 - `inc/content-types/*.php` for declarative project post types and taxonomies; discovery is automatic, so no child `functions.php` bootstrap edit is needed. See `docs/content-types.md`.

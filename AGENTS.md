@@ -58,7 +58,7 @@
 
 ## Change discipline
 
-- Prefix new public PHP symbols with `lonestar_`/`LONESTAR_`; preserve documented compatibility aliases.
+- The public API is not yet stable: no child themes exist. Do not add compatibility aliases or deprecated wrappers; rename freely until the first child theme ships, then treat `lonestar_*` names as a stable API.
 - Use explicit module/block metadata, deterministic discovery, WordPress escaping and capability/nonce checks.
 - Update `CHANGELOG.md`, relevant `docs/`, and this file when contracts or commands change.
 - Normal feature work does not bump versions. Release prep aligns `style.css`, `package.json`, and `package-lock.json`.

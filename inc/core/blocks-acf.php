@@ -10,8 +10,8 @@ if (!defined('ABSPATH')) {
  * ACF v6.0 ready - searching for and loading block.json files.
  *
  * Constants required (defined in functions.php):
- * - TEMPLATE_PATH: Theme directory path with trailing slash
- * - ACF_BLOCKS_PATH: Relative path to ACF blocks directory
+ * - LONESTAR_TEMPLATE_PATH: Theme directory path with trailing slash
+ * - LONESTAR_ACF_BLOCKS_PATH: Relative path to ACF blocks directory
  */
 
 add_action('init', 'lonestar_register_acf_block_types');
@@ -27,87 +27,28 @@ function lonestar_register_acf_block_types()
         return;
     }
 
-    $transient_key = 'lonestar_acf_blocks_to_load_v3';
-    $cache_namespace = function_exists('lonestar_get_theme_cache_namespace') ? lonestar_get_theme_cache_namespace() : 'default';
-    $use_cache = !lonestar_is_vite_dev_mode();
-    $blocks = false;
+    $index = function_exists('lonestar_get_block_runtime_index') ? lonestar_get_block_runtime_index() : array();
+    $directories = isset($index['directories']['acf']) && is_array($index['directories']['acf']) ? $index['directories']['acf'] : array();
+    $metadata_cache = isset($index['metadata']) && is_array($index['metadata']) ? $index['metadata'] : array();
 
-    if ($use_cache) {
-        $cached_payload = get_transient($transient_key);
-        if (
-            is_array($cached_payload) &&
-            isset($cached_payload['cache_namespace'], $cached_payload['blocks']) &&
-            $cache_namespace === $cached_payload['cache_namespace'] &&
-            is_array($cached_payload['blocks'])
-        ) {
-            $blocks = $cached_payload['blocks'];
-        }
-    }
-
-    if (false === $blocks) {
-        $blocks = array();
-        $block_directories = function_exists('lonestar_find_block_directories') ? lonestar_find_block_directories() : array();
-        $acf_block_roots = function_exists('lonestar_get_acf_block_root_paths')
-            ? lonestar_get_acf_block_root_paths()
-            : array(wp_normalize_path(TEMPLATE_PATH . ACF_BLOCKS_PATH));
-
-        if (empty($block_directories) || empty($acf_block_roots)) {
-            return;
-        }
-
-        foreach ($block_directories as $block_directory) {
-            $block_directory = untrailingslashit(wp_normalize_path((string) $block_directory));
-            if ('' === $block_directory || !is_dir($block_directory)) {
-                continue;
-            }
-
-            $is_acf_directory = false;
-            foreach ($acf_block_roots as $acf_block_root) {
-                $acf_block_root = untrailingslashit(wp_normalize_path((string) $acf_block_root));
-                if ('' === $acf_block_root) {
-                    continue;
-                }
-
-                if ($block_directory === $acf_block_root || 0 === strpos($block_directory, $acf_block_root . '/')) {
-                    $is_acf_directory = true;
-                    break;
-                }
-            }
-
-            if (!$is_acf_directory) {
-                continue;
-            }
-
-            $metadata_path = function_exists('lonestar_get_block_json_path') ? lonestar_get_block_json_path($block_directory) : '';
-            if ('' === $metadata_path || !is_readable($metadata_path)) {
-                continue;
-            }
-
-            $blocks[] = wp_normalize_path($metadata_path);
-        }
-
-        $blocks = array_values(array_unique($blocks));
-        sort($blocks, SORT_NATURAL);
-        if ($use_cache) {
-            set_transient(
-                $transient_key,
-                array(
-                    'cache_namespace' => $cache_namespace,
-                    'blocks'          => $blocks,
-                ),
-                HOUR_IN_SECONDS
-            );
-        }
-    }
-
-    if (!is_array($blocks)) {
+    if (empty($directories)) {
         return;
     }
 
-    foreach ($blocks as $block) {
-        $block_directory = dirname((string) $block);
-        $metadata_raw = file_get_contents($block);
-        $metadata = is_string($metadata_raw) ? json_decode($metadata_raw, true) : array();
+    foreach ($directories as $block_directory) {
+        $block_directory = untrailingslashit(wp_normalize_path((string) $block_directory));
+        if ('' === $block_directory || !is_dir($block_directory)) {
+            continue;
+        }
+
+        $entry = isset($metadata_cache[$block_directory]) ? $metadata_cache[$block_directory] : null;
+        $metadata_path = (is_array($entry) && isset($entry['path'])) ? (string) $entry['path'] : '';
+        $metadata = (is_array($entry) && isset($entry['data']) && is_array($entry['data'])) ? $entry['data'] : array();
+
+        if ('' === $metadata_path) {
+            continue;
+        }
+
         $errors = function_exists('lonestar_validate_block_contract')
             ? lonestar_validate_block_contract('acf', 'acf', $metadata, $block_directory)
             : array();
@@ -127,7 +68,7 @@ function lonestar_register_acf_block_types()
             }
         }
 
-        register_block_type($block);
+        register_block_type($metadata_path);
     }
 }
 

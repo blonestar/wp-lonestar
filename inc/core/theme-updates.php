@@ -33,6 +33,55 @@ add_action('after_switch_theme', 'lonestar_flush_parent_theme_update_cache');
 add_action('upgrader_process_complete', 'lonestar_flush_parent_theme_update_cache', 10, 2);
 
 /**
+ * Return the WP_Theme object for the active parent theme.
+ *
+ * Calling wp_get_theme() with the literal slug "lonestar" resolves to
+ * nothing in development checkouts that use the `wp-lonestar` stylesheet
+ * folder name; get_template() always matches the folder that is actually
+ * active as the parent theme.
+ *
+ * @return WP_Theme
+ */
+function lonestar_get_parent_theme()
+{
+    return wp_get_theme(get_template());
+}
+
+/**
+ * Return the parent theme's declared "Tested up to" WordPress version.
+ *
+ * WP_Theme does not expose the "Tested up to" style.css header through
+ * WP_Theme::get(), so it is read directly with get_file_data() and cached
+ * for the request. Falls back to the theme's "Requires at least" header
+ * when "Tested up to" is not declared.
+ *
+ * @return string
+ */
+function lonestar_get_parent_theme_tested_wp_version()
+{
+    static $tested_version = null;
+    if (null !== $tested_version) {
+        return $tested_version;
+    }
+
+    $tested_version = '';
+    $style_css = trailingslashit(get_template_directory()) . 'style.css';
+    if (file_exists($style_css)) {
+        if (!function_exists('get_file_data')) {
+            require_once ABSPATH . WPINC . '/functions.php';
+        }
+        $headers = get_file_data($style_css, array('TestedUpTo' => 'Tested up to'));
+        $tested_version = isset($headers['TestedUpTo']) ? trim((string) $headers['TestedUpTo']) : '';
+    }
+
+    if ('' === $tested_version) {
+        $tested_version = (string) lonestar_get_parent_theme()->get('RequiresWP');
+    }
+
+    return $tested_version;
+}
+
+/**
  * Decide whether this parent installation may use WordPress updates.
  *
  * Release packages do not contain .git, while a development checkout does.
@@ -155,7 +204,7 @@ function lonestar_get_latest_parent_release_payload()
         return lonestar_cache_parent_theme_update_error(__('Invalid GitHub repository configuration.', 'lonestar'));
     }
 
-    $theme = wp_get_theme('lonestar');
+    $theme = lonestar_get_parent_theme();
     $headers = array(
         'Accept'               => 'application/vnd.github+json',
         'User-Agent'           => 'LonestarThemeUpdater/' . (string) $theme->get('Version'),
@@ -248,24 +297,31 @@ function lonestar_get_latest_parent_release_payload()
  */
 function lonestar_filter_parent_theme_update($update, $theme_data, $theme_stylesheet, $locales)
 {
-    unset($update, $locales);
+    unset($locales);
+
+    // This hook (update_themes_github.com) can be shared by other themes whose
+    // Update URI also resolves to github.com. Core chains every callback
+    // registered on the hook for a single theme check, passing the previous
+    // callback's return value in as $update; returning false unconditionally
+    // here would discard a legitimate update payload another updater already
+    // supplied for a different theme.
     if ('lonestar' !== sanitize_key((string) $theme_stylesheet)) {
-        return false;
+        return $update;
     }
 
     $payload = lonestar_get_latest_parent_release_payload();
     $current_version = isset($theme_data['Version']) ? (string) $theme_data['Version'] : '';
     if (!is_array($payload) || '' === $current_version || version_compare((string) $payload['version'], $current_version, '<=')) {
-        return false;
+        return $update;
     }
 
     return array(
         'id'           => LONESTAR_UPDATE_URI,
         'theme'        => 'lonestar',
         'version'      => (string) $payload['version'],
-        'url'          => (string) $payload['release_url'],
+        'url'          => admin_url('theme-install.php?tab=theme-information&theme=lonestar'),
         'package'      => (string) $payload['package_url'],
-        'tested'       => '7.0',
+        'tested'       => lonestar_get_parent_theme_tested_wp_version(),
         'requires_php' => isset($theme_data['RequiresPHP']) ? (string) $theme_data['RequiresPHP'] : '8.2',
     );
 }
@@ -289,7 +345,7 @@ function lonestar_provide_parent_theme_update_info($result, $action, $args)
         return $result;
     }
 
-    $theme = wp_get_theme('lonestar');
+    $theme = lonestar_get_parent_theme();
     $info = new stdClass();
     $info->name = (string) $theme->get('Name');
     $info->slug = 'lonestar';
@@ -297,7 +353,7 @@ function lonestar_provide_parent_theme_update_info($result, $action, $args)
     $info->author = (string) $theme->get('Author');
     $info->homepage = (string) $payload['release_url'];
     $info->requires = (string) $theme->get('RequiresWP');
-    $info->tested = '7.0';
+    $info->tested = lonestar_get_parent_theme_tested_wp_version();
     $info->requires_php = (string) $theme->get('RequiresPHP');
     $info->download_link = (string) $payload['package_url'];
     $info->last_updated = (string) $payload['published_at'];
@@ -392,7 +448,7 @@ function lonestar_add_parent_update_site_health_info($debug_info)
     $debug_info['lonestar-update'] = array(
         'label'  => __('Lonestar parent update', 'lonestar'),
         'fields' => array(
-            'installed_version' => array('label' => __('Installed version', 'lonestar'), 'value' => (string) wp_get_theme('lonestar')->get('Version')),
+            'installed_version' => array('label' => __('Installed version', 'lonestar'), 'value' => (string) lonestar_get_parent_theme()->get('Version')),
             'update_policy'     => array('label' => __('Update policy', 'lonestar'), 'value' => lonestar_get_parent_theme_update_policy_label()),
             'latest_version'    => array('label' => __('Latest checked version', 'lonestar'), 'value' => (string) ($status['version'] ?? __('Unknown', 'lonestar'))),
             'checked_at'        => array('label' => __('Last check (UTC)', 'lonestar'), 'value' => (string) ($status['checked_at'] ?? __('Not checked', 'lonestar'))),
@@ -415,7 +471,7 @@ function lonestar_render_parent_update_status()
     $status = lonestar_get_cached_parent_theme_update_status();
     echo '<h3 style="margin-top:20px;">' . esc_html__('Parent Update Status', 'lonestar') . '</h3>';
     echo '<table class="widefat striped" style="max-width:1200px;"><tbody>';
-    echo '<tr><th style="width:260px;">' . esc_html__('Installed version', 'lonestar') . '</th><td><code>' . esc_html((string) wp_get_theme('lonestar')->get('Version')) . '</code></td></tr>';
+    echo '<tr><th style="width:260px;">' . esc_html__('Installed version', 'lonestar') . '</th><td><code>' . esc_html((string) lonestar_get_parent_theme()->get('Version')) . '</code></td></tr>';
     echo '<tr><th>' . esc_html__('Update policy', 'lonestar') . '</th><td>' . esc_html(lonestar_get_parent_theme_update_policy_label()) . '</td></tr>';
     echo '<tr><th>' . esc_html__('Latest checked version', 'lonestar') . '</th><td>' . esc_html((string) ($status['version'] ?? __('Unknown', 'lonestar'))) . '</td></tr>';
     echo '<tr><th>' . esc_html__('Last check (UTC)', 'lonestar') . '</th><td>' . esc_html((string) ($status['checked_at'] ?? __('Not checked', 'lonestar'))) . '</td></tr>';

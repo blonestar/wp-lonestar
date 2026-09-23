@@ -1,22 +1,16 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^Constant LONESTAR_TEMPLATE_PATH not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: inc/core/blocks-acf-enqueue.php
+
+		-
 			message: '#^Ternary operator condition is always false\.$#'
 			identifier: ternary.alwaysFalse
 			count: 2
 			path: inc/core/blocks-acf-enqueue.php
-
-		-
-			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 1
-			path: inc/core/blocks-acf.php
-
-		-
-			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 1
-			path: inc/core/blocks-native.php
 
 		-
 			message: '#^Call to function is_array\(\) with list will always evaluate to true\.$#'
@@ -61,12 +55,6 @@ parameters:
 			path: inc/core/modules_catalog.php
 
 		-
-			message: '#^Unreachable statement \- code above always terminates\.$#'
-			identifier: deadCode.unreachable
-			count: 1
-			path: inc/core/modules_catalog.php
-
-		-
 			message: '#^Call to function is_array\(\) with list will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
@@ -77,6 +65,12 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: inc/core/modules_state.php
+
+		-
+			message: '#^Constant WPINC not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: inc/core/theme-updates.php
 
 		-
 			message: '#^Parameter \#4 \$ver of function wp_enqueue_script expects bool\|string\|null, int\|null given\.$#'

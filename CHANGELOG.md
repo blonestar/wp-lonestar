@@ -7,9 +7,52 @@ All notable changes to the Lonestar parent theme are documented in this file.
 ### Added
 
 - Added dev-only PHP quality tooling (`composer.json`, `phpcs.xml.dist`, `phpstan.neon.dist`, `phpstan-baseline.neon`): a curated WordPress Coding Standards gate (security, i18n, discouraged/deprecated functions, PHP 8.2+ compatibility, `lonestar_`/`LONESTAR_` symbol prefixing) and PHPStan level 5 with a baseline for pre-existing findings. None of this ships in release ZIPs.
-- Added a CI `quality` job running `composer run lint:phpcs` (report-only for now; see TODO in `.github/workflows/ci.yml`) and `composer run lint:phpstan` (blocking).
+- Added a CI `quality` job running `composer run lint:phpcs` and `composer run lint:phpstan`.
 - Added PHP 8.5 to the CI PHP lint matrix (alongside 8.2 and 8.4).
 - Added a `.wp-env.json` and a CI `smoke` job (report-only, `continue-on-error: true`, unvalidated locally — no Docker in this environment) that starts `@wordpress/env`, activates the theme, and checks for PHP fatals/warnings and expected block registration on the homepage and a 404 page.
+
+### Changed (Phase 4: prefixed public API & code hygiene)
+
+- The public PHP API now uses `lonestar_`/`LONESTAR_` prefixes consistently, and production Vite assets use the `lonestar-main` and `lonestar-{filename}` handles.
+- Shortcode tags `[R]`, `[Y]`, and `[year]` remain unchanged.
+- Module functions use the `lonestar_*` namespace, the unused module PHP scanner was removed, and the module admin handler guards `$_SERVER['REQUEST_METHOD']` with `isset()` before reading it.
+
+### Fixed
+
+- Vite/HMR module scripts now actually load as `type="module"`: added a `wp_script_attributes` filter (`lonestar_filter_module_script_attributes`) since core silently ignores `wp_script_add_data($handle, 'type', 'module')`.
+- Block `viewScriptModule` handles are now registered through the WordPress Script Modules API (`wp_register_script_module`) instead of being merged into classic `script`/`editorScript`/`viewScript` handles, which previously risked applying `type="module"` to non-ESM built block scripts.
+- Fixed the WordPress 7 PHP-only example block's `render.php`, whose wrapper `<section>` tag was never closed.
+- Content Types admin screen strings now use the `lonestar` text domain instead of the retired `lonestar-theme` domain.
+- `lonestar_filter_parent_theme_update` no longer discards `$update` for non-Lonestar themes or when no newer release is available; it now returns the incoming `$update` unchanged, since `update_themes_github.com` can be shared by other GitHub-hosted theme updaters.
+- Parent theme update metadata now resolves the theme via `get_template()` (`lonestar_get_parent_theme()`), instead of a hardcoded `wp_get_theme('lonestar')` lookup that resolves to nothing in the `wp-lonestar` development checkout folder.
+- Parent theme update metadata no longer hardcodes `'tested' => '7.0'`; it now reads the parent's "Tested up to" `style.css` header (`lonestar_get_parent_theme_tested_wp_version()`), falling back to "Requires at least".
+- `module.disable-emoji.php` now also removes `wp_enqueue_scripts`/`admin_enqueue_scripts` → `wp_enqueue_emoji_styles`, and the `embed_head`/`enqueue_embed_scripts` emoji hooks, which modern core registers but the module previously left active. The removal now also runs on `admin_init`, since core's admin-only emoji hooks (`wp-admin/includes/admin-filters.php`) are not attached until after the `init` action has already fired in `wp-admin`.
+- `assets/css/reset.css` no longer forces `display: block` on `img`/`picture`/`video`/`canvas`/`svg`, which broke inline images and WordPress image-alignment classes; images now get `max-width: 100%; height: auto;` (plus `vertical-align: middle`) without a forced display change. The universal `margin: 0; padding: 0` reset no longer strips `ul`/`ol` padding, so post-content list bullet/number indentation is preserved.
+- `inc/inc.filters.php`: removed the `upload_mimes` AVIF filter — WordPress core has supported AVIF uploads since 6.5 and no longer needs it.
+
+### Added
+
+- Added `templates/archive.html` and `templates/search.html`, and rebuilt `templates/index.html` as a generic Query Loop fallback (`core/query` with `inherit: true`, post title/date/excerpt/featured image, pagination, and no-results states).
+- Added the `parts/comments.html` template part to `templates/single.html` and registered it in `theme.json` `templateParts`.
+- Added `lonestar_register_editor_styles()` (`inc/core/vite.php`, hooked on `after_setup_theme` priority 20), so the block editor iframe loads `assets/css/reset.css` and the built Vite CSS via `add_editor_style()`, matching the frontend. In Vite dev mode the built `dist/` CSS is skipped since the editor already gets live styles from the Vite HMR client.
+- Added `patterns/404-content.php`, `patterns/no-results.php`, and `patterns/no-search-results.php` — translatable (`lonestar` text domain) PHP block patterns referenced via `<!-- wp:pattern {"slug":"lonestar/..."} /-->` from `templates/404.html`, `templates/index.html`, `templates/archive.html`, and `templates/search.html`, replacing hardcoded English text in those static HTML templates (block templates are not scanned by `wp i18n make-pot`).
+- `theme.json`: enabled fluid typography (`settings.typography.fluid: true`) with `fluid.min`/`fluid.max` on each existing font size preset (slugs and max sizes unchanged), and added `styles.elements.link` (brand color, underlined, brand-strong on hover) and `styles.elements.heading` (heading font family, weight 700, line-height 1.2), removing the now-duplicated rules from `assets/css/_base-styles.css`.
+
+### Changed
+
+- Bumped the block asset registration transient cache key from `lonestar_block_asset_map_v3_*` to `lonestar_block_asset_map_v4_*` to invalidate stale cached asset maps after the `viewScriptModule` handling change.
+- `style.css` "Tested up to" header raised to 7.1.
+- `theme.json` `$schema` now points at the versioned `https://schemas.wp.org/wp/7.1/theme.json` instead of `.../trunk/theme.json`.
+- Renamed the `themes.php` submenu label from "Reusable Blocks" to "Patterns" (`inc/inc.filters.php`), matching core's WordPress 6.3+ terminology; the underlying `wp_block` post type and screen URL are unchanged.
+- `blocks/acf/example-acf/block.json`: added `"blockVersion": 3` to the `acf` object to opt the example block into ACF 6.3+'s iframed block editor (block API v3).
+
+### Performance
+
+- The Vite dev-server auto-probe (`lonestar_is_vite_dev_mode()`) now only runs its `wp_remote_get()` HTTP check when `wp_get_environment_type()` is `local` or `development`; other environment types (e.g. `staging`) must opt in explicitly via `LONESTAR_VITE_DEVELOPMENT` or `LONESTAR_VITE_DEV`. Added filter `lonestar_vite_dev_probe_enabled` to override the gate per site. See `docs/developer-guide.md`.
+- `lonestar_remove_query_string_from_static_files()` (`inc/core/blocks-acf-enqueue.php`) no longer runs `filemtime()` on every enqueued theme asset on every request. It now only rewrites the `ver` query arg when the asset carries WordPress's default core-version `ver` (i.e. was enqueued without an explicit version — theme-registered block assets already pass explicit filemtime versions and are skipped). Path resolution now maps the template/stylesheet directory URI to `get_template_directory()`/`get_stylesheet_directory()` instead of `ABSPATH`, which was wrong whenever `WP_CONTENT_DIR` lives outside `ABSPATH` (e.g. Bedrock-style installs). Resolved mtimes are memoized per request. The active resolver is `lonestar_theme_asset_url_to_path()`.
+- Consolidated block discovery caching uses a single request-memoized + transient-backed block runtime index (`lonestar_get_block_runtime_index()`, fixed transient key `lonestar_block_runtime_v1`, payload carries its own `cache_namespace` so a namespace change on deploy is detected and rebuilt). Each block.json is now decoded once per request/cache build and reused by the ACF/native/PHP-only register functions and the JS/CSS asset map. `lonestar_flush_block_discovery_caches()` clears the current runtime index key.
+- Fixed a module catalog i18n cache bug: `lonestar_get_module_catalog()` now caches module labels/descriptions/admin-link labels untranslated with their textdomain, and translates on every read (`lonestar_localize_module_catalog()`), after both cache hits and fresh builds. Bumped the catalog transient schema from `v4` to `v5`.
+- `lonestar_get_module_source_fingerprint()` supports a fast production mode that hashes module-root mtimes plus the theme version; non-production environments keep the full per-entry fingerprint. Added filter `lonestar_module_fingerprint_mode` (`'full'|'fast'`).
 
 ## [0.5.0] - 2026-07-13
 

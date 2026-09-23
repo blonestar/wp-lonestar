@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
  * Module discovery, metadata, and catalog caching.
  */
 
-function modules_get_modules_directory()
+function lonestar_get_modules_directory()
 {
     $modules_directory = wp_normalize_path(trailingslashit(get_template_directory()) . 'modules');
     if (!is_dir($modules_directory) || !is_readable($modules_directory)) {
@@ -24,7 +24,7 @@ function modules_get_modules_directory()
  * @param string $source Source key.
  * @return string
  */
-function modules_normalize_source($source)
+function lonestar_normalize_source($source)
 {
     $source = sanitize_key((string) $source);
     if ('' === $source) {
@@ -40,9 +40,9 @@ function modules_normalize_source($source)
  * @param string $source Source key.
  * @return string
  */
-function modules_get_source_label($source)
+function lonestar_get_source_label($source)
 {
-    $source = modules_normalize_source($source);
+    $source = lonestar_normalize_source($source);
     if ('stylesheet' === $source) {
         return __('Child Theme', 'lonestar');
     }
@@ -58,9 +58,9 @@ function modules_get_source_label($source)
  * @param string $source Source key.
  * @return int
  */
-function modules_get_source_priority($source)
+function lonestar_get_source_priority($source)
 {
-    $source = modules_normalize_source($source);
+    $source = lonestar_normalize_source($source);
     if ('stylesheet' === $source) {
         return 20;
     }
@@ -78,9 +78,9 @@ function modules_get_source_priority($source)
  * @param string $slug Module slug.
  * @return string
  */
-function modules_build_module_key($source, $slug)
+function lonestar_build_module_key($source, $slug)
 {
-    $source = modules_normalize_source($source);
+    $source = lonestar_normalize_source($source);
     $slug = sanitize_key((string) $slug);
     if ('' === $slug) {
         return '';
@@ -95,7 +95,7 @@ function modules_build_module_key($source, $slug)
  * @param string $module_key Module key.
  * @return array{source:string,slug:string}
  */
-function modules_split_module_key($module_key)
+function lonestar_split_module_key($module_key)
 {
     $module_key = sanitize_key((string) $module_key);
     if ('' === $module_key) {
@@ -108,15 +108,14 @@ function modules_split_module_key($module_key)
     $parts = explode('__', $module_key, 2);
     if (2 === count($parts)) {
         return array(
-            'source' => modules_normalize_source($parts[0]),
+            'source' => lonestar_normalize_source($parts[0]),
             'slug'   => sanitize_key($parts[1]),
         );
     }
 
-    // Legacy key compatibility (slug-only keys from older versions).
     return array(
-        'source' => 'template',
-        'slug'   => $module_key,
+        'source' => '',
+        'slug'   => '',
     );
 }
 
@@ -125,7 +124,7 @@ function modules_split_module_key($module_key)
  *
  * @return array<int,array{source:string,directory:string}>
  */
-function modules_get_module_source_directories()
+function lonestar_get_module_source_directories()
 {
     $sources = array();
 
@@ -156,24 +155,88 @@ function modules_get_module_source_directories()
 }
 
 /**
+ * Resolve the module source fingerprint mode.
+ *
+ * 'full' walks every top-level module entry (glob + filemtime per entry) on
+ * every request that needs the cache key, which is unnecessary filesystem
+ * work once a site is deployed and its module set is stable. 'fast' hashes
+ * only the modules root directory mtimes (which change on add/remove/rename
+ * of a top-level entry on typical filesystems) plus the theme version.
+ *
+ * Defaults to 'fast' in the 'production' environment type and 'full'
+ * otherwise (local/development/staging), where module folders are actively
+ * being added/edited and per-entry precision is more valuable than the
+ * saved filesystem calls.
+ *
+ * @return string 'full'|'fast'
+ */
+function lonestar_get_module_fingerprint_mode()
+{
+    static $mode = null;
+    if (is_string($mode) && '' !== $mode) {
+        return $mode;
+    }
+
+    $environment = function_exists('wp_get_environment_type') ? (string) wp_get_environment_type() : 'production';
+    $default_mode = ('production' === $environment) ? 'fast' : 'full';
+
+    /**
+     * Filter the module source fingerprint mode.
+     *
+     * @param string $mode Fingerprint mode: 'full' or 'fast'.
+     */
+    $filtered_mode = (string) apply_filters('lonestar_module_fingerprint_mode', $default_mode);
+    $mode = in_array($filtered_mode, array('full', 'fast'), true) ? $filtered_mode : $default_mode;
+
+    return $mode;
+}
+
+/**
  * Build module source filesystem fingerprint for cache namespace.
  *
- * The fingerprint tracks top-level module entries (file/folder + mtime) across
- * parent and child module roots so add/remove operations invalidate cache keys.
+ * In 'full' mode the fingerprint tracks top-level module entries
+ * (file/folder + mtime) across parent and child module roots so add/remove
+ * operations invalidate cache keys. In 'fast' mode (see
+ * lonestar_get_module_fingerprint_mode()) only the modules root directory
+ * mtimes plus the theme version are hashed.
  *
  * @return string
  */
-function modules_get_module_source_fingerprint()
+function lonestar_get_module_source_fingerprint()
 {
-    $module_sources = modules_get_module_source_directories();
+    $module_sources = lonestar_get_module_source_directories();
     if (empty($module_sources)) {
         return 'none';
+    }
+
+    if ('fast' === lonestar_get_module_fingerprint_mode()) {
+        $theme = function_exists('wp_get_theme') ? wp_get_theme() : null;
+        $theme_version = ($theme instanceof \WP_Theme) ? (string) $theme->get('Version') : '';
+
+        $fast_chunks = array();
+        foreach ($module_sources as $module_source) {
+            $source = isset($module_source['source']) ? lonestar_normalize_source($module_source['source']) : 'template';
+            $modules_directory = isset($module_source['directory']) ? untrailingslashit(wp_normalize_path((string) $module_source['directory'])) : '';
+            if ('' === $modules_directory || !is_dir($modules_directory) || !is_readable($modules_directory)) {
+                continue;
+            }
+
+            $dir_mtime = file_exists($modules_directory) ? filemtime($modules_directory) : false;
+            $fast_chunks[] = $source . '|' . $modules_directory . '|' . ((false !== $dir_mtime) ? (string) $dir_mtime : '0');
+        }
+
+        if (empty($fast_chunks)) {
+            return 'none';
+        }
+
+        sort($fast_chunks, SORT_NATURAL);
+        return substr(md5($theme_version . '||' . implode('||', $fast_chunks)), 0, 12);
     }
 
     $fingerprint_chunks = array();
 
     foreach ($module_sources as $module_source) {
-        $source = isset($module_source['source']) ? modules_normalize_source($module_source['source']) : 'template';
+        $source = isset($module_source['source']) ? lonestar_normalize_source($module_source['source']) : 'template';
         $modules_directory = isset($module_source['directory']) ? untrailingslashit(wp_normalize_path((string) $module_source['directory'])) : '';
         if ('' === $modules_directory || !is_dir($modules_directory) || !is_readable($modules_directory)) {
             continue;
@@ -214,7 +277,7 @@ function modules_get_module_source_fingerprint()
  *
  * @return string
  */
-function modules_get_module_catalog_transient_key()
+function lonestar_get_module_catalog_transient_key()
 {
     static $transient_key = null;
     if (is_string($transient_key) && '' !== $transient_key) {
@@ -226,8 +289,12 @@ function modules_get_module_catalog_transient_key()
         $theme_fingerprint = md5((string) get_template_directory());
     }
 
-    $catalog_schema_version = 'v4';
-    $source_fingerprint = modules_get_module_source_fingerprint();
+    // v5: catalog caches untranslated label/description source values +
+    // textdomain instead of pre-translated strings, so a cached catalog
+    // built under one locale still renders correctly for readers in a
+    // different locale (see lonestar_localize_module_catalog()).
+    $catalog_schema_version = 'v5';
+    $source_fingerprint = lonestar_get_module_source_fingerprint();
     $cache_seed = $catalog_schema_version . '|' . $theme_fingerprint . '|' . $source_fingerprint;
     $transient_key = 'lonestar_mod_catalog_' . $catalog_schema_version . '_' . substr(md5((string) $cache_seed), 0, 12);
     return $transient_key;
@@ -238,7 +305,7 @@ function modules_get_module_catalog_transient_key()
  *
  * @return bool
  */
-function modules_should_use_module_catalog_cache()
+function lonestar_should_use_module_catalog_cache()
 {
     static $use_cache = null;
     if (null !== $use_cache) {
@@ -251,11 +318,10 @@ function modules_should_use_module_catalog_cache()
     }
 
     // Avoid recursive cache-namespace resolution by not calling lonestar_is_vite_dev_mode() here.
-    if (defined('IS_VITE_DEVELOPMENT') && true === IS_VITE_DEVELOPMENT) {
+    if (defined('LONESTAR_VITE_DEVELOPMENT') && true === LONESTAR_VITE_DEVELOPMENT) {
         $use_cache = false;
         return $use_cache;
     }
-
     $env_flag = getenv('LONESTAR_VITE_DEV');
     if (false !== $env_flag) {
         $is_vite_dev = in_array(strtolower((string) $env_flag), array('1', 'true', 'yes', 'on'), true);
@@ -281,25 +347,26 @@ function modules_should_use_module_catalog_cache()
  *
  * @return array<string,array>
  */
-function modules_get_module_catalog()
+function lonestar_get_module_catalog()
 {
     static $catalog = null;
     if (is_array($catalog)) {
         return $catalog;
     }
 
-    $use_cache = modules_should_use_module_catalog_cache();
-    $cache_key = modules_get_module_catalog_transient_key();
+    $use_cache = lonestar_should_use_module_catalog_cache();
+    $cache_key = lonestar_get_module_catalog_transient_key();
     if ($use_cache) {
         $cached_catalog = get_transient($cache_key);
         if (is_array($cached_catalog)) {
-            $catalog = modules_refresh_module_catalog_availability($cached_catalog);
+            $catalog = lonestar_refresh_module_catalog_availability($cached_catalog);
+            $catalog = lonestar_localize_module_catalog($catalog);
             return $catalog;
         }
     }
 
     $catalog = array();
-    $module_sources = modules_get_module_source_directories();
+    $module_sources = lonestar_get_module_source_directories();
     if (empty($module_sources)) {
         if ($use_cache) {
             set_transient($cache_key, $catalog, LONESTAR_MODULE_CATALOG_CACHE_TTL);
@@ -308,7 +375,7 @@ function modules_get_module_catalog()
     }
 
     foreach ($module_sources as $module_source) {
-        $source = isset($module_source['source']) ? modules_normalize_source($module_source['source']) : 'template';
+        $source = isset($module_source['source']) ? lonestar_normalize_source($module_source['source']) : 'template';
         $modules_directory = isset($module_source['directory']) ? untrailingslashit(wp_normalize_path((string) $module_source['directory'])) : '';
         if ('' === $modules_directory || !is_dir($modules_directory) || !is_readable($modules_directory)) {
             continue;
@@ -318,39 +385,45 @@ function modules_get_module_catalog()
         if (is_array($flat_module_files)) {
             sort($flat_module_files, SORT_NATURAL);
             foreach ($flat_module_files as $module_file) {
-                $slug = modules_module_slug_from_entry_file($module_file);
+                $slug = lonestar_module_slug_from_entry_file($module_file);
                 if ('' === $slug) {
                     continue;
                 }
 
-                $module_key = modules_build_module_key($source, $slug);
+                $module_key = lonestar_build_module_key($source, $slug);
                 if ('' === $module_key) {
                     continue;
                 }
 
                 $module_directory = untrailingslashit(wp_normalize_path(dirname($module_file)));
                 $entry_file = wp_normalize_path($module_file);
-                $resolved_meta = modules_resolve_module_metadata($slug, $module_directory, $entry_file, 'file', $source);
-                $requirements = modules_get_module_requirements($module_directory, $entry_file, 'file');
-                $availability = modules_get_module_availability($requirements);
+                $resolved_meta = lonestar_resolve_module_metadata($slug, $module_directory, $entry_file, 'file', $source);
+                $requirements = lonestar_get_module_requirements($module_directory, $entry_file, 'file');
+                $availability = lonestar_get_module_availability($requirements);
 
                 $catalog[$module_key] = array(
-                    'key'         => $module_key,
-                    'slug'        => $slug,
-                    'label'       => isset($resolved_meta['label']) ? (string) $resolved_meta['label'] : modules_module_label_from_slug($slug),
-                    'description' => isset($resolved_meta['description']) ? (string) $resolved_meta['description'] : '',
+                    'key'                     => $module_key,
+                    'slug'                    => $slug,
+                    // 'label'/'description' hold untranslated source values here;
+                    // lonestar_localize_module_catalog() translates them on every
+                    // read (cache hit or miss) using the accompanying textdomain.
+                    'label'                   => isset($resolved_meta['label']) ? (string) $resolved_meta['label'] : lonestar_module_label_from_slug($slug),
+                    'label_textdomain'        => isset($resolved_meta['label_textdomain']) ? (string) $resolved_meta['label_textdomain'] : '',
+                    'description'             => isset($resolved_meta['description']) ? (string) $resolved_meta['description'] : '',
+                    'description_textdomain'  => isset($resolved_meta['description_textdomain']) ? (string) $resolved_meta['description_textdomain'] : '',
+                    'description_is_default'  => !empty($resolved_meta['description_is_default']),
                     'version'     => isset($resolved_meta['version']) ? (string) $resolved_meta['version'] : '',
                     'author'      => isset($resolved_meta['author']) ? (string) $resolved_meta['author'] : '',
                     'source'      => $source,
-                    'source_label'=> modules_get_source_label($source),
-                    'admin_links' => modules_get_module_admin_links($slug, $module_directory, $entry_file, 'file', $source),
+                    'source_label'=> lonestar_get_source_label($source),
+                    'admin_links' => lonestar_get_module_admin_links($slug, $module_directory, $entry_file, 'file', $source),
                     'requires'    => $requirements,
                     'available'   => $availability['available'],
                     'status'      => $availability['status'],
                     'mode'        => 'file',
                     'directory'   => $module_directory,
                     'entry_file'  => $entry_file,
-                    'features'    => modules_detect_module_features($module_directory, $entry_file),
+                    'features'    => lonestar_detect_module_features($module_directory, $entry_file),
                 );
             }
         }
@@ -364,7 +437,7 @@ function modules_get_module_catalog()
                     continue;
                 }
 
-                $module_key = modules_build_module_key($source, $slug);
+                $module_key = lonestar_build_module_key($source, $slug);
                 if ('' === $module_key) {
                     continue;
                 }
@@ -376,26 +449,29 @@ function modules_get_module_catalog()
                 }
 
                 // Folder module takes precedence over flat module with the same key (source + slug).
-                $resolved_meta = modules_resolve_module_metadata($slug, $module_directory, $entry_file, 'folder', $source);
-                $requirements = modules_get_module_requirements($module_directory, $entry_file, 'folder');
-                $availability = modules_get_module_availability($requirements);
+                $resolved_meta = lonestar_resolve_module_metadata($slug, $module_directory, $entry_file, 'folder', $source);
+                $requirements = lonestar_get_module_requirements($module_directory, $entry_file, 'folder');
+                $availability = lonestar_get_module_availability($requirements);
                 $catalog[$module_key] = array(
-                    'key'         => $module_key,
-                    'slug'        => $slug,
-                    'label'       => isset($resolved_meta['label']) ? (string) $resolved_meta['label'] : modules_module_label_from_slug($slug),
-                    'description' => isset($resolved_meta['description']) ? (string) $resolved_meta['description'] : '',
+                    'key'                     => $module_key,
+                    'slug'                    => $slug,
+                    'label'                   => isset($resolved_meta['label']) ? (string) $resolved_meta['label'] : lonestar_module_label_from_slug($slug),
+                    'label_textdomain'        => isset($resolved_meta['label_textdomain']) ? (string) $resolved_meta['label_textdomain'] : '',
+                    'description'             => isset($resolved_meta['description']) ? (string) $resolved_meta['description'] : '',
+                    'description_textdomain'  => isset($resolved_meta['description_textdomain']) ? (string) $resolved_meta['description_textdomain'] : '',
+                    'description_is_default'  => !empty($resolved_meta['description_is_default']),
                     'version'     => isset($resolved_meta['version']) ? (string) $resolved_meta['version'] : '',
                     'author'      => isset($resolved_meta['author']) ? (string) $resolved_meta['author'] : '',
                     'source'      => $source,
-                    'source_label'=> modules_get_source_label($source),
-                    'admin_links' => modules_get_module_admin_links($slug, $module_directory, $entry_file, 'folder', $source),
+                    'source_label'=> lonestar_get_source_label($source),
+                    'admin_links' => lonestar_get_module_admin_links($slug, $module_directory, $entry_file, 'folder', $source),
                     'requires'    => $requirements,
                     'available'   => $availability['available'],
                     'status'      => $availability['status'],
                     'mode'        => 'folder',
                     'directory'   => $module_directory,
                     'entry_file'  => $entry_file,
-                    'features'    => modules_detect_module_features($module_directory, $entry_file),
+                    'features'    => lonestar_detect_module_features($module_directory, $entry_file),
                 );
             }
         }
@@ -411,13 +487,17 @@ function modules_get_module_catalog()
         $catalog = array();
     }
 
-    $catalog = modules_refresh_module_catalog_availability($catalog);
+    $catalog = lonestar_refresh_module_catalog_availability($catalog);
 
     ksort($catalog, SORT_NATURAL);
 
     if ($use_cache) {
+        // Cache raw (untranslated) label/description source values; see
+        // lonestar_localize_module_catalog() for the read-time translation step.
         set_transient($cache_key, $catalog, LONESTAR_MODULE_CATALOG_CACHE_TTL);
     }
+
+    $catalog = lonestar_localize_module_catalog($catalog);
 
     return $catalog;
 }
@@ -428,7 +508,7 @@ function modules_get_module_catalog()
  * @param string $module_file Module entry file path.
  * @return string
  */
-function modules_module_slug_from_entry_file($module_file)
+function lonestar_module_slug_from_entry_file($module_file)
 {
     $filename = pathinfo((string) $module_file, PATHINFO_FILENAME);
     if (!is_string($filename) || 0 !== strpos($filename, 'module.')) {
@@ -444,7 +524,7 @@ function modules_module_slug_from_entry_file($module_file)
  * @param string $slug Module slug.
  * @return string
  */
-function modules_module_label_from_slug($slug)
+function lonestar_module_label_from_slug($slug)
 {
     $slug = sanitize_key((string) $slug);
     if ('' === $slug) {
@@ -464,50 +544,56 @@ function modules_module_label_from_slug($slug)
  * @param string $source Theme source (template|stylesheet).
  * @return array{label:string,description:string,version:string,author:string}
  */
-function modules_resolve_module_metadata($slug, $module_directory, $entry_file = '', $mode = 'folder', $source = 'template')
+function lonestar_resolve_module_metadata($slug, $module_directory, $entry_file = '', $mode = 'folder', $source = 'template')
 {
     $slug = sanitize_key((string) $slug);
-    $label = modules_module_label_from_slug($slug);
-    $description = '';
     $version = '';
     $author = '';
     $mode = ('file' === strtolower((string) $mode)) ? 'file' : 'folder';
 
-    $json_meta = modules_get_module_json_metadata($module_directory, $entry_file, $mode);
-    $doc_meta = modules_extract_module_docblock_metadata($entry_file);
-    $textdomain = modules_get_module_metadata_textdomain($json_meta, $source);
+    $json_meta = lonestar_get_module_json_metadata($module_directory, $entry_file, $mode);
+    $doc_meta = lonestar_extract_module_docblock_metadata($entry_file);
+    $textdomain = lonestar_get_module_metadata_textdomain($json_meta, $source);
 
+    // Untranslated source values are cached (see lonestar_get_module_catalog());
+    // translation happens on every read via lonestar_localize_module_catalog()
+    // so cached catalogs render in the current request's locale instead of
+    // whichever locale happened to be active when the cache was built.
+    $label = lonestar_module_label_from_slug($slug);
+    $label_textdomain = '';
     $label_candidates = array(
-        isset($json_meta['name']) ? modules_translate_module_metadata_value($json_meta['name'], $textdomain) : '',
-        isset($json_meta['title']) ? modules_translate_module_metadata_value($json_meta['title'], $textdomain) : '',
-        isset($doc_meta['module']) ? (string) $doc_meta['module'] : '',
-        isset($doc_meta['name']) ? (string) $doc_meta['name'] : '',
+        array('value' => isset($json_meta['name']) ? (string) $json_meta['name'] : '', 'textdomain' => $textdomain),
+        array('value' => isset($json_meta['title']) ? (string) $json_meta['title'] : '', 'textdomain' => $textdomain),
+        array('value' => isset($doc_meta['module']) ? (string) $doc_meta['module'] : '', 'textdomain' => ''),
+        array('value' => isset($doc_meta['name']) ? (string) $doc_meta['name'] : '', 'textdomain' => ''),
     );
     foreach ($label_candidates as $candidate) {
-        $candidate = sanitize_text_field(trim((string) $candidate));
-        if ('' !== $candidate) {
-            $label = $candidate;
+        $candidate_value = sanitize_text_field(trim((string) $candidate['value']));
+        if ('' !== $candidate_value) {
+            $label = $candidate_value;
+            $label_textdomain = $candidate['textdomain'];
             break;
         }
     }
 
+    $description = '';
+    $description_textdomain = '';
     $description_candidates = array(
-        isset($json_meta['description']) ? modules_translate_module_metadata_value($json_meta['description'], $textdomain) : '',
-        isset($doc_meta['description']) ? (string) $doc_meta['description'] : '',
-        modules_extract_module_readme_description($module_directory . '/README.md'),
-        modules_extract_module_docblock_summary($entry_file),
+        array('value' => isset($json_meta['description']) ? (string) $json_meta['description'] : '', 'textdomain' => $textdomain),
+        array('value' => isset($doc_meta['description']) ? (string) $doc_meta['description'] : '', 'textdomain' => ''),
+        array('value' => lonestar_extract_module_readme_description($module_directory . '/README.md'), 'textdomain' => ''),
+        array('value' => lonestar_extract_module_docblock_summary($entry_file), 'textdomain' => ''),
     );
     foreach ($description_candidates as $candidate) {
-        $candidate = sanitize_text_field(trim((string) $candidate));
-        if ('' !== $candidate) {
-            $description = $candidate;
+        $candidate_value = sanitize_text_field(trim((string) $candidate['value']));
+        if ('' !== $candidate_value) {
+            $description = $candidate_value;
+            $description_textdomain = $candidate['textdomain'];
             break;
         }
     }
 
-    if ('' === $description) {
-        $description = sprintf(__('Module: %s', 'lonestar'), $label);
-    }
+    $description_is_default = ('' === $description);
 
     $version_candidates = array(
         isset($json_meta['version']) ? (string) $json_meta['version'] : '',
@@ -534,11 +620,94 @@ function modules_resolve_module_metadata($slug, $module_directory, $entry_file =
     }
 
     return array(
-        'label'       => $label,
-        'description' => $description,
-        'version'     => $version,
-        'author'      => $author,
+        'label'                   => $label,
+        'label_textdomain'        => $label_textdomain,
+        'description'             => $description,
+        'description_textdomain'  => $description_textdomain,
+        'description_is_default'  => $description_is_default,
+        'version'                 => $version,
+        'author'                  => $author,
     );
+}
+
+/**
+ * Translate a module catalog entry's label/description and admin link
+ * labels for the current request locale.
+ *
+ * Catalog entries store untranslated source strings plus their textdomain
+ * (see lonestar_resolve_module_metadata() / lonestar_get_module_admin_links());
+ * this step applies translate()/__() using whichever locale is active when
+ * the catalog is read, regardless of whether the catalog itself came from a
+ * fresh scan or a transient built under a different user's locale.
+ *
+ * @param array<string,array> $catalog Module catalog with raw i18n fields.
+ * @return array<string,array> Module catalog with localized label/description.
+ */
+function lonestar_localize_module_catalog($catalog)
+{
+    if (!is_array($catalog)) {
+        return array();
+    }
+
+    foreach ($catalog as $module_key => $module) {
+        if (!is_array($module)) {
+            continue;
+        }
+
+        $slug = isset($module['slug']) ? (string) $module['slug'] : '';
+        $raw_label = isset($module['label']) ? (string) $module['label'] : '';
+        $label_textdomain = isset($module['label_textdomain']) ? (string) $module['label_textdomain'] : '';
+        $label = ('' !== $label_textdomain)
+            ? lonestar_translate_module_metadata_value($raw_label, $label_textdomain)
+            : sanitize_text_field($raw_label);
+        if ('' === $label) {
+            $label = lonestar_module_label_from_slug($slug);
+        }
+
+        $description_is_default = !empty($module['description_is_default']);
+        $raw_description = isset($module['description']) ? (string) $module['description'] : '';
+        $description_textdomain = isset($module['description_textdomain']) ? (string) $module['description_textdomain'] : '';
+
+        if ($description_is_default || '' === $raw_description) {
+            $description = sprintf(__('Module: %s', 'lonestar'), $label);
+        } else {
+            $description = ('' !== $description_textdomain)
+                ? lonestar_translate_module_metadata_value($raw_description, $description_textdomain)
+                : sanitize_text_field($raw_description);
+            if ('' === $description) {
+                $description = sprintf(__('Module: %s', 'lonestar'), $label);
+            }
+        }
+
+        $module['label'] = $label;
+        $module['description'] = $description;
+        unset($module['label_textdomain'], $module['description_textdomain'], $module['description_is_default']);
+
+        if (isset($module['admin_links']) && is_array($module['admin_links'])) {
+            foreach ($module['admin_links'] as $link_index => $link) {
+                if (!is_array($link)) {
+                    continue;
+                }
+
+                $raw_link_label = isset($link['label']) ? (string) $link['label'] : '';
+                $link_textdomain = isset($link['label_textdomain']) ? (string) $link['label_textdomain'] : '';
+                $link_label = ('' !== $raw_link_label)
+                    ? (('' !== $link_textdomain) ? lonestar_translate_module_metadata_value($raw_link_label, $link_textdomain) : sanitize_text_field($raw_link_label))
+                    : '';
+                if ('' === $link_label) {
+                    $link_label = __('Settings', 'lonestar');
+                }
+
+                $link['label'] = $link_label;
+                unset($link['label_textdomain']);
+                $module['admin_links'][$link_index] = $link;
+            }
+        }
+
+        $catalog[$module_key] = $module;
+    }
+
+    return $catalog;
 }
 
 /**
@@ -551,13 +720,13 @@ function modules_resolve_module_metadata($slug, $module_directory, $entry_file =
  * @param string $source Theme source.
  * @return string
  */
-function modules_get_module_metadata_textdomain($metadata, $source)
+function lonestar_get_module_metadata_textdomain($metadata, $source)
 {
     if (is_array($metadata) && isset($metadata['textdomain']) && is_string($metadata['textdomain'])) {
         return sanitize_key($metadata['textdomain']);
     }
 
-    return ('template' === modules_normalize_source($source)) ? 'lonestar' : '';
+    return ('template' === lonestar_normalize_source($source)) ? 'lonestar' : '';
 }
 
 /**
@@ -567,7 +736,7 @@ function modules_get_module_metadata_textdomain($metadata, $source)
  * @param string $textdomain Translation domain.
  * @return string
  */
-function modules_translate_module_metadata_value($value, $textdomain)
+function lonestar_translate_module_metadata_value($value, $textdomain)
 {
     $value = sanitize_text_field((string) $value);
     if ('' === $value || '' === $textdomain) {
@@ -585,7 +754,7 @@ function modules_translate_module_metadata_value($value, $textdomain)
  * @param string $mode Module mode (file|folder).
  * @return array<string,mixed>
  */
-function modules_get_module_json_metadata($module_directory, $entry_file = '', $mode = 'folder')
+function lonestar_get_module_json_metadata($module_directory, $entry_file = '', $mode = 'folder')
 {
     $module_directory = untrailingslashit(wp_normalize_path((string) $module_directory));
     $entry_file = wp_normalize_path((string) $entry_file);
@@ -629,9 +798,9 @@ function modules_get_module_json_metadata($module_directory, $entry_file = '', $
  * @param string $mode Module mode.
  * @return array<int,string>
  */
-function modules_get_module_requirements($module_directory, $entry_file = '', $mode = 'folder')
+function lonestar_get_module_requirements($module_directory, $entry_file = '', $mode = 'folder')
 {
-    $metadata = modules_get_module_json_metadata($module_directory, $entry_file, $mode);
+    $metadata = lonestar_get_module_json_metadata($module_directory, $entry_file, $mode);
     $requirements = isset($metadata['requires']) ? $metadata['requires'] : array();
     if (is_string($requirements)) {
         $requirements = array($requirements);
@@ -651,7 +820,7 @@ function modules_get_module_requirements($module_directory, $entry_file = '', $m
  * @param array<int,string> $requirements Requirement slugs.
  * @return array{available:bool,status:string}
  */
-function modules_get_module_availability($requirements)
+function lonestar_get_module_availability($requirements)
 {
     $missing = array();
     $labels = array(
@@ -695,7 +864,7 @@ function modules_get_module_availability($requirements)
  * @param array<string,array> $catalog Module catalog.
  * @return array<string,array>
  */
-function modules_refresh_module_catalog_availability($catalog)
+function lonestar_refresh_module_catalog_availability($catalog)
 {
     if (!is_array($catalog)) {
         return array();
@@ -706,7 +875,7 @@ function modules_refresh_module_catalog_availability($catalog)
             continue;
         }
         $requirements = isset($module['requires']) && is_array($module['requires']) ? $module['requires'] : array();
-        $availability = modules_get_module_availability($requirements);
+        $availability = lonestar_get_module_availability($requirements);
         $catalog[$module_key]['available'] = $availability['available'];
         $catalog[$module_key]['status'] = $availability['status'];
     }
@@ -726,7 +895,7 @@ function modules_refresh_module_catalog_availability($catalog)
  * @param string $file_path Module entry file path.
  * @return array<string,string>
  */
-function modules_extract_module_docblock_metadata($file_path)
+function lonestar_extract_module_docblock_metadata($file_path)
 {
     $file_path = wp_normalize_path((string) $file_path);
     if ('' === $file_path || !file_exists($file_path) || !is_readable($file_path)) {
@@ -805,7 +974,7 @@ function modules_extract_module_docblock_metadata($file_path)
  * @param string $entry_file Module entry file path.
  * @return string
  */
-function modules_get_module_description($slug, $module_directory, $entry_file = '')
+function lonestar_get_module_description($slug, $module_directory, $entry_file = '')
 {
     $slug = sanitize_key((string) $slug);
     $module_directory = untrailingslashit(wp_normalize_path((string) $module_directory));
@@ -821,18 +990,18 @@ function modules_get_module_description($slug, $module_directory, $entry_file = 
     }
 
     if ('' === $description && '' !== $entry_file) {
-        $doc_meta = modules_extract_module_docblock_metadata($entry_file);
+        $doc_meta = lonestar_extract_module_docblock_metadata($entry_file);
         if (isset($doc_meta['description']) && is_string($doc_meta['description'])) {
             $description = trim((string) $doc_meta['description']);
         }
     }
 
     if ('' === $description) {
-        $description = modules_extract_module_readme_description($module_directory . '/README.md');
+        $description = lonestar_extract_module_readme_description($module_directory . '/README.md');
     }
 
     if ('' === $description && '' !== $entry_file) {
-        $description = modules_extract_module_docblock_summary($entry_file);
+        $description = lonestar_extract_module_docblock_summary($entry_file);
     }
 
     $description = is_string($description) ? trim($description) : '';
@@ -849,7 +1018,7 @@ function modules_get_module_description($slug, $module_directory, $entry_file = 
     $description = is_string($description) ? trim($description) : '';
 
     if ('' === $description) {
-        return sprintf(__('Module: %s', 'lonestar'), modules_module_label_from_slug($slug));
+        return sprintf(__('Module: %s', 'lonestar'), lonestar_module_label_from_slug($slug));
     }
 
     return sanitize_text_field($description);
@@ -861,7 +1030,7 @@ function modules_get_module_description($slug, $module_directory, $entry_file = 
  * @param string $readme_path README file path.
  * @return string
  */
-function modules_extract_module_readme_description($readme_path)
+function lonestar_extract_module_readme_description($readme_path)
 {
     $readme_path = wp_normalize_path((string) $readme_path);
     if (!file_exists($readme_path) || !is_readable($readme_path)) {
@@ -900,7 +1069,7 @@ function modules_extract_module_readme_description($readme_path)
  * @param string $file_path PHP file path.
  * @return string
  */
-function modules_extract_module_docblock_summary($file_path)
+function lonestar_extract_module_docblock_summary($file_path)
 {
     $file_path = wp_normalize_path((string) $file_path);
     if (!file_exists($file_path) || !is_readable($file_path)) {
@@ -952,7 +1121,7 @@ function modules_extract_module_docblock_summary($file_path)
  * @param string $mode Module mode (file|folder).
  * @return array<int,array{label:string,url:string}>
  */
-function modules_get_module_admin_links($slug, $module_directory, $entry_file = '', $mode = 'folder', $source = 'template')
+function lonestar_get_module_admin_links($slug, $module_directory, $entry_file = '', $mode = 'folder', $source = 'template')
 {
     unset($slug);
 
@@ -988,20 +1157,21 @@ function modules_get_module_admin_links($slug, $module_directory, $entry_file = 
             continue;
         }
 
-        $textdomain = modules_get_module_metadata_textdomain($json, $source);
+        $textdomain = lonestar_get_module_metadata_textdomain($json, $source);
         foreach ($json['admin_links'] as $item) {
             if (!is_array($item)) {
                 continue;
             }
 
-            $label = isset($item['label'])
-                ? modules_translate_module_metadata_value($item['label'], $textdomain)
-                : __('Settings', 'lonestar');
+            // Store the raw (untranslated) label + textdomain; translation
+            // happens at read time in lonestar_localize_module_catalog() so
+            // cached links render in the current request's locale.
+            $raw_label = isset($item['label']) ? sanitize_text_field(trim((string) $item['label'])) : '';
             $page_slug = isset($item['page']) ? sanitize_key((string) $item['page']) : '';
             $raw_url = isset($item['url']) ? trim((string) $item['url']) : '';
 
             if ('' !== $page_slug) {
-                modules_add_module_admin_page_link($links, $seen_pages, $page_slug, $label);
+                lonestar_add_module_admin_page_link($links, $seen_pages, $page_slug, $raw_label, $textdomain);
                 continue;
             }
 
@@ -1021,71 +1191,11 @@ function modules_get_module_admin_links($slug, $module_directory, $entry_file = 
                 }
 
                 $links[] = array(
-                    'label' => $label,
-                    'url'   => $resolved_url,
+                    'label'            => $raw_label,
+                    'label_textdomain' => $textdomain,
+                    'url'              => $resolved_url,
                 );
                 $seen_urls[$resolved_url] = true;
-            }
-        }
-    }
-
-    return $links;
-
-    // Deprecated unreachable compatibility code. It will be removed in the next major release.
-    if ('file' === $mode) {
-        $php_files = ('' !== $entry_file && file_exists($entry_file) && is_readable($entry_file))
-            ? array($entry_file)
-            : array();
-    } else {
-        $php_files = modules_get_module_php_files_for_scanning($module_directory);
-    }
-
-    foreach ($php_files as $php_file) {
-        $contents = file_get_contents($php_file);
-        if (false === $contents || '' === trim((string) $contents)) {
-            continue;
-        }
-
-        // ACF options page/subpage args parsing.
-        if (preg_match_all('/acf_add_options_(?:sub_)?page\s*\(\s*array\s*\((.*?)\)\s*\)\s*;?/is', (string) $contents, $calls)) {
-            $arg_blocks = isset($calls[1]) && is_array($calls[1]) ? $calls[1] : array();
-            foreach ($arg_blocks as $args) {
-                $menu_slug = '';
-                $menu_title = '';
-                $page_title = '';
-
-                if (preg_match('/[\'"]menu_slug[\'"]\s*=>\s*[\'"]([^\'"]+)[\'"]/i', (string) $args, $match)) {
-                    $menu_slug = sanitize_key((string) $match[1]);
-                }
-                if (preg_match('/[\'"]menu_title[\'"]\s*=>\s*[\'"]([^\'"]+)[\'"]/i', (string) $args, $match)) {
-                    $menu_title = sanitize_text_field((string) $match[1]);
-                }
-                if (preg_match('/[\'"]page_title[\'"]\s*=>\s*[\'"]([^\'"]+)[\'"]/i', (string) $args, $match)) {
-                    $page_title = sanitize_text_field((string) $match[1]);
-                }
-
-                if ('' === $menu_slug) {
-                    $title_for_slug = '' !== $menu_title ? $menu_title : $page_title;
-                    if ('' !== $title_for_slug) {
-                        $menu_slug = 'acf-options-' . sanitize_title($title_for_slug);
-                    }
-                }
-
-                if ('' !== $menu_slug) {
-                    $label = '' !== $menu_title ? $menu_title : ('' !== $page_title ? $page_title : __('Settings', 'lonestar'));
-                    modules_add_module_admin_page_link($links, $seen_pages, $menu_slug, $label);
-                }
-            }
-        }
-
-        // Fallback from explicit ACF options page value usage in field groups.
-        if (preg_match_all('/acf-options-[a-z0-9_-]+/i', (string) $contents, $matches)) {
-            $pages = isset($matches[0]) && is_array($matches[0]) ? $matches[0] : array();
-            foreach ($pages as $page_slug) {
-                $page_slug = sanitize_key((string) $page_slug);
-                if ('' !== $page_slug) {
-                    modules_add_module_admin_page_link($links, $seen_pages, $page_slug, __('Settings', 'lonestar'));
-                }
             }
         }
     }
@@ -1096,13 +1206,19 @@ function modules_get_module_admin_links($slug, $module_directory, $entry_file = 
 /**
  * Add admin page link to module link list (deduplicated by page slug).
  *
- * @param array<int,array{label:string,url:string}> $links Link list.
+ * Stores the raw (untranslated) label + textdomain; translation happens at
+ * read time in lonestar_localize_module_catalog(), so a link's label renders
+ * in the current request's locale even when the catalog itself is served
+ * from a transient built under a different locale.
+ *
+ * @param array<int,array{label:string,label_textdomain:string,url:string}> $links Link list.
  * @param array<string,bool> $seen_pages Seen page slugs.
  * @param string $page_slug Admin page slug.
- * @param string $label Link label.
+ * @param string $label Raw (untranslated) link label; empty resolves to "Settings" at read time.
+ * @param string $textdomain Translation domain for $label (empty = not translatable / already-literal).
  * @return void
  */
-function modules_add_module_admin_page_link(&$links, &$seen_pages, $page_slug, $label)
+function lonestar_add_module_admin_page_link(&$links, &$seen_pages, $page_slug, $label, $textdomain = '')
 {
     $page_slug = sanitize_key((string) $page_slug);
     if ('' === $page_slug) {
@@ -1114,9 +1230,6 @@ function modules_add_module_admin_page_link(&$links, &$seen_pages, $page_slug, $
     }
 
     $label = sanitize_text_field((string) $label);
-    if ('' === $label) {
-        $label = __('Settings', 'lonestar');
-    }
 
     $url = add_query_arg('page', $page_slug, admin_url('admin.php'));
     $url = esc_url_raw($url);
@@ -1125,61 +1238,11 @@ function modules_add_module_admin_page_link(&$links, &$seen_pages, $page_slug, $
     }
 
     $links[] = array(
-        'label' => $label,
-        'url'   => $url,
+        'label'            => $label,
+        'label_textdomain' => sanitize_key((string) $textdomain),
+        'url'              => $url,
     );
     $seen_pages[$page_slug] = true;
-}
-
-/**
- * Collect module PHP files for metadata scanning.
- *
- * @param string $module_directory Module directory.
- * @return array<int,string>
- */
-function modules_get_module_php_files_for_scanning($module_directory)
-{
-    $module_directory = untrailingslashit(wp_normalize_path((string) $module_directory));
-    if ('' === $module_directory || !is_dir($module_directory) || !is_readable($module_directory)) {
-        return array();
-    }
-
-    $files = array();
-
-    try {
-        $directory = new \RecursiveDirectoryIterator($module_directory, \FilesystemIterator::SKIP_DOTS);
-        $filter = new \RecursiveCallbackFilterIterator(
-            $directory,
-            function ($current) {
-                $name = $current->getFilename();
-                if ('' === $name || '.' === $name[0]) {
-                    return false;
-                }
-
-                if ($current->isDir()) {
-                    $skip_dirs = array('node_modules', 'dist', 'build', 'vendor', '.git');
-                    return !in_array($name, $skip_dirs, true);
-                }
-
-                return ('php' === strtolower((string) pathinfo($name, PATHINFO_EXTENSION)));
-            }
-        );
-
-        $iterator = new \RecursiveIteratorIterator($filter);
-        foreach ($iterator as $file) {
-            if ($file->isFile()) {
-                $files[] = wp_normalize_path((string) $file);
-            }
-        }
-    } catch (\Exception $e) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[lonestar-theme] Module scan error: ' . $e->getMessage());
-        }
-    }
-
-    $files = array_values(array_unique($files));
-    sort($files, SORT_NATURAL);
-    return $files;
 }
 
 /**
@@ -1189,7 +1252,7 @@ function modules_get_module_php_files_for_scanning($module_directory)
  * @param string $entry_file Optional module entry file.
  * @return array<string,bool>
  */
-function modules_detect_module_features($module_directory, $entry_file = '')
+function lonestar_detect_module_features($module_directory, $entry_file = '')
 {
     $module_directory = untrailingslashit(wp_normalize_path($module_directory));
     $features = array(

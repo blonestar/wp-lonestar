@@ -15,73 +15,23 @@ add_action('upgrader_process_complete', 'lonestar_flush_block_discovery_caches',
  */
 function lonestar_register_native_block_types()
 {
-    $transient_key = 'lonestar_native_blocks_to_load_v2';
-    $cache_namespace = function_exists('lonestar_get_theme_cache_namespace') ? lonestar_get_theme_cache_namespace() : 'default';
-    $use_cache = !lonestar_is_vite_dev_mode();
-    $block_directories = false;
+    $index = function_exists('lonestar_get_block_runtime_index') ? lonestar_get_block_runtime_index() : array();
+    $block_directories = isset($index['directories']['native']) && is_array($index['directories']['native']) ? $index['directories']['native'] : array();
+    $metadata_cache = isset($index['metadata']) && is_array($index['metadata']) ? $index['metadata'] : array();
 
-    if ($use_cache) {
-        $cached_payload = get_transient($transient_key);
-        if (
-            is_array($cached_payload) &&
-            isset($cached_payload['cache_namespace'], $cached_payload['directories']) &&
-            $cache_namespace === $cached_payload['cache_namespace'] &&
-            is_array($cached_payload['directories'])
-        ) {
-            $block_directories = $cached_payload['directories'];
-        }
-    }
-
-    if (false === $block_directories) {
-        $block_directories = lonestar_find_block_directories();
-        $native_roots = function_exists('lonestar_get_native_block_root_paths')
-            ? lonestar_get_native_block_root_paths()
-            : array(wp_normalize_path(TEMPLATE_PATH . NATIVE_BLOCKS_PATH));
-
-        $block_directories = array_values(
-            array_filter(
-                $block_directories,
-                function ($directory) use ($native_roots) {
-                    $normalized_directory = wp_normalize_path($directory);
-                    foreach ($native_roots as $native_root) {
-                        if (0 === strpos($normalized_directory, wp_normalize_path($native_root))) {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-            )
-        );
-
-        if ($use_cache) {
-            set_transient(
-                $transient_key,
-                array(
-                    'cache_namespace' => $cache_namespace,
-                    'directories'     => $block_directories,
-                ),
-                HOUR_IN_SECONDS
-            );
-        }
-    }
-
-    if (!is_array($block_directories) || empty($block_directories)) {
+    if (empty($block_directories)) {
         return;
     }
 
     foreach ($block_directories as $block_directory) {
-        $metadata_path = lonestar_get_block_json_path($block_directory);
-        if ('' === $metadata_path || !is_readable($metadata_path)) {
-            continue;
-        }
+        $block_directory = untrailingslashit(wp_normalize_path((string) $block_directory));
+        $entry = isset($metadata_cache[$block_directory]) ? $metadata_cache[$block_directory] : null;
+        $metadata_path = (is_array($entry) && isset($entry['path'])) ? (string) $entry['path'] : '';
+        $metadata = (is_array($entry) && isset($entry['data']) && is_array($entry['data'])) ? $entry['data'] : null;
 
-        $metadata_raw = file_get_contents($metadata_path);
-        $metadata = is_string($metadata_raw) ? json_decode($metadata_raw, true) : null;
-
-        if (!is_array($metadata) || empty($metadata['name'])) {
+        if ('' === $metadata_path || !is_array($metadata) || empty($metadata['name'])) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('[lonestar-theme] Invalid native block metadata: ' . $metadata_path);
+                error_log('[lonestar-theme] Invalid native block metadata: ' . ('' !== $metadata_path ? $metadata_path : $block_directory));
             }
             continue;
         }
@@ -115,18 +65,11 @@ function lonestar_flush_block_discovery_caches($upgrader_object = null, $options
 {
     unset($upgrader_object, $options);
 
-    $cache_namespace = function_exists('lonestar_get_theme_cache_namespace') ? lonestar_get_theme_cache_namespace() : 'default';
+    // Current consolidated block runtime index (single fixed key).
+    if (function_exists('lonestar_get_block_runtime_index_transient_key')) {
+        delete_transient(lonestar_get_block_runtime_index_transient_key());
+    } else {
+        delete_transient('lonestar_block_runtime_v1');
+    }
 
-    delete_transient('lonestar_acf_blocks_to_load');
-    delete_transient('lonestar_native_blocks_to_load');
-    delete_transient('lonestar_acf_blocks_to_load_v2');
-    delete_transient('lonestar_acf_blocks_to_load_v3');
-    delete_transient('lonestar_native_blocks_to_load_v2');
-    delete_transient('lonestar_php_only_blocks_to_load_v1');
-    delete_transient('lonestar_blocks_to_scan_' . $cache_namespace);
-    delete_transient('lonestar_blocks_to_scan_v2_' . $cache_namespace);
-    delete_transient('lonestar_blocks_to_scan_v3_' . $cache_namespace);
-    delete_transient('lonestar_block_asset_map_' . $cache_namespace);
-    delete_transient('lonestar_block_asset_map_v2_' . $cache_namespace);
-    delete_transient('lonestar_block_asset_map_v3_' . $cache_namespace);
 }

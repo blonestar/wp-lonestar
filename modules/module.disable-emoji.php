@@ -6,8 +6,17 @@ if (!defined('ABSPATH')) {
 
 /**
  * Disable default WordPress emoji scripts/styles.
+ *
+ * Hooked on both `init` and `admin_init`: core's admin-only emoji hooks
+ * (registered in wp-admin/includes/admin-filters.php) are not attached
+ * until wp-admin/includes/admin.php loads them, which happens after the
+ * `init` action has already fired during bootstrap. Removing them only on
+ * `init` is therefore a no-op in wp-admin; `admin_init` fires after
+ * admin-filters.php is loaded (see wp-admin/admin.php) so the admin hooks
+ * exist by the time we try to remove them.
  */
 add_action('init', 'lonestar_module_disable_emojis');
+add_action('admin_init', 'lonestar_module_disable_emojis');
 
 /**
  * Remove emoji-related hooks and filters.
@@ -16,10 +25,21 @@ add_action('init', 'lonestar_module_disable_emojis');
  */
 function lonestar_module_disable_emojis()
 {
+    // Frontend.
     remove_action('wp_head', 'print_emoji_detection_script', 7);
-    remove_action('admin_print_scripts', 'print_emoji_detection_script');
     remove_action('wp_print_styles', 'print_emoji_styles');
+    remove_action('wp_enqueue_scripts', 'wp_enqueue_emoji_styles');
+
+    // wp-admin.
+    remove_action('admin_print_scripts', 'print_emoji_detection_script');
     remove_action('admin_print_styles', 'print_emoji_styles');
+    remove_action('admin_enqueue_scripts', 'wp_enqueue_emoji_styles');
+
+    // oEmbed/embeds.
+    remove_action('embed_head', 'print_emoji_detection_script');
+    remove_action('enqueue_embed_scripts', 'wp_enqueue_emoji_styles');
+
+    // Content/feed/email staticizing.
     remove_filter('the_content_feed', 'wp_staticize_emoji');
     remove_filter('comment_text_rss', 'wp_staticize_emoji');
     remove_filter('wp_mail', 'wp_staticize_emoji_for_email');

@@ -71,26 +71,5 @@
                 <element value="LONESTAR"/>
             </property>
         </properties>
-        <!--
-            Legacy, pre-lonestar_ compatibility symbols (TEMPLATE_PATH,
-            modules_*(), etc.) are documented, intentional compatibility
-            aliases (see AGENTS.md: "preserve documented compatibility
-            aliases"). Excluding this sniff for the files that define them
-            avoids flagging code that must not be renamed.
-        -->
-        <exclude-pattern>functions\.php</exclude-pattern>
-        <exclude-pattern>inc/core/vite\.php</exclude-pattern>
-        <exclude-pattern>inc/core/modules\.php</exclude-pattern>
-        <exclude-pattern>inc/core/modules_admin\.php</exclude-pattern>
-        <exclude-pattern>inc/core/modules_bootstrap\.php</exclude-pattern>
-        <exclude-pattern>inc/core/modules_catalog\.php</exclude-pattern>
-        <exclude-pattern>inc/core/modules_state\.php</exclude-pattern>
-        <exclude-pattern>inc/core/blocks-acf\.php</exclude-pattern>
-        <exclude-pattern>inc/core/blocks-acf-enqueue\.php</exclude-pattern>
-        <exclude-pattern>inc/core/blocks-native\.php</exclude-pattern>
-        <exclude-pattern>inc/helpers/helper\.debug\.php</exclude-pattern>
-        <exclude-pattern>inc/helpers/helper\.printr\.php</exclude-pattern>
-        <exclude-pattern>inc/shortcodes/shortcode\.reserved\.php</exclude-pattern>
-        <exclude-pattern>inc/shortcodes/shortcode\.year\.php</exclude-pattern>
     </rule>
 </ruleset>

@@ -17,6 +17,11 @@ if (!defined('ABSPATH')) {
  *
  * Bugfix for ACF REST API/ACF Pro issue preventing updates to taxonomy ACF field data.
  * @link https://github.com/airesvsg/acf-to-rest-api/issues/301
+ *
+ * Not re-verified against a current ACF Pro release as part of this WP 7.1
+ * compatibility pass (no ACF Pro license available in this environment).
+ * Re-check whether this workaround is still needed the next time ACF Pro is
+ * upgraded; remove it if the underlying REST API bug has been fixed upstream.
  */
 function lonestar_match_taxonomy_acf($result, $rule, $screen, $field_group)
 {
@@ -48,25 +53,19 @@ function lonestar_match_taxonomy_acf($result, $rule, $screen, $field_group)
 add_filter('acf/location/rule_match/taxonomy', 'lonestar_match_taxonomy_acf', 10, 4);
 
 /**
- * Add reusable blocks UI to WordPress Menu
+ * Add Patterns (formerly "Reusable Blocks") UI to WordPress Menu.
+ *
+ * Core renamed reusable blocks to synced patterns in WordPress 6.3; the
+ * underlying post type (wp_block) and its edit screen URL are unchanged,
+ * so only the visible label is updated here.
  */
 if (!function_exists('lonestar_reusable_blocks_ui')) {
     function lonestar_reusable_blocks_ui()
     {
-        add_submenu_page('themes.php', __('Reusable Blocks', 'lonestar'), __('Reusable Blocks', 'lonestar'), 'edit_posts', 'edit.php?post_type=wp_block', '', 22);
+        add_submenu_page('themes.php', __('Patterns', 'lonestar'), __('Patterns', 'lonestar'), 'edit_posts', 'edit.php?post_type=wp_block', '', 22);
     }
     add_action('admin_menu', 'lonestar_reusable_blocks_ui');
 }
-
-/**
- * Add AVIF mime type support
- */
-function lonestar_filter_allowed_mimes_avif($mime_types)
-{
-    $mime_types['avif'] = 'image/avif';
-    return $mime_types;
-}
-add_filter('upload_mimes', 'lonestar_filter_allowed_mimes_avif', 1000, 1);
 
 /* ============================================
  * Add your project-specific filters below

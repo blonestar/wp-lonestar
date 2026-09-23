@@ -14,17 +14,17 @@ if (!defined('ABSPATH')) {
  *
  * @return void
  */
-function modules_boot_theme_modules()
+function lonestar_boot_theme_modules()
 {
     static $booted_modules = array();
-    $enabled_catalog = modules_get_enabled_module_catalog();
+    $enabled_catalog = lonestar_get_enabled_module_catalog();
 
     foreach ($enabled_catalog as $module_slug => $module) {
         if (isset($booted_modules[$module_slug])) {
             continue;
         }
 
-        modules_boot_single_module($module);
+        lonestar_boot_single_module($module);
         $booted_modules[$module_slug] = true;
     }
 }
@@ -35,7 +35,7 @@ function modules_boot_theme_modules()
  * @param array $module Module metadata.
  * @return void
  */
-function modules_boot_single_module($module)
+function lonestar_boot_single_module($module)
 {
     if (!is_array($module)) {
         return;
@@ -52,7 +52,7 @@ function modules_boot_single_module($module)
         return;
     }
 
-    modules_include_module_support_files($directory);
+    lonestar_include_module_support_files($directory);
 }
 
 /**
@@ -61,15 +61,15 @@ function modules_boot_single_module($module)
  * @param string $module_directory Absolute module directory.
  * @return void
  */
-function modules_include_module_support_files($module_directory)
+function lonestar_include_module_support_files($module_directory)
 {
-    $module_directories = modules_normalize_base_directories($module_directory);
+    $module_directories = lonestar_normalize_base_directories($module_directory);
     if (empty($module_directories)) {
         return;
     }
 
-    foreach (modules_get_module_convention_globs() as $relative_pattern => $debug_sensitive) {
-        modules_include_globbed_files($module_directories, $relative_pattern, $debug_sensitive);
+    foreach (lonestar_get_module_convention_globs() as $relative_pattern => $debug_sensitive) {
+        lonestar_include_globbed_files($module_directories, $relative_pattern, $debug_sensitive);
     }
 }
 
@@ -81,11 +81,11 @@ function modules_include_module_support_files($module_directory)
  * @param bool   $debug_sensitive Whether debug-only helper names should be filtered by WP_DEBUG.
  * @return void
  */
-function modules_include_globbed_files($base_directories, $relative_pattern, $debug_sensitive = false)
+function lonestar_include_globbed_files($base_directories, $relative_pattern, $debug_sensitive = false)
 {
     $relative_pattern = ltrim((string) $relative_pattern, '/');
     $debug_sensitive = (bool) $debug_sensitive;
-    $base_directories = modules_normalize_base_directories($base_directories);
+    $base_directories = lonestar_normalize_base_directories($base_directories);
 
     if (empty($base_directories) || '' === $relative_pattern) {
         return;
@@ -136,7 +136,7 @@ function modules_include_globbed_files($base_directories, $relative_pattern, $de
  * @param string|array<int,string> $base_directories Base directory (or ordered list of directories).
  * @return array<int,string>
  */
-function modules_normalize_base_directories($base_directories)
+function lonestar_normalize_base_directories($base_directories)
 {
     if (is_string($base_directories)) {
         $base_directories = array($base_directories);
@@ -164,7 +164,7 @@ function modules_normalize_base_directories($base_directories)
  *
  * @return array<string,bool> Relative glob pattern => debug-sensitive flag.
  */
-function modules_get_module_convention_globs()
+function lonestar_get_module_convention_globs()
 {
 
     return array(
