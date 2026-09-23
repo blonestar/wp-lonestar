@@ -1,5 +1,4 @@
 {
-  "//": "Core is pinned to a WordPress.org release ZIP rather than a WordPress/WordPress#branch ref, because @wordpress/env's GitHub-ref core sources fetch and build the git checkout (slow, and version drifts with 'trunk'/'master'). https://wordpress.org/latest.zip currently resolves to the newest stable release; pin to a specific version ZIP (e.g. https://wordpress.org/wordpress-7.1.zip) once WordPress 7.1 ships and this file needs to track it exactly, matching the WordPress 7.0+ floor in AGENTS.md.",
   "core": "https://wordpress.org/latest.zip",
   "phpVersion": "8.2",
   "themes": ["."],
