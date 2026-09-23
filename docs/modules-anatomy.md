@@ -92,7 +92,8 @@ Parent module state also supports:
     - `LONESTAR_DISABLE_ALL_MODULES`
     - `LONESTAR_DISABLED_MODULES`
 - sentinel file: `.disable-modules`
-- module catalog cache key now fingerprints parent/child `modules/` roots, so module add/remove changes refresh discovery automatically.
+- module catalog cache key now fingerprints parent/child `modules/` roots, so module add/remove changes refresh discovery automatically. The fingerprint has two modes (`modules_get_module_fingerprint_mode()`, filter `lonestar_module_fingerprint_mode`): `full` hashes every top-level module entry's mtime (default outside the `production` environment type), `fast` hashes only the modules root directory mtimes plus the theme version (default in `production`, where per-entry precision matters less than avoiding a glob+filemtime pass every request).
+- module catalog labels/descriptions/admin-link labels are cached untranslated (with their textdomain) and translated on every read (`modules_localize_module_catalog()`), so a catalog transient built under one wp-admin user's locale still renders correctly for a reader using a different locale.
 
 ## 4) Convention Paths Used By Module Runtime
 

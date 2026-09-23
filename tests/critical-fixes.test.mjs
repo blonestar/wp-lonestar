@@ -46,9 +46,13 @@ test("registers viewScriptModule handles with the Script Modules API, not wp_reg
     assert.match(blocksAcfEnqueueSource, /wp_register_script_module\(/);
 });
 
-test("bumps the block asset map transient cache key and flushes it on discovery reset", () => {
-    assert.match(blocksAcfEnqueueSource, /lonestar_block_asset_map_v4_/);
-    assert.doesNotMatch(blocksAcfEnqueueSource, /lonestar_block_asset_map_v3_/);
+test("consolidates block discovery into a single runtime index transient and flushes legacy keys on discovery reset", () => {
+    assert.match(blocksAcfEnqueueSource, /function lonestar_get_block_runtime_index_transient_key\(\)\s*\{\s*return 'lonestar_block_runtime_v1';/);
+    assert.match(blocksNativeSource, /delete_transient\(lonestar_get_block_runtime_index_transient_key\(\)\)/);
+    // Legacy per-family transients (pre-consolidation) are still cleaned up.
+    assert.match(blocksNativeSource, /delete_transient\('lonestar_acf_blocks_to_load_v3'\)/);
+    assert.match(blocksNativeSource, /delete_transient\('lonestar_native_blocks_to_load_v2'\)/);
+    assert.match(blocksNativeSource, /delete_transient\('lonestar_php_only_blocks_to_load_v1'\)/);
     assert.match(blocksNativeSource, /delete_transient\('lonestar_block_asset_map_v4_' \. \$cache_namespace\)/);
 });
 

@@ -156,10 +156,50 @@ function modules_get_module_source_directories()
 }
 
 /**
+ * Resolve the module source fingerprint mode.
+ *
+ * 'full' walks every top-level module entry (glob + filemtime per entry) on
+ * every request that needs the cache key, which is unnecessary filesystem
+ * work once a site is deployed and its module set is stable. 'fast' hashes
+ * only the modules root directory mtimes (which change on add/remove/rename
+ * of a top-level entry on typical filesystems) plus the theme version.
+ *
+ * Defaults to 'fast' in the 'production' environment type and 'full'
+ * otherwise (local/development/staging), where module folders are actively
+ * being added/edited and per-entry precision is more valuable than the
+ * saved filesystem calls.
+ *
+ * @return string 'full'|'fast'
+ */
+function modules_get_module_fingerprint_mode()
+{
+    static $mode = null;
+    if (is_string($mode) && '' !== $mode) {
+        return $mode;
+    }
+
+    $environment = function_exists('wp_get_environment_type') ? (string) wp_get_environment_type() : 'production';
+    $default_mode = ('production' === $environment) ? 'fast' : 'full';
+
+    /**
+     * Filter the module source fingerprint mode.
+     *
+     * @param string $mode Fingerprint mode: 'full' or 'fast'.
+     */
+    $filtered_mode = (string) apply_filters('lonestar_module_fingerprint_mode', $default_mode);
+    $mode = in_array($filtered_mode, array('full', 'fast'), true) ? $filtered_mode : $default_mode;
+
+    return $mode;
+}
+
+/**
  * Build module source filesystem fingerprint for cache namespace.
  *
- * The fingerprint tracks top-level module entries (file/folder + mtime) across
- * parent and child module roots so add/remove operations invalidate cache keys.
+ * In 'full' mode the fingerprint tracks top-level module entries
+ * (file/folder + mtime) across parent and child module roots so add/remove
+ * operations invalidate cache keys. In 'fast' mode (see
+ * modules_get_module_fingerprint_mode()) only the modules root directory
+ * mtimes plus the theme version are hashed.
  *
  * @return string
  */
@@ -168,6 +208,30 @@ function modules_get_module_source_fingerprint()
     $module_sources = modules_get_module_source_directories();
     if (empty($module_sources)) {
         return 'none';
+    }
+
+    if ('fast' === modules_get_module_fingerprint_mode()) {
+        $theme = function_exists('wp_get_theme') ? wp_get_theme() : null;
+        $theme_version = ($theme instanceof \WP_Theme) ? (string) $theme->get('Version') : '';
+
+        $fast_chunks = array();
+        foreach ($module_sources as $module_source) {
+            $source = isset($module_source['source']) ? modules_normalize_source($module_source['source']) : 'template';
+            $modules_directory = isset($module_source['directory']) ? untrailingslashit(wp_normalize_path((string) $module_source['directory'])) : '';
+            if ('' === $modules_directory || !is_dir($modules_directory) || !is_readable($modules_directory)) {
+                continue;
+            }
+
+            $dir_mtime = file_exists($modules_directory) ? filemtime($modules_directory) : false;
+            $fast_chunks[] = $source . '|' . $modules_directory . '|' . ((false !== $dir_mtime) ? (string) $dir_mtime : '0');
+        }
+
+        if (empty($fast_chunks)) {
+            return 'none';
+        }
+
+        sort($fast_chunks, SORT_NATURAL);
+        return substr(md5($theme_version . '||' . implode('||', $fast_chunks)), 0, 12);
     }
 
     $fingerprint_chunks = array();
@@ -226,7 +290,11 @@ function modules_get_module_catalog_transient_key()
         $theme_fingerprint = md5((string) get_template_directory());
     }
 
-    $catalog_schema_version = 'v4';
+    // v5: catalog caches untranslated label/description source values +
+    // textdomain instead of pre-translated strings, so a cached catalog
+    // built under one locale still renders correctly for readers in a
+    // different locale (see modules_localize_module_catalog()).
+    $catalog_schema_version = 'v5';
     $source_fingerprint = modules_get_module_source_fingerprint();
     $cache_seed = $catalog_schema_version . '|' . $theme_fingerprint . '|' . $source_fingerprint;
     $transient_key = 'lonestar_mod_catalog_' . $catalog_schema_version . '_' . substr(md5((string) $cache_seed), 0, 12);
@@ -294,6 +362,7 @@ function modules_get_module_catalog()
         $cached_catalog = get_transient($cache_key);
         if (is_array($cached_catalog)) {
             $catalog = modules_refresh_module_catalog_availability($cached_catalog);
+            $catalog = modules_localize_module_catalog($catalog);
             return $catalog;
         }
     }
@@ -335,10 +404,16 @@ function modules_get_module_catalog()
                 $availability = modules_get_module_availability($requirements);
 
                 $catalog[$module_key] = array(
-                    'key'         => $module_key,
-                    'slug'        => $slug,
-                    'label'       => isset($resolved_meta['label']) ? (string) $resolved_meta['label'] : modules_module_label_from_slug($slug),
-                    'description' => isset($resolved_meta['description']) ? (string) $resolved_meta['description'] : '',
+                    'key'                     => $module_key,
+                    'slug'                    => $slug,
+                    // 'label'/'description' hold untranslated source values here;
+                    // modules_localize_module_catalog() translates them on every
+                    // read (cache hit or miss) using the accompanying textdomain.
+                    'label'                   => isset($resolved_meta['label']) ? (string) $resolved_meta['label'] : modules_module_label_from_slug($slug),
+                    'label_textdomain'        => isset($resolved_meta['label_textdomain']) ? (string) $resolved_meta['label_textdomain'] : '',
+                    'description'             => isset($resolved_meta['description']) ? (string) $resolved_meta['description'] : '',
+                    'description_textdomain'  => isset($resolved_meta['description_textdomain']) ? (string) $resolved_meta['description_textdomain'] : '',
+                    'description_is_default'  => !empty($resolved_meta['description_is_default']),
                     'version'     => isset($resolved_meta['version']) ? (string) $resolved_meta['version'] : '',
                     'author'      => isset($resolved_meta['author']) ? (string) $resolved_meta['author'] : '',
                     'source'      => $source,
@@ -380,10 +455,13 @@ function modules_get_module_catalog()
                 $requirements = modules_get_module_requirements($module_directory, $entry_file, 'folder');
                 $availability = modules_get_module_availability($requirements);
                 $catalog[$module_key] = array(
-                    'key'         => $module_key,
-                    'slug'        => $slug,
-                    'label'       => isset($resolved_meta['label']) ? (string) $resolved_meta['label'] : modules_module_label_from_slug($slug),
-                    'description' => isset($resolved_meta['description']) ? (string) $resolved_meta['description'] : '',
+                    'key'                     => $module_key,
+                    'slug'                    => $slug,
+                    'label'                   => isset($resolved_meta['label']) ? (string) $resolved_meta['label'] : modules_module_label_from_slug($slug),
+                    'label_textdomain'        => isset($resolved_meta['label_textdomain']) ? (string) $resolved_meta['label_textdomain'] : '',
+                    'description'             => isset($resolved_meta['description']) ? (string) $resolved_meta['description'] : '',
+                    'description_textdomain'  => isset($resolved_meta['description_textdomain']) ? (string) $resolved_meta['description_textdomain'] : '',
+                    'description_is_default'  => !empty($resolved_meta['description_is_default']),
                     'version'     => isset($resolved_meta['version']) ? (string) $resolved_meta['version'] : '',
                     'author'      => isset($resolved_meta['author']) ? (string) $resolved_meta['author'] : '',
                     'source'      => $source,
@@ -416,8 +494,12 @@ function modules_get_module_catalog()
     ksort($catalog, SORT_NATURAL);
 
     if ($use_cache) {
+        // Cache raw (untranslated) label/description source values; see
+        // modules_localize_module_catalog() for the read-time translation step.
         set_transient($cache_key, $catalog, LONESTAR_MODULE_CATALOG_CACHE_TTL);
     }
+
+    $catalog = modules_localize_module_catalog($catalog);
 
     return $catalog;
 }
@@ -467,8 +549,6 @@ function modules_module_label_from_slug($slug)
 function modules_resolve_module_metadata($slug, $module_directory, $entry_file = '', $mode = 'folder', $source = 'template')
 {
     $slug = sanitize_key((string) $slug);
-    $label = modules_module_label_from_slug($slug);
-    $description = '';
     $version = '';
     $author = '';
     $mode = ('file' === strtolower((string) $mode)) ? 'file' : 'folder';
@@ -477,37 +557,45 @@ function modules_resolve_module_metadata($slug, $module_directory, $entry_file =
     $doc_meta = modules_extract_module_docblock_metadata($entry_file);
     $textdomain = modules_get_module_metadata_textdomain($json_meta, $source);
 
+    // Untranslated source values are cached (see modules_get_module_catalog());
+    // translation happens on every read via modules_localize_module_catalog()
+    // so cached catalogs render in the current request's locale instead of
+    // whichever locale happened to be active when the cache was built.
+    $label = modules_module_label_from_slug($slug);
+    $label_textdomain = '';
     $label_candidates = array(
-        isset($json_meta['name']) ? modules_translate_module_metadata_value($json_meta['name'], $textdomain) : '',
-        isset($json_meta['title']) ? modules_translate_module_metadata_value($json_meta['title'], $textdomain) : '',
-        isset($doc_meta['module']) ? (string) $doc_meta['module'] : '',
-        isset($doc_meta['name']) ? (string) $doc_meta['name'] : '',
+        array('value' => isset($json_meta['name']) ? (string) $json_meta['name'] : '', 'textdomain' => $textdomain),
+        array('value' => isset($json_meta['title']) ? (string) $json_meta['title'] : '', 'textdomain' => $textdomain),
+        array('value' => isset($doc_meta['module']) ? (string) $doc_meta['module'] : '', 'textdomain' => ''),
+        array('value' => isset($doc_meta['name']) ? (string) $doc_meta['name'] : '', 'textdomain' => ''),
     );
     foreach ($label_candidates as $candidate) {
-        $candidate = sanitize_text_field(trim((string) $candidate));
-        if ('' !== $candidate) {
-            $label = $candidate;
+        $candidate_value = sanitize_text_field(trim((string) $candidate['value']));
+        if ('' !== $candidate_value) {
+            $label = $candidate_value;
+            $label_textdomain = $candidate['textdomain'];
             break;
         }
     }
 
+    $description = '';
+    $description_textdomain = '';
     $description_candidates = array(
-        isset($json_meta['description']) ? modules_translate_module_metadata_value($json_meta['description'], $textdomain) : '',
-        isset($doc_meta['description']) ? (string) $doc_meta['description'] : '',
-        modules_extract_module_readme_description($module_directory . '/README.md'),
-        modules_extract_module_docblock_summary($entry_file),
+        array('value' => isset($json_meta['description']) ? (string) $json_meta['description'] : '', 'textdomain' => $textdomain),
+        array('value' => isset($doc_meta['description']) ? (string) $doc_meta['description'] : '', 'textdomain' => ''),
+        array('value' => modules_extract_module_readme_description($module_directory . '/README.md'), 'textdomain' => ''),
+        array('value' => modules_extract_module_docblock_summary($entry_file), 'textdomain' => ''),
     );
     foreach ($description_candidates as $candidate) {
-        $candidate = sanitize_text_field(trim((string) $candidate));
-        if ('' !== $candidate) {
-            $description = $candidate;
+        $candidate_value = sanitize_text_field(trim((string) $candidate['value']));
+        if ('' !== $candidate_value) {
+            $description = $candidate_value;
+            $description_textdomain = $candidate['textdomain'];
             break;
         }
     }
 
-    if ('' === $description) {
-        $description = sprintf(__('Module: %s', 'lonestar'), $label);
-    }
+    $description_is_default = ('' === $description);
 
     $version_candidates = array(
         isset($json_meta['version']) ? (string) $json_meta['version'] : '',
@@ -534,11 +622,94 @@ function modules_resolve_module_metadata($slug, $module_directory, $entry_file =
     }
 
     return array(
-        'label'       => $label,
-        'description' => $description,
-        'version'     => $version,
-        'author'      => $author,
+        'label'                   => $label,
+        'label_textdomain'        => $label_textdomain,
+        'description'             => $description,
+        'description_textdomain'  => $description_textdomain,
+        'description_is_default'  => $description_is_default,
+        'version'                 => $version,
+        'author'                  => $author,
     );
+}
+
+/**
+ * Translate a module catalog entry's label/description and admin link
+ * labels for the current request locale.
+ *
+ * Catalog entries store untranslated source strings plus their textdomain
+ * (see modules_resolve_module_metadata() / modules_get_module_admin_links());
+ * this step applies translate()/__() using whichever locale is active when
+ * the catalog is read, regardless of whether the catalog itself came from a
+ * fresh scan or a transient built under a different user's locale.
+ *
+ * @param array<string,array> $catalog Module catalog with raw i18n fields.
+ * @return array<string,array> Module catalog with localized label/description.
+ */
+function modules_localize_module_catalog($catalog)
+{
+    if (!is_array($catalog)) {
+        return array();
+    }
+
+    foreach ($catalog as $module_key => $module) {
+        if (!is_array($module)) {
+            continue;
+        }
+
+        $slug = isset($module['slug']) ? (string) $module['slug'] : '';
+        $raw_label = isset($module['label']) ? (string) $module['label'] : '';
+        $label_textdomain = isset($module['label_textdomain']) ? (string) $module['label_textdomain'] : '';
+        $label = ('' !== $label_textdomain)
+            ? modules_translate_module_metadata_value($raw_label, $label_textdomain)
+            : sanitize_text_field($raw_label);
+        if ('' === $label) {
+            $label = modules_module_label_from_slug($slug);
+        }
+
+        $description_is_default = !empty($module['description_is_default']);
+        $raw_description = isset($module['description']) ? (string) $module['description'] : '';
+        $description_textdomain = isset($module['description_textdomain']) ? (string) $module['description_textdomain'] : '';
+
+        if ($description_is_default || '' === $raw_description) {
+            $description = sprintf(__('Module: %s', 'lonestar'), $label);
+        } else {
+            $description = ('' !== $description_textdomain)
+                ? modules_translate_module_metadata_value($raw_description, $description_textdomain)
+                : sanitize_text_field($raw_description);
+            if ('' === $description) {
+                $description = sprintf(__('Module: %s', 'lonestar'), $label);
+            }
+        }
+
+        $module['label'] = $label;
+        $module['description'] = $description;
+        unset($module['label_textdomain'], $module['description_textdomain'], $module['description_is_default']);
+
+        if (isset($module['admin_links']) && is_array($module['admin_links'])) {
+            foreach ($module['admin_links'] as $link_index => $link) {
+                if (!is_array($link)) {
+                    continue;
+                }
+
+                $raw_link_label = isset($link['label']) ? (string) $link['label'] : '';
+                $link_textdomain = isset($link['label_textdomain']) ? (string) $link['label_textdomain'] : '';
+                $link_label = ('' !== $raw_link_label)
+                    ? (('' !== $link_textdomain) ? modules_translate_module_metadata_value($raw_link_label, $link_textdomain) : sanitize_text_field($raw_link_label))
+                    : '';
+                if ('' === $link_label) {
+                    $link_label = __('Settings', 'lonestar');
+                }
+
+                $link['label'] = $link_label;
+                unset($link['label_textdomain']);
+                $module['admin_links'][$link_index] = $link;
+            }
+        }
+
+        $catalog[$module_key] = $module;
+    }
+
+    return $catalog;
 }
 
 /**
@@ -994,14 +1165,15 @@ function modules_get_module_admin_links($slug, $module_directory, $entry_file = 
                 continue;
             }
 
-            $label = isset($item['label'])
-                ? modules_translate_module_metadata_value($item['label'], $textdomain)
-                : __('Settings', 'lonestar');
+            // Store the raw (untranslated) label + textdomain; translation
+            // happens at read time in modules_localize_module_catalog() so
+            // cached links render in the current request's locale.
+            $raw_label = isset($item['label']) ? sanitize_text_field(trim((string) $item['label'])) : '';
             $page_slug = isset($item['page']) ? sanitize_key((string) $item['page']) : '';
             $raw_url = isset($item['url']) ? trim((string) $item['url']) : '';
 
             if ('' !== $page_slug) {
-                modules_add_module_admin_page_link($links, $seen_pages, $page_slug, $label);
+                modules_add_module_admin_page_link($links, $seen_pages, $page_slug, $raw_label, $textdomain);
                 continue;
             }
 
@@ -1021,8 +1193,9 @@ function modules_get_module_admin_links($slug, $module_directory, $entry_file = 
                 }
 
                 $links[] = array(
-                    'label' => $label,
-                    'url'   => $resolved_url,
+                    'label'            => $raw_label,
+                    'label_textdomain' => $textdomain,
+                    'url'              => $resolved_url,
                 );
                 $seen_urls[$resolved_url] = true;
             }
@@ -1096,13 +1269,19 @@ function modules_get_module_admin_links($slug, $module_directory, $entry_file = 
 /**
  * Add admin page link to module link list (deduplicated by page slug).
  *
- * @param array<int,array{label:string,url:string}> $links Link list.
+ * Stores the raw (untranslated) label + textdomain; translation happens at
+ * read time in modules_localize_module_catalog(), so a link's label renders
+ * in the current request's locale even when the catalog itself is served
+ * from a transient built under a different locale.
+ *
+ * @param array<int,array{label:string,label_textdomain:string,url:string}> $links Link list.
  * @param array<string,bool> $seen_pages Seen page slugs.
  * @param string $page_slug Admin page slug.
- * @param string $label Link label.
+ * @param string $label Raw (untranslated) link label; empty resolves to "Settings" at read time.
+ * @param string $textdomain Translation domain for $label (empty = not translatable / already-literal).
  * @return void
  */
-function modules_add_module_admin_page_link(&$links, &$seen_pages, $page_slug, $label)
+function modules_add_module_admin_page_link(&$links, &$seen_pages, $page_slug, $label, $textdomain = '')
 {
     $page_slug = sanitize_key((string) $page_slug);
     if ('' === $page_slug) {
@@ -1114,9 +1293,6 @@ function modules_add_module_admin_page_link(&$links, &$seen_pages, $page_slug, $
     }
 
     $label = sanitize_text_field((string) $label);
-    if ('' === $label) {
-        $label = __('Settings', 'lonestar');
-    }
 
     $url = add_query_arg('page', $page_slug, admin_url('admin.php'));
     $url = esc_url_raw($url);
@@ -1125,8 +1301,9 @@ function modules_add_module_admin_page_link(&$links, &$seen_pages, $page_slug, $
     }
 
     $links[] = array(
-        'label' => $label,
-        'url'   => $url,
+        'label'            => $label,
+        'label_textdomain' => sanitize_key((string) $textdomain),
+        'url'              => $url,
     );
     $seen_pages[$page_slug] = true;
 }
