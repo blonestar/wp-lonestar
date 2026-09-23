@@ -26,7 +26,7 @@ $wrapper_attributes = get_block_wrapper_attributes(
     array('class' => 'wp-block-lonestar-example-php-only is-tone-' . sanitize_html_class($tone))
 );
 ?>
-<section <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+<section <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
     <h3><?php echo esc_html($heading); ?></h3>
     <?php if ($show_divider) : ?>
         <hr aria-hidden="true" />

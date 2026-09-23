@@ -4,6 +4,26 @@ All notable changes to the Lonestar parent theme are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Vite/HMR module scripts now actually load as `type="module"`: added a `wp_script_attributes` filter (`lonestar_filter_module_script_attributes`) since core silently ignores `wp_script_add_data($handle, 'type', 'module')`.
+- Block `viewScriptModule` handles are now registered through the WordPress Script Modules API (`wp_register_script_module`) instead of being merged into classic `script`/`editorScript`/`viewScript` handles, which previously risked applying `type="module"` to non-ESM built block scripts.
+- Fixed the WordPress 7 PHP-only example block's `render.php`, whose wrapper `<section>` tag was never closed.
+- Content Types admin screen strings now use the `lonestar` text domain instead of the retired `lonestar-theme` domain.
+- `lonestar_filter_parent_theme_update` no longer discards `$update` for non-Lonestar themes or when no newer release is available; it now returns the incoming `$update` unchanged, since `update_themes_github.com` can be shared by other GitHub-hosted theme updaters.
+- Parent theme update metadata now resolves the theme via `get_template()` (`lonestar_get_parent_theme()`), instead of a hardcoded `wp_get_theme('lonestar')` lookup that resolves to nothing in the `wp-lonestar` development checkout folder.
+- Parent theme update metadata no longer hardcodes `'tested' => '7.0'`; it now reads the parent's "Tested up to" `style.css` header (`lonestar_get_parent_theme_tested_wp_version()`), falling back to "Requires at least".
+
+### Added
+
+- Added `templates/archive.html` and `templates/search.html`, and rebuilt `templates/index.html` as a generic Query Loop fallback (`core/query` with `inherit: true`, post title/date/excerpt/featured image, pagination, and no-results states).
+- Added the `parts/comments.html` template part to `templates/single.html` and registered it in `theme.json` `templateParts`.
+
+### Changed
+
+- Bumped the block asset registration transient cache key from `lonestar_block_asset_map_v3_*` to `lonestar_block_asset_map_v4_*` to invalidate stale cached asset maps after the `viewScriptModule` handling change.
+- `style.css` "Tested up to" header raised to 7.1.
+
 ## [0.5.0] - 2026-07-13
 
 ### Added

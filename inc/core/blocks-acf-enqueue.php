@@ -706,7 +706,8 @@ function lonestar_build_block_asset_registration_map($block_directories)
 		$source_context = lonestar_get_source_context_key_for_path($block_directory);
 		$map[] = array(
 			'css_handles' => lonestar_collect_metadata_handles($json_contents, array('style', 'editorStyle', 'viewStyle'), $fallback_css_handle),
-			'js_handles'  => lonestar_collect_metadata_handles($json_contents, array('script', 'editorScript', 'viewScript', 'viewScriptModule'), $fallback_js_handle),
+			'js_handles'  => lonestar_collect_metadata_handles($json_contents, array('script', 'editorScript', 'viewScript'), $fallback_js_handle),
+			'module_handles' => lonestar_collect_metadata_handles($json_contents, array('viewScriptModule'), ''),
 			'js_dependencies' => lonestar_get_block_script_dependencies($json_contents),
 			'js_textdomain'   => lonestar_get_block_script_textdomain($json_contents, $source_context),
 			'source_context'  => $source_context,
@@ -730,7 +731,7 @@ function lonestar_get_cached_block_asset_registration_map()
 		return lonestar_build_block_asset_registration_map($block_directories);
 	}
 
-	$transient_key = 'lonestar_block_asset_map_v3_' . lonestar_get_block_cache_namespace();
+	$transient_key = 'lonestar_block_asset_map_v4_' . lonestar_get_block_cache_namespace();
 	$cached = get_transient($transient_key);
 	if (is_array($cached)) {
 		return $cached;
@@ -760,6 +761,7 @@ function lonestar_register_block_files()
 		$js_source = isset($asset_map['js_source']) && is_string($asset_map['js_source']) ? $asset_map['js_source'] : '';
 		$css_source = isset($asset_map['css_source']) && is_string($asset_map['css_source']) ? $asset_map['css_source'] : '';
 		$js_handles = isset($asset_map['js_handles']) && is_array($asset_map['js_handles']) ? $asset_map['js_handles'] : array();
+		$module_handles = isset($asset_map['module_handles']) && is_array($asset_map['module_handles']) ? $asset_map['module_handles'] : array();
 		$js_dependencies = isset($asset_map['js_dependencies']) && is_array($asset_map['js_dependencies']) ? $asset_map['js_dependencies'] : array();
 		$js_textdomain = isset($asset_map['js_textdomain']) ? sanitize_key((string) $asset_map['js_textdomain']) : '';
 		$source_context = isset($asset_map['source_context']) ? sanitize_key((string) $asset_map['source_context']) : 'template';
@@ -774,8 +776,13 @@ function lonestar_register_block_files()
 							continue;
 						}
 						wp_register_script($js_handle, $js_url, $js_dependencies, null, true);
-						wp_script_add_data($js_handle, 'type', 'module');
 						lonestar_register_block_script_translations($js_handle, $js_textdomain, $source_context);
+					}
+
+					if (!empty($module_handles) && function_exists('wp_register_script_module')) {
+						foreach ($module_handles as $module_handle) {
+							wp_register_script_module($module_handle, $js_url, array(), null);
+						}
 					}
 				}
 			}
@@ -826,8 +833,13 @@ function lonestar_register_block_files()
 						continue;
 					}
 					wp_register_script($js_handle, $js_file_path, $js_dependencies, $js_file_version, true);
-					wp_script_add_data($js_handle, 'type', 'module');
 					lonestar_register_block_script_translations($js_handle, $js_textdomain, $source_context);
+				}
+
+				if (!empty($module_handles) && function_exists('wp_register_script_module')) {
+					foreach ($module_handles as $module_handle) {
+						wp_register_script_module($module_handle, $js_file_path, array(), $js_file_version);
+					}
 				}
 			}
 		}

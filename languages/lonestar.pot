@@ -203,6 +203,7 @@ msgstr ""
 #: inc/core/modules_admin.php:77
 #: inc/core/modules_admin.php:92
 #: inc/core/modules_admin.php:113
+#: inc/core/modules_admin.php:954
 msgid "Content Types"
 msgstr ""
 
@@ -336,6 +337,7 @@ msgstr ""
 
 #: inc/core/modules_admin.php:390
 #: inc/core/modules_admin.php:423
+#: inc/core/modules_admin.php:860
 msgid "Slug"
 msgstr ""
 
@@ -346,6 +348,7 @@ msgid "Path"
 msgstr ""
 
 #: inc/core/modules_admin.php:393
+#: inc/core/modules_admin.php:879
 #: inc/core/theme-updates.php:423
 msgid "Status"
 msgstr ""
@@ -392,6 +395,7 @@ msgstr ""
 #. translators: %s: Theme source overriding the parent module.
 #: inc/core/modules_admin.php:664
 #: inc/core/modules_admin.php:783
+#: inc/core/modules_admin.php:916
 #, php-format
 msgid "Overridden by %s."
 msgstr ""
@@ -410,6 +414,7 @@ msgid "Folder"
 msgstr ""
 
 #: inc/core/modules_admin.php:708
+#: inc/core/modules_admin.php:855
 msgid "File"
 msgstr ""
 
@@ -828,4 +833,163 @@ msgstr ""
 #: theme.json
 msgctxt "Template part name"
 msgid "Footer"
+msgstr ""
+
+#: inc/core/modules_admin.php:803
+#: inc/core/modules_admin.php:906
+msgid "Not declared"
+msgstr ""
+
+#: inc/core/modules_admin.php:807
+msgid "Yes"
+msgstr ""
+
+#: inc/core/modules_admin.php:807
+msgid "No"
+msgstr ""
+
+#: inc/core/modules_admin.php:810
+#: inc/core/modules_admin.php:816
+msgid "Declared empty"
+msgstr ""
+
+#: inc/core/modules_admin.php:813
+msgid "Declared null"
+msgstr ""
+
+#: inc/core/modules_admin.php:818
+msgid "Unsupported value"
+msgstr ""
+
+#: inc/core/modules_admin.php:827
+msgid "Filter"
+msgstr ""
+
+#: inc/core/modules_admin.php:855
+msgid "Origin"
+msgstr ""
+
+#: inc/core/modules_admin.php:860
+#: inc/core/modules_admin.php:879
+msgid "Taxonomy"
+msgstr ""
+
+#: inc/core/modules_admin.php:860
+msgid "Post type"
+msgstr ""
+
+#: inc/core/modules_admin.php:873
+msgid "Taxonomies"
+msgstr ""
+
+#: inc/core/modules_admin.php:873
+msgid "Post Types"
+msgstr ""
+
+#: inc/core/modules_admin.php:875
+msgid "No taxonomies were discovered."
+msgstr ""
+
+#: inc/core/modules_admin.php:875
+msgid "No post types were discovered."
+msgstr ""
+
+#: inc/core/modules_admin.php:879
+msgid "Post Type"
+msgstr ""
+
+#: inc/core/modules_admin.php:879
+msgid "Source"
+msgstr ""
+
+#: inc/core/modules_admin.php:879
+msgid "Configuration"
+msgstr ""
+
+#: inc/core/modules_admin.php:894
+msgid "Effective"
+msgstr ""
+
+#: inc/core/modules_admin.php:894
+msgid "Not effective"
+msgstr ""
+
+#: inc/core/modules_admin.php:895
+msgid "Overridden"
+msgstr ""
+
+#: inc/core/modules_admin.php:896
+msgid "Filtered out"
+msgstr ""
+
+#: inc/core/modules_admin.php:896
+msgid "Filter modified"
+msgstr ""
+
+#: inc/core/modules_admin.php:897
+msgid "Slug exists in WordPress"
+msgstr ""
+
+#: inc/core/modules_admin.php:897
+msgid "Slug does not exist in WordPress"
+msgstr ""
+
+#: inc/core/modules_admin.php:906
+msgid "Object types"
+msgstr ""
+
+#: inc/core/modules_admin.php:907
+#: inc/core/modules_admin.php:911
+msgid "Public"
+msgstr ""
+
+#: inc/core/modules_admin.php:907
+#: inc/core/modules_admin.php:911
+msgid "REST"
+msgstr ""
+
+#: inc/core/modules_admin.php:907
+msgid "Hierarchical"
+msgstr ""
+
+#: inc/core/modules_admin.php:907
+#: inc/core/modules_admin.php:911
+msgid "Rewrite"
+msgstr ""
+
+#: inc/core/modules_admin.php:911
+msgid "Archive"
+msgstr ""
+
+#: inc/core/modules_admin.php:911
+msgid "Supports"
+msgstr ""
+
+#: inc/core/modules_admin.php:921
+msgid "View posts"
+msgstr ""
+
+#: inc/core/modules_admin.php:922
+msgid "View archive"
+msgstr ""
+
+#: inc/core/modules_admin.php:932
+msgid "View terms"
+msgstr ""
+
+#: inc/core/modules_admin.php:941
+msgid "Showing effective values after filters; declared values remain available in the catalog."
+msgstr ""
+
+#: inc/core/modules_admin.php:954
+msgid "Read-only overview of content type definitions resolved for this request. This page does not save settings or change rewrites."
+msgstr ""
+
+#: inc/core/modules_admin.php:959
+msgid "Definition diagnostics"
+msgstr ""
+
+#: theme.json
+msgctxt "Template part name"
+msgid "Comments"
 msgstr ""
