@@ -325,3 +325,49 @@ function lonestar_enqueue_vite_assets()
     wp_enqueue_script('main', DIST_URI . '/' . $main_file, JS_DEPENDENCY, lonestar_asset_version($main_path), JS_LOAD_IN_FOOTER);
     wp_script_add_data('main', 'type', 'module');
 }
+
+/**
+ * Register block editor styles so editor content preview matches the front end.
+ *
+ * The frontend already loads assets/css/reset.css and the built Vite CSS
+ * (see lonestar_enqueue_reset_css() and lonestar_enqueue_vite_assets()),
+ * but `add_theme_support('editor-styles')` alone does not pull those files
+ * into the editor iframe — each stylesheet must be registered explicitly
+ * via add_editor_style().
+ *
+ * In Vite dev mode we skip the (possibly stale/missing) dist CSS entirely:
+ * the editor already gets live styles via the Vite HMR client, enqueued in
+ * lonestar_enqueue_vite_editor_hmr_client() on enqueue_block_editor_assets.
+ *
+ * Hooked on after_setup_theme at priority 20, after lonestar_setup() (which
+ * runs at the default priority 10 and declares editor-styles support) and
+ * after this file's own top-level code has run. lonestar_is_vite_dev_mode()
+ * caches its Vite dev-server probe in a transient (see
+ * inc/core/blocks-acf-enqueue.php), so calling it here costs at most one
+ * fast options read; it never re-probes on every request.
+ *
+ * @return void
+ */
+function lonestar_register_editor_styles()
+{
+    add_editor_style('assets/css/reset.css');
+
+    if (lonestar_is_vite_dev_mode()) {
+        return;
+    }
+
+    $entry_key = ltrim(VITE_ENTRY_POINT, '/');
+    $manifest_entry = lonestar_get_vite_manifest_entry($entry_key);
+    if (!is_array($manifest_entry) || empty($manifest_entry['css']) || !is_array($manifest_entry['css'])) {
+        return;
+    }
+
+    foreach ($manifest_entry['css'] as $css_file) {
+        if (!is_string($css_file) || '' === $css_file) {
+            continue;
+        }
+
+        add_editor_style(trailingslashit(DIST_DEF) . ltrim($css_file, '/'));
+    }
+}
+add_action('after_setup_theme', 'lonestar_register_editor_styles', 20);

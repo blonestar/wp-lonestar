@@ -13,16 +13,25 @@ All notable changes to the Lonestar parent theme are documented in this file.
 - `lonestar_filter_parent_theme_update` no longer discards `$update` for non-Lonestar themes or when no newer release is available; it now returns the incoming `$update` unchanged, since `update_themes_github.com` can be shared by other GitHub-hosted theme updaters.
 - Parent theme update metadata now resolves the theme via `get_template()` (`lonestar_get_parent_theme()`), instead of a hardcoded `wp_get_theme('lonestar')` lookup that resolves to nothing in the `wp-lonestar` development checkout folder.
 - Parent theme update metadata no longer hardcodes `'tested' => '7.0'`; it now reads the parent's "Tested up to" `style.css` header (`lonestar_get_parent_theme_tested_wp_version()`), falling back to "Requires at least".
+- `module.disable-emoji.php` now also removes `wp_enqueue_scripts`/`admin_enqueue_scripts` → `wp_enqueue_emoji_styles`, and the `embed_head`/`enqueue_embed_scripts` emoji hooks, which modern core registers but the module previously left active. The removal now also runs on `admin_init`, since core's admin-only emoji hooks (`wp-admin/includes/admin-filters.php`) are not attached until after the `init` action has already fired in `wp-admin`.
+- `assets/css/reset.css` no longer forces `display: block` on `img`/`picture`/`video`/`canvas`/`svg`, which broke inline images and WordPress image-alignment classes; images now get `max-width: 100%; height: auto;` (plus `vertical-align: middle`) without a forced display change. The universal `margin: 0; padding: 0` reset no longer strips `ul`/`ol` padding, so post-content list bullet/number indentation is preserved.
+- `inc/inc.filters.php`: removed the `upload_mimes` AVIF filter — WordPress core has supported AVIF uploads since 6.5 and no longer needs it.
 
 ### Added
 
 - Added `templates/archive.html` and `templates/search.html`, and rebuilt `templates/index.html` as a generic Query Loop fallback (`core/query` with `inherit: true`, post title/date/excerpt/featured image, pagination, and no-results states).
 - Added the `parts/comments.html` template part to `templates/single.html` and registered it in `theme.json` `templateParts`.
+- Added `lonestar_register_editor_styles()` (`inc/core/vite.php`, hooked on `after_setup_theme` priority 20), so the block editor iframe loads `assets/css/reset.css` and the built Vite CSS via `add_editor_style()`, matching the frontend. In Vite dev mode the built `dist/` CSS is skipped since the editor already gets live styles from the Vite HMR client.
+- Added `patterns/404-content.php`, `patterns/no-results.php`, and `patterns/no-search-results.php` — translatable (`lonestar` text domain) PHP block patterns referenced via `<!-- wp:pattern {"slug":"lonestar/..."} /-->` from `templates/404.html`, `templates/index.html`, `templates/archive.html`, and `templates/search.html`, replacing hardcoded English text in those static HTML templates (block templates are not scanned by `wp i18n make-pot`).
+- `theme.json`: enabled fluid typography (`settings.typography.fluid: true`) with `fluid.min`/`fluid.max` on each existing font size preset (slugs and max sizes unchanged), and added `styles.elements.link` (brand color, underlined, brand-strong on hover) and `styles.elements.heading` (heading font family, weight 700, line-height 1.2), removing the now-duplicated rules from `assets/css/_base-styles.css`.
 
 ### Changed
 
 - Bumped the block asset registration transient cache key from `lonestar_block_asset_map_v3_*` to `lonestar_block_asset_map_v4_*` to invalidate stale cached asset maps after the `viewScriptModule` handling change.
 - `style.css` "Tested up to" header raised to 7.1.
+- `theme.json` `$schema` now points at the versioned `https://schemas.wp.org/wp/7.1/theme.json` instead of `.../trunk/theme.json`.
+- Renamed the `themes.php` submenu label from "Reusable Blocks" to "Patterns" (`inc/inc.filters.php`), matching core's WordPress 6.3+ terminology; the underlying `wp_block` post type and screen URL are unchanged.
+- `blocks/acf/example-acf/block.json`: added `"blockVersion": 3` to the `acf` object to opt the example block into ACF 6.3+'s iframed block editor (block API v3).
 
 ## [0.5.0] - 2026-07-13
 
