@@ -31,12 +31,12 @@
     "extends @wordpress/browserslist-config"
   ],
   "devDependencies": {
-    "@wordpress/browserslist-config": "^6.52.0",
-    "autoprefixer": "^10.5.4",
+    "@wordpress/browserslist-config": "^6.55.0",
+    "autoprefixer": "^10.6.1",
     "browserslist": "^4.28.7",
-    "postcss": "^8.5.25",
+    "postcss": "^8.5.28",
     "postcss-nesting": "^14.0.1",
-    "prettier": "^3.9.6",
-    "vite": "^8.2.0"
+    "prettier": "^3.9.8",
+    "vite": "^8.3.0"
   }
 }
