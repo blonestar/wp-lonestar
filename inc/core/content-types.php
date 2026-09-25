@@ -62,7 +62,7 @@ function lonestar_content_types_diagnostic($message, $context = array())
     $message = (string) $message;
     $context = is_array($context) ? $context : array();
     if (isset($GLOBALS['lonestar_content_type_catalog_diagnostics']) && is_array($GLOBALS['lonestar_content_type_catalog_diagnostics'])) {
-        $signature = md5($message . "\0" . serialize($context));
+        $signature = md5($message . "\0" . serialize($context)); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- Serialized context is only hashed for request-local deduplication and is never unserialized.
         if (!isset($GLOBALS['lonestar_content_type_catalog_diagnostics'][$signature])) {
             $GLOBALS['lonestar_content_type_catalog_diagnostics'][$signature] = array(
                 'message' => $message,
@@ -73,6 +73,7 @@ function lonestar_content_types_diagnostic($message, $context = array())
     do_action('lonestar_content_types_diagnostic', $message, $context);
 
     if (defined('WP_DEBUG') && WP_DEBUG && function_exists('_doing_it_wrong')) {
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- _doing_it_wrong() emits a PHP diagnostic, not HTML.
         _doing_it_wrong('lonestar_content_types', $message, '0.4.0');
     }
 }

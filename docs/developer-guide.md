@@ -13,6 +13,7 @@ For child-theme-specific procedures, see:
 - Node.js 22.12+
 - npm 10+
 - ACF Pro is optional and required only for ACF blocks/modules.
+- Composer 2 is optional, required only to run the PHP quality tooling (`phpcs`, `phpstan`).
 
 ## 2) Scope
 
@@ -53,6 +54,18 @@ php tests/content-types-runtime.php
 ```
 
 `npm run browsers` prints the browser matrix inherited from the official WordPress Browserslist profile.
+
+### 5a) PHP quality gates (optional, requires Composer)
+
+```bash
+composer install
+composer run lint:phpcs
+composer run lint:phpstan
+```
+
+- `phpcs` uses `phpcs.xml.dist`, a curated WordPress Coding Standards ruleset scoped to security (escaping/nonces/sanitization), i18n, discouraged/deprecated functions, PHP 8.2+ compatibility (`PHPCompatibilityWP`, `testVersion 8.2-`), and `PrefixAllGlobals` across theme code. It excludes formatting/whitespace sniffs that conflict with this codebase's 4-space indentation and `array()` long syntax. PHPCS blocks CI; use a line-specific `phpcs:ignore` with a reason only for justified exceptions.
+- `phpstan` runs at level 5 over `functions.php`, `inc/`, `modules/`, and `blocks/`, using `szepeviktor/phpstan-wordpress` for WordPress core stubs and `php-stubs/acf-pro-stubs` for ACF. `phpstan-baseline.neon` captures pre-existing findings so the blocking gate passes clean; do not add new findings to the baseline without a reason.
+- None of this tooling (`composer.json`, `composer.lock`, `phpcs.xml.dist`, `phpstan*.neon*`, `vendor/`) ships in release ZIPs.
 
 ## 5.1) CSS Pipeline
 

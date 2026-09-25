@@ -113,8 +113,8 @@ unset($lonestar_core_file, $lonestar_core_files, $lonestar_core_path, $lonestar_
  * Load project-specific functionality
  * Add your custom inc.*.php files here for project-specific features
  */
-foreach (glob(get_template_directory() . '/inc/inc.*.php') as $file) {
-    require_once $file;
+foreach (glob(get_template_directory() . '/inc/inc.*.php') as $lonestar_file) {
+    require_once $lonestar_file;
 }
 
 if (!function_exists('lonestar_setup')) {

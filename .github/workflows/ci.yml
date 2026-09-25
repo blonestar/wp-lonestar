@@ -60,7 +60,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ["8.2", "8.4"]
+        php: ["8.2", "8.4", "8.5"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -83,3 +83,94 @@ jobs:
         run: |
           php tests/content-types-runtime.php
           php tests/content-types-admin.php
+
+  quality:
+    name: PHP quality gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: "8.2"
+          coverage: none
+          tools: composer
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: PHPCS (WordPress security/i18n/compatibility gate)
+        run: composer run lint:phpcs
+
+      - name: PHPStan (level 5, with baseline)
+        run: composer run lint:phpstan
+
+  # NOTE: This job cannot be validated locally in this environment (no Docker
+  # available here), so it is intentionally continue-on-error: true. Once a
+  # maintainer confirms it goes green against a real @wordpress/env + Docker
+  # runner, remove continue-on-error to make it a blocking gate.
+  smoke:
+    name: wp-env frontend/admin smoke test
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start wp-env
+        run: npx @wordpress/env start
+
+      - name: Activate Lonestar theme
+        run: |
+          set -euo pipefail
+          THEME_SLUG="$(basename "$GITHUB_WORKSPACE")"
+          npx wp-env run cli wp theme activate "$THEME_SLUG"
+
+      - name: Check blocks are registered
+        run: |
+          set -euo pipefail
+          npx wp-env run cli wp eval '
+            $blocks = array( "lonestar/example-native", "lonestar/example-php-only" );
+            foreach ( $blocks as $block ) {
+              if ( ! \WP_Block_Type_Registry::get_instance()->is_registered( $block ) ) {
+                fwrite( STDERR, "Block not registered: $block\n" );
+                exit( 1 );
+              }
+            }
+            echo "All expected blocks are registered.\n";
+          '
+
+      - name: Smoke test homepage and 404
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_URL="http://localhost:8888"
+          HOME_HTML="$(curl -sS -f "$BASE_URL/")"
+          NOTFOUND_HTML="$(curl -sS -f "$BASE_URL/this-page-does-not-exist-lonestar-smoke/" || true)"
+
+          if echo "$HOME_HTML" | grep -E -q "Fatal error|Warning:|Notice:|Deprecated:"; then
+            echo "PHP fatal/warning/notice/deprecated output found on homepage"
+            echo "$HOME_HTML" | grep -E "Fatal error|Warning:|Notice:|Deprecated:"
+            exit 1
+          fi
+
+          if echo "$NOTFOUND_HTML" | grep -E -q "Fatal error|Warning:|Notice:|Deprecated:"; then
+            echo "PHP fatal/warning/notice/deprecated output found on 404 page"
+            echo "$NOTFOUND_HTML" | grep -E "Fatal error|Warning:|Notice:|Deprecated:"
+            exit 1
+          fi
+
+      - name: Dump wp-env logs on failure
+        if: failure()
+        run: npx wp-env logs --watch=false || true

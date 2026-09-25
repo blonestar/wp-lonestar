@@ -121,8 +121,8 @@ function lonestar_get_current_settings_tab($requested_tab = null)
     $tab_keys = array_keys($tabs);
     $default_tab = !empty($tab_keys) ? sanitize_key((string) $tab_keys[0]) : 'modules';
 
-    if (!is_string($requested_tab) && isset($_GET['tab'])) {
-        $requested_tab = (string) wp_unslash($_GET['tab']);
+    if (!is_string($requested_tab) && isset($_GET['tab'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only tab selection; it never updates settings.
+        $requested_tab = sanitize_key((string) wp_unslash($_GET['tab'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only tab selection; it never updates settings.
     }
 
     $requested_tab = sanitize_key((string) $requested_tab);
@@ -392,8 +392,10 @@ function lonestar_render_about_tab()
     echo '<tr><th>' . esc_html__('Description', 'lonestar') . '</th><td>' . ('' !== $template_description ? esc_html($template_description) : '&mdash;') . '</td></tr>';
     echo '<tr><th>' . esc_html__('Text Domain', 'lonestar') . '</th><td>' . ('' !== $template_text_domain ? '<code>' . esc_html($template_text_domain) . '</code>' : '&mdash;') . '</td></tr>';
     echo '<tr><th>' . esc_html__('Requires', 'lonestar') . '</th><td>';
+    // translators: %s: required WordPress version.
     echo ('' !== $template_requires_wp ? esc_html(sprintf(__('WP %s+', 'lonestar'), $template_requires_wp)) : esc_html__('WP n/a', 'lonestar'));
     echo ' / ';
+    // translators: %s: required PHP version.
     echo ('' !== $template_requires_php ? esc_html(sprintf(__('PHP %s+', 'lonestar'), $template_requires_php)) : esc_html__('PHP n/a', 'lonestar'));
     echo '</td></tr>';
     echo '<tr><th>' . esc_html__('Theme URI', 'lonestar') . '</th><td>';
@@ -436,7 +438,7 @@ function lonestar_handle_modules_admin_post()
         return;
     }
 
-    if (!isset($_SERVER['REQUEST_METHOD']) || 'POST' !== strtoupper((string) $_SERVER['REQUEST_METHOD'])) {
+    if (!isset($_SERVER['REQUEST_METHOD']) || 'POST' !== strtoupper(sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])))) {
         return;
     }
 
@@ -449,7 +451,7 @@ function lonestar_handle_modules_admin_post()
         return;
     }
 
-    $submitted_tab = isset($_POST['lonestar_settings_tab']) ? (string) wp_unslash($_POST['lonestar_settings_tab']) : null;
+    $submitted_tab = isset($_POST['lonestar_settings_tab']) ? sanitize_key((string) wp_unslash($_POST['lonestar_settings_tab'])) : null;
     $current_tab = lonestar_get_current_settings_tab($submitted_tab);
     if ('content-types' === $current_tab) {
         return;
@@ -461,8 +463,10 @@ function lonestar_handle_modules_admin_post()
 
     if ('modules' === $current_tab) {
         $module_catalog = lonestar_get_module_catalog();
-        $selected_modules = isset($_POST['lonestar_modules']) && is_array($_POST['lonestar_modules']) ? wp_unslash($_POST['lonestar_modules']) : array();
-        $selected_modules = array_values(array_unique(array_map('sanitize_key', $selected_modules)));
+        $selected_modules = isset($_POST['lonestar_modules']) && is_array($_POST['lonestar_modules'])
+            ? array_map('sanitize_key', wp_unslash($_POST['lonestar_modules']))
+            : array();
+        $selected_modules = array_values(array_unique($selected_modules));
         $override_state = function_exists('lonestar_get_module_override_state') ? lonestar_get_module_override_state($module_catalog) : array();
         $overridden_lookup = (is_array($override_state) && isset($override_state['overridden_by_key']) && is_array($override_state['overridden_by_key']))
             ? $override_state['overridden_by_key']
@@ -488,8 +492,10 @@ function lonestar_handle_modules_admin_post()
         $is_updated = true;
     } elseif ('blocks' === $current_tab) {
         $block_catalog = function_exists('lonestar_get_block_catalog') ? lonestar_get_block_catalog() : array();
-        $selected_blocks = isset($_POST['lonestar_blocks']) && is_array($_POST['lonestar_blocks']) ? wp_unslash($_POST['lonestar_blocks']) : array();
-        $selected_blocks = array_values(array_unique(array_map('sanitize_key', $selected_blocks)));
+        $selected_blocks = isset($_POST['lonestar_blocks']) && is_array($_POST['lonestar_blocks'])
+            ? array_map('sanitize_key', wp_unslash($_POST['lonestar_blocks']))
+            : array();
+        $selected_blocks = array_values(array_unique($selected_blocks));
         $override_state = function_exists('lonestar_get_block_override_state') ? lonestar_get_block_override_state($block_catalog) : array();
         $overridden_lookup = (is_array($override_state) && isset($override_state['overridden_by_key']) && is_array($override_state['overridden_by_key']))
             ? $override_state['overridden_by_key']
@@ -770,6 +776,7 @@ function lonestar_render_block_table($catalog, $enabled_keys, $source_label, $ov
         }
         if ($is_overridden) {
             $source_label_text = ('' !== $overriding_source) ? lonestar_get_source_label($overriding_source) : __('Child Theme', 'lonestar');
+            // translators: %s: theme or module source overriding this block.
             echo '<br /><span class="description">' . esc_html(sprintf(__('Overridden by %s.', 'lonestar'), $source_label_text)) . '</span>';
         }
         if (!$is_available && '' !== $status_message) {
@@ -903,6 +910,7 @@ function lonestar_render_content_type_table($entries, $entity_type)
             }
         }
         echo '<tr><td><strong>' . esc_html($label) . '</strong><br /><code>' . esc_html($slug) . '</code>';
+        // translators: %s: theme or module source overriding this content type.
         if (!empty($entry['overridden']) && !empty($entry['overriding_source'])) echo '<br /><span class="description">' . esc_html(sprintf(__('Overridden by %s.', 'lonestar'), lonestar_get_content_type_source_label($entry['overriding_source']))) . '</span>';
         if (!empty($entry['effective']) && !empty($entry['registered'])) {
             if (!$is_taxonomy && function_exists('get_post_type_object')) {
@@ -1008,7 +1016,7 @@ function lonestar_render_modules_admin_page()
         <h1><?php echo esc_html__('Theme Settings', 'lonestar'); ?></h1>
         <p><?php echo esc_html__('Manage module and block availability, and review informational theme runtime details.', 'lonestar'); ?></p>
 
-        <?php $is_updated = (isset($_GET['updated']) && '1' === sanitize_text_field((string) wp_unslash($_GET['updated']))); ?>
+        <?php $is_updated = (isset($_GET['updated']) && '1' === sanitize_text_field((string) wp_unslash($_GET['updated']))); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only notice flag; it never updates settings. ?>
         <?php if ($is_updated) : ?>
             <div class="notice notice-success is-dismissible"><p><?php echo esc_html__('Theme settings updated.', 'lonestar'); ?></p></div>
         <?php endif; ?>

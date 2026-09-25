@@ -11,7 +11,7 @@ if (!function_exists('lonestar_printr') && defined('WP_DEBUG') && WP_DEBUG && fu
         }
 
         echo '<pre>';
-        echo esc_html(print_r($arr, true));
+        echo esc_html(print_r($arr, true)); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r -- This debug-only output is escaped and unavailable in production.
         echo '</pre>';
 
         if ($die)

@@ -40,6 +40,7 @@ function lonestar_module_output_gtm_head_snippet()
         return;
     }
 
+    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- This markup is a validated GTM script snippet.
     echo lonestar_module_get_gtm_head_markup($container_id);
 }
 
@@ -55,5 +56,6 @@ function lonestar_module_output_gtm_body_snippet()
         return;
     }
 
+    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- This markup is a validated GTM iframe snippet.
     echo lonestar_module_get_gtm_body_markup($container_id);
 }

@@ -136,8 +136,9 @@ function lonestar_module_handle_gtm_settings_post($current_tab)
         return;
     }
 
+    // phpcs:ignore WordPress.Security.NonceVerification.Missing -- The parent handler verifies the settings nonce before dispatching this tab hook.
     $raw_settings = (isset($_POST['lonestar_gtm']) && is_array($_POST['lonestar_gtm']))
-        ? wp_unslash($_POST['lonestar_gtm'])
+        ? wp_unslash($_POST['lonestar_gtm']) // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The parent handler verifies the settings nonce before dispatch and this payload is sanitized below.
         : array();
 
     $sanitized_settings = lonestar_module_sanitize_gtm_settings($raw_settings);

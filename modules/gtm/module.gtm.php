@@ -7,6 +7,6 @@ if (!defined('ABSPATH')) {
 /**
  * GTM module bootstrap.
  */
-foreach (glob(__DIR__ . '/inc/inc.*.php') as $file) {
-    require_once $file;
+foreach (glob(__DIR__ . '/inc/inc.*.php') as $lonestar_file) {
+    require_once $lonestar_file;
 }

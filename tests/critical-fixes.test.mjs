@@ -53,8 +53,8 @@ test("consolidates block discovery into a single runtime index transient", () =>
 });
 
 test("php-only example block closes its wrapper <section> tag", () => {
-    assert.match(phpOnlyRenderSource, /<section <\?php echo \$wrapper_attributes;[^?]*\?>>/);
-    assert.doesNotMatch(phpOnlyRenderSource, /<section <\?php echo \$wrapper_attributes;[^?]*\?>\s*\n\s*<h3>/);
+    assert.match(phpOnlyRenderSource, /<section <\?php echo \$lonestar_wrapper_attributes;[^?]*\?>>/);
+    assert.doesNotMatch(phpOnlyRenderSource, /<section <\?php echo \$lonestar_wrapper_attributes;[^?]*\?>\s*\n\s*<h3>/);
 });
 
 test("Content Types admin screen uses the lonestar text domain only", () => {

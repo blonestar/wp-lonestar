@@ -2,6 +2,12 @@
 node_modules/
 vendor/
 
+# PHP quality tooling caches
+.phpcs-cache
+.phpunit.cache
+/phpstan.neon
+.phpstan-cache/
+
 # Logs
 *.log
 npm-debug.log*

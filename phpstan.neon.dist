@@ -1,0 +1,19 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+    paths:
+        - functions.php
+        - inc
+        - modules
+        - blocks
+    excludePaths:
+        - node_modules/*
+        - vendor/*
+        - dist/*
+        - tests/*
+    bootstrapFiles:
+        - vendor/php-stubs/acf-pro-stubs/acf-pro-stubs.php
+    treatPhpDocTypesAsCertain: false

@@ -290,7 +290,7 @@ function lonestar_find_block_directories($apply_toggle_filter = true)
 			}
 		} catch (\Exception $e) {
 			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('[lonestar-theme] ' . $e->getMessage());
+                error_log('[lonestar-theme] ' . $e->getMessage()); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-only diagnostic for a filesystem scan failure.
 			}
 		}
 	}
@@ -667,7 +667,7 @@ function lonestar_build_block_asset_registration_map($block_directories)
 		$json_contents = json_decode($json_file, true);
 		if (JSON_ERROR_NONE !== json_last_error() || !isset($json_contents['name'])) {
 			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('[lonestar-theme] Invalid block metadata: ' . $block_json_path);
+                error_log('[lonestar-theme] Invalid block metadata: ' . $block_json_path); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-only diagnostic for invalid block metadata.
 			}
 			continue;
 		}

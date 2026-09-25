@@ -1,0 +1,27 @@
+{
+  "name": "blonestar/wp-lonestar",
+  "description": "Dev-only PHP quality tooling for the Lonestar parent theme (not shipped in releases).",
+  "type": "project",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=8.2"
+  },
+  "require-dev": {
+    "wp-coding-standards/wpcs": "^3",
+    "phpcompatibility/phpcompatibility-wp": "*",
+    "dealerdirect/phpcodesniffer-composer-installer": "^1",
+    "phpstan/phpstan": "^2",
+    "szepeviktor/phpstan-wordpress": "^2",
+    "php-stubs/acf-pro-stubs": "^6"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    },
+    "sort-packages": true
+  },
+  "scripts": {
+    "lint:phpcs": "phpcs",
+    "lint:phpstan": "phpstan analyse --memory-limit=2G"
+  }
+}

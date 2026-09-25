@@ -186,7 +186,7 @@ function lonestar_get_vite_manifest()
     $manifest_path = LONESTAR_DIST_PATH . '/manifest.json';
     if (!file_exists($manifest_path) || !is_readable($manifest_path)) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[lonestar-theme] Vite manifest is missing or unreadable: ' . $manifest_path);
+            error_log('[lonestar-theme] Vite manifest is missing or unreadable: ' . $manifest_path); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-only diagnostic for a missing build artifact.
         }
         return null;
     }
@@ -194,7 +194,7 @@ function lonestar_get_vite_manifest()
     $manifest_content = file_get_contents($manifest_path);
     if (false === $manifest_content) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[lonestar-theme] Unable to read Vite manifest: ' . $manifest_path);
+            error_log('[lonestar-theme] Unable to read Vite manifest: ' . $manifest_path); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-only diagnostic for a failed file read.
         }
         return null;
     }
@@ -202,7 +202,7 @@ function lonestar_get_vite_manifest()
     $decoded_manifest = json_decode($manifest_content, true);
     if (!is_array($decoded_manifest)) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[lonestar-theme] Invalid Vite manifest JSON: ' . $manifest_path);
+            error_log('[lonestar-theme] Invalid Vite manifest JSON: ' . $manifest_path); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-only diagnostic for invalid build metadata.
         }
         return null;
     }
@@ -232,7 +232,7 @@ function lonestar_get_vite_manifest_entry($entry_key)
     }
 
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('[lonestar-theme] Missing Vite entry in manifest: ' . $entry_key);
+        error_log('[lonestar-theme] Missing Vite entry in manifest: ' . $entry_key); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-only diagnostic for a missing build entry.
     }
     return null;
 }

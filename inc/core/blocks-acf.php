@@ -55,7 +55,7 @@ function lonestar_register_acf_block_types()
 
         if (!empty($errors)) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('[lonestar-theme] Invalid ACF block contract: ' . implode(' ', $errors));
+                error_log('[lonestar-theme] Invalid ACF block contract: ' . implode(' ', $errors)); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-only diagnostic for invalid block metadata.
             }
             continue;
         }

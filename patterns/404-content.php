@@ -21,4 +21,4 @@ $lonestar_home_link_attrs = wp_json_encode(array('label' => __('Go Home', 'lones
 <p class="has-text-align-center"><?php esc_html_e('The page you are looking for could not be found.', 'lonestar'); ?></p>
 <!-- /wp:paragraph -->
 
-<!-- wp:home-link <?php echo $lonestar_home_link_attrs; ?> /-->
+<!-- wp:home-link <?php echo $lonestar_home_link_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON is serialized for a WordPress block comment, not an HTML attribute. ?> /-->
