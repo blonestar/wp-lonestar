@@ -107,14 +107,9 @@ jobs:
       - name: PHPStan (level 5, with baseline)
         run: composer run lint:phpstan
 
-  # NOTE: This job cannot be validated locally in this environment (no Docker
-  # available here), so it is intentionally continue-on-error: true. Once a
-  # maintainer confirms it goes green against a real @wordpress/env + Docker
-  # runner, remove continue-on-error to make it a blocking gate.
   smoke:
     name: wp-env frontend/admin smoke test
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

@@ -49,7 +49,7 @@ composer run lint:phpcs
 composer run lint:phpstan
 ```
 
-Both `phpcs` and `phpstan` are blocking CI gates. PHPStan uses `phpstan-baseline.neon` for existing findings. Fix new PHPCS findings; for a justified exception, add a line-specific `phpcs:ignore` with a reason. Do not add findings to the PHPStan baseline or broad PHPCS exclusions without a reason.
+`phpcs`, `phpstan`, and the `wp-env frontend/admin smoke test` are blocking CI gates. The smoke job checks frontend/admin output and expected block registration through `@wordpress/env`. PHPStan uses `phpstan-baseline.neon` for existing findings. Fix new PHPCS findings; for a justified exception, add a line-specific `phpcs:ignore` with a reason. Do not add findings to the PHPStan baseline or broad PHPCS exclusions without a reason.
 
 Also do a manual smoke test for affected admin and frontend paths.
 
@@ -87,5 +87,6 @@ Also do a manual smoke test for affected admin and frontend paths.
     - `PHP 8.4 lint`
     - `PHP 8.5 lint`
     - `PHP quality gates`
+    - `wp-env frontend/admin smoke test`
 - Prefer squash merge for a clean history.
 - Optional: require review from Code Owners.
