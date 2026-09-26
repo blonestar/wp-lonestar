@@ -115,6 +115,7 @@ Recommended:
     - WP admin load
     - affected module/block behavior
     - desktop + mobile rendering
+4. The blocking CI job `wp-env frontend/admin smoke test` passes its `@wordpress/env` frontend/admin and block-registration checks.
 
 ## 8) Deployment Checklist
 
