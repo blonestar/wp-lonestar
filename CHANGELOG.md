@@ -4,18 +4,20 @@ All notable changes to the Lonestar parent theme are documented in this file.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-26
+
 ### Added
 
 - Added dev-only PHP quality tooling (`composer.json`, `phpcs.xml.dist`, `phpstan.neon.dist`, `phpstan-baseline.neon`): a curated WordPress Coding Standards gate (security, i18n, discouraged/deprecated functions, PHP 8.2+ compatibility, `lonestar_`/`LONESTAR_` symbol prefixing) and PHPStan level 5 with a baseline for pre-existing findings. None of this ships in release ZIPs.
 - Added blocking CI PHP quality gates running `composer run lint:phpcs` and `composer run lint:phpstan`.
 - Added PHP 8.5 to the CI PHP lint matrix (alongside 8.2 and 8.4).
-- Added a `.wp-env.json` and a CI `smoke` job (report-only, `continue-on-error: true`, unvalidated locally — no Docker in this environment) that starts `@wordpress/env`, activates the theme, and checks for PHP fatals/warnings and expected block registration on the homepage and a 404 page.
+- Added `.wp-env.json` and a blocking CI `smoke` gate that starts `@wordpress/env`, activates the theme, and checks for PHP fatals/warnings and expected block registration on the homepage and a 404 page.
 
 ### Changed (Phase 4: prefixed public API & code hygiene)
 
 - The public PHP API now uses `lonestar_`/`LONESTAR_` prefixes consistently, and production Vite assets use the `lonestar-main` and `lonestar-{filename}` handles.
 - Shortcode tags `[R]`, `[Y]`, and `[year]` remain unchanged.
-- Module functions use the `lonestar_*` namespace, the unused module PHP scanner was removed, and the module admin handler guards `$_SERVER['REQUEST_METHOD']` with `isset()` before reading it.
+- Renamed the module API from `modules_*` to `lonestar_*`, removed the unused module PHP scanner, and made the module admin handler guard `$_SERVER['REQUEST_METHOD']` with `isset()` before reading it.
 
 ### Fixed
 
